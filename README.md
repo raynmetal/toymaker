@@ -8,6 +8,8 @@ ToyMaker is an open source game engine developed and maintained by Zoheb Shujaud
 
 ### Documentation
 
+See [raynmetal/game-of-ur's toymaker-fork tag](https://github.com/raynmetal/game-of-ur/releases/tag/toymaker-fork) which holds the commit history leading up to the splitting of the engine project from the game project.
+
 Documentation for this game and its engine is available on this project's [github pages](https://raynmetal.github.io/toymaker/index.html).
 
 ### Motivation
@@ -51,13 +53,7 @@ Finally, [clone this repository,](https://github.com/raynmetal/toymaker) or down
 
 #### Compiling
 
-1. Enter the root directory of the project (the same one where README.md and LICENSE.txt are found).
-
-2. Run `cmake . -B build/ -DCMAKE_BUILD_TYPE=Debug` to initialize the build directory.
-
-3. Change to the build directory using `cd build`, then run `cmake --build .` to build the Debug version of the project.
-
-4. Run the (debug build of the) game using the generated `ToyMakerDemo-d.exe` file in the build folder.
+WIP
 
 ## Goals
 
