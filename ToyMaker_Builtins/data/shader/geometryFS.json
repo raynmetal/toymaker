@@ -1,0 +1,10 @@
+{
+    "name": "geometryFS",
+    "type": "shader/fragment",
+    "sources" : [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.fs",
+        "common/material.fs",
+        "geometry/geometry.fs"
+    ]
+}

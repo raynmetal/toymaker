@@ -1,0 +1,10 @@
+{
+    "name" : "gaussianblurVS",
+    "type" : "shader/vertex",
+    "sources" : [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.vs",
+        "common/vertexAttributes.vs",
+        "blur/gaussian.vs"
+    ]
+}

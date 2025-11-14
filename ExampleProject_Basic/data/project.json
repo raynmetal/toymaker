@@ -1,0 +1,22 @@
+{
+    "window_configuration": {
+        "application_title": "ToyMaker Demo",
+        "window_width": 800,
+        "window_height": 600 
+    },
+
+    "root_viewport_render_configuration": {
+        "base_dimensions": [800, 600],
+        "update_mode": "on-render-cap-fps",
+        "resize_type": "texture-dimensions",
+        "resize_mode": "fixed-aspect",
+        "render_type": "basic-3d",
+        "fps_cap": 60,
+        "render_scale": 1.0
+    },
+
+    "simulation_step": 33,
+
+    "input_map_path": "input_bindings.json",
+    "root_scene_path": "root.json"
+}

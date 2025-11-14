@@ -1,0 +1,17 @@
+{
+    "version": 4,
+    "configurePresets": [
+        {
+            "name": "ToyMakerExampleBasic",
+            "displayName": "Example Project Basic Debug Build",
+            "description": "Build ExampleProjectBasic with debug flags enabled.",
+            "binaryDir": "${sourceDir}/build",
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "BUILD_EXAMPLE_PROJECT_BASIC": "ON"
+            }
+        }
+    ]
+}

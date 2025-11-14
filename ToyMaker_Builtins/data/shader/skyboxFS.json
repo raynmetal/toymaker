@@ -1,0 +1,10 @@
+{
+    "name": "skyboxFS",
+    "type": "shader/fragment",
+    "sources": [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.fs",
+        "common/geometrySampler.fs",
+        "skybox/skybox.fs"
+    ]
+}

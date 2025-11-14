@@ -1,0 +1,10 @@
+{
+    "name": "lightingFS",
+    "type": "shader/fragment",
+    "sources": [
+        "common/versionHeader.glsl",
+        "common/geometrySampler.fs",
+        "common/lightStruct.fs",
+        "lighting/deferredLighting.fs"
+    ]
+}

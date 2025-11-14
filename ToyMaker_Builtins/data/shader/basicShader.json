@@ -1,0 +1,6 @@
+{
+    "name": "basicShader",
+    "type": "shader/program",
+    "vertexShader": "basicVS.json",
+    "fragmentShader": "basicFS.json"
+}

@@ -1,0 +1,6 @@
+{
+    "name": "tonemappingShader",
+    "type": "shader/program",
+    "vertexShader": "tonemappingVS.json",
+    "fragmentShader": "tonemappingFS.json"
+}

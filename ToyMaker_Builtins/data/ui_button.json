@@ -1,0 +1,169 @@
+{
+    "resources": [
+        {
+            "name": "UI_BUTTON_DEFAULT_ACTIVE_TEXTURE",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/textures/button_active.png"
+            }
+        },
+        {
+            "name": "UI_BUTTON_DEFAULT_INACTIVE_TEXTURE",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path":  "data/textures/button_inactive.png"
+            }
+        },
+        {
+            "name": "UI_BUTTON_DEFAULT_HOVER_TEXTURE",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/textures/button_hover.png"
+            }
+        },
+        {
+            "name": "UI_BUTTON_DEFAULT_PRESSED_TEXTURE",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/textures/button_pressed.png"
+            }
+        },
+        {
+            "name": "UI_BUTTON_DEFAULT_HIGHLIGHT_TEXTURE",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/textures/button_highlight.png"
+            }
+        },
+
+        {
+            "name": "UI_BUTTON_DEFAULT_ACTIVE_PANEL",
+            "type": "NineSlicePanel",
+            "method": "fromDescription",
+            "parameters": {
+                "base_texture": "UI_BUTTON_DEFAULT_ACTIVE_TEXTURE"
+            }
+        },
+        {
+            "name": "UI_BUTTON_DEFAULT_INACTIVE_PANEL",
+            "type": "NineSlicePanel",
+            "method": "fromDescription",
+            "parameters": {
+                "base_texture": "UI_BUTTON_DEFAULT_INACTIVE_TEXTURE"
+            }
+        },
+        {
+            "name": "UI_BUTTON_DEFAULT_HOVER_PANEL",
+            "type": "NineSlicePanel",
+            "method": "fromDescription",
+            "parameters": {
+                "base_texture": "UI_BUTTON_DEFAULT_HOVER_TEXTURE"
+            }
+        },
+        {
+            "name": "UI_BUTTON_DEFAULT_PRESSED_PANEL",
+            "type": "NineSlicePanel",
+            "method": "fromDescription",
+            "parameters": {
+                "base_texture": "UI_BUTTON_DEFAULT_PRESSED_TEXTURE"
+            }
+        },
+        {
+            "name": "UI_BUTTON_DEFAULT_HIGHLIGHT_PANEL",
+            "type": "NineSlicePanel",
+            "method": "fromDescription",
+            "parameters": {
+                "base_texture": "UI_BUTTON_DEFAULT_HIGHLIGHT_TEXTURE"
+            }
+        },
+
+        {
+            "name": "UI_BUTTON_DEFAULT_TEXT_FONT",
+            "type": "TextFont",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
+                "point_size": 24
+            }
+        }
+    ],
+    "nodes": [
+        { 
+            "name": "ui_button",
+            "aspects": [
+                {
+                    "type": "UIButton",
+                    "anchor": [0.5, 0.5],
+
+                    "scale": 1.0,
+                    "value": "",
+
+                    "text": "Default Text",
+                    "font_resource_name": "UI_BUTTON_DEFAULT_TEXT_FONT",
+
+                    "panel_active": "UI_BUTTON_DEFAULT_ACTIVE_PANEL",
+                    "panel_inactive": "UI_BUTTON_DEFAULT_INACTIVE_PANEL",
+                    "panel_hover": "UI_BUTTON_DEFAULT_HOVER_PANEL",
+                    "panel_pressed": "UI_BUTTON_DEFAULT_HIGHLIGHT_PANEL",
+
+                    "has_highlight": false,
+                    "highlight": "UI_BUTTON_DEFAULT_HIGHLIGHT_PANEL",
+                    "highlight_color": [1.0, 0, 0, 1.0]
+                }
+            ],
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ],
+            "parent": "",
+            "type": "SimObject"
+        },
+
+        {
+            "name": "button_text",
+            "parent": "/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ],
+            "aspects": [
+                {
+                    "type": "UIText",
+                    "text": "Default Text",
+                    "font_resource_name": "UI_BUTTON_DEFAULT_TEXT_FONT",
+                    "scale": 1.0,
+                    "anchor": [1.0, 1.0]
+                }
+            ]
+        },
+
+        {
+            "name": "highlight",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "orientation": [1.0, 0.0, 0.0, 0.0],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ]
+        }
+    ],
+    "connections": []
+}

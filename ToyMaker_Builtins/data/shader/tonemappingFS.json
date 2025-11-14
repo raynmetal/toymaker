@@ -1,0 +1,11 @@
+{
+    "name": "tonemappingFS",
+    "type": "shader/fragment",
+    "sources" : [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.fs",
+        "common/genericSampler.fs",
+        "simple_tonemapping/tonemapping.fs"
+    ]
+}
+

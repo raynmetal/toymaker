@@ -1,0 +1,6 @@
+{
+    "name": "geometryShader",
+    "type": "shader/program",
+    "vertexShader": "geometryVS.json",
+    "fragmentShader": "geometryFS.json"
+}

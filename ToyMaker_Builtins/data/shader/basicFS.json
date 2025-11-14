@@ -1,0 +1,10 @@
+{
+    "name": "basicFS",
+    "type": "shader/fragment",
+    "sources": [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.fs",
+        "common/genericSampler.fs",
+        "basic/basic.fs"
+    ]
+}

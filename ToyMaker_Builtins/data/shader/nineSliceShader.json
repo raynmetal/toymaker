@@ -1,0 +1,6 @@
+{
+    "name": "nineSliceShader",
+    "type": "shader/program",
+    "vertexShader": "basicVS.json",
+    "fragmentShader": "nineSliceFS.json"
+}

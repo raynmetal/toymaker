@@ -1,0 +1,17 @@
+@PACKAGE_INIT@
+
+include(CMakeFindDependencyMacro)
+include(${CMAKE_CURRENT_LIST_DIR}/LibToyMakerTargets.cmake)
+
+find_dependency(SDL2)
+find_dependency(SDL2_image)
+find_dependency(SDL2_ttf)
+
+find_dependency(GLEW)
+find_dependency(OpenGL)
+find_dependency(glm)
+
+find_dependency(assimp)
+find_dependency(nlohmann_json)
+
+check_required_components(ToyMaker)

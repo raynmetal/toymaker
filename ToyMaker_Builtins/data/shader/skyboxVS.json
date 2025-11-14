@@ -1,0 +1,12 @@
+{
+    "name": "lightingVS",
+    "type": "shader/vertex",
+    "sources": [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.vs",
+        "common/projectionViewMatrices.vs",
+        "common/vertexAttributes.vs",
+        "skybox/skybox.vs"
+    ]
+}
+

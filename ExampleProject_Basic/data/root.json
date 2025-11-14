@@ -1,0 +1,107 @@
+{
+    "resources": [
+        {
+            "name": "Roboto_Mono_Regular_24",
+            "type": "TextFont",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
+                "point_size": 24
+            }
+        }
+    ],
+
+    "nodes": [
+        {
+            "name": "root",
+            "aspects": [],
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ],
+            "parent": "",
+            "type": "SimObject"
+        },
+
+        {
+            "name": "ui_light",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                },
+                {
+                    "ambient": [ 0.9, 0.9, 0.9 ],
+                    "diffuse": [ 0.0, 0.0, 0.0 ],
+                    "specular": [ 0.0, 0.0, 0.0 ],
+                    "lightType": "directional",
+                    "type": "LightEmissionData"
+                }
+            ]
+        },
+
+        {
+            "name": "camera",
+            "aspects":[{"type": "QueryClick" }],
+            "parent": "/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "fov": 45.0,
+                    "aspect": 0.0,
+                    "orthographic_dimensions": {
+                        "horizontal": 800,
+                        "vertical": 600 
+                    },
+                    "near_far_planes": {
+                        "near": -1000,
+                        "far": 1000
+                    },
+                    "projection_mode": "orthographic",
+                    "type": "CameraProperties"
+                },
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ]
+        },
+
+        {
+            "name": "center_text",
+            "parent": "/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0,  0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            ],
+            "aspects": [
+                {
+                    "type": "UIText",
+                    "text": "ToyMaker Center Text",
+                    "font_resource_name": "Roboto_Mono_Regular_24",
+                    "scale": 1.0,
+                    "anchor": [0.5, 0.0],
+                    "color": [255, 255, 255, 255]
+                }
+            ]
+        }
+    ],
+
+    "connections":[]
+}
+

@@ -1,0 +1,6 @@
+{
+    "name": "lightingShader",
+    "type": "shader/program",
+    "vertexShader": "lightingVS.json",
+    "fragmentShader": "lightingFS.json"
+}

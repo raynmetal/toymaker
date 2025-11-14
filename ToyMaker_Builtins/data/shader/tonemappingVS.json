@@ -1,0 +1,10 @@
+{
+    "name": "tonemappingVS",
+    "type": "shader/vertex",
+    "sources" : [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.vs",
+        "common/vertexAttributes.vs",
+        "simple_tonemapping/tonemapping.vs"
+    ]
+}

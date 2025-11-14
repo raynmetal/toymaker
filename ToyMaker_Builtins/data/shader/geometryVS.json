@@ -1,0 +1,12 @@
+{
+    "name": "geometryVS",
+    "type": "shader/vertex",
+    "sources": [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.vs",
+        "common/projectionViewMatrices.vs",
+        "common/modelNormalMatrices.vs",
+        "common/vertexAttributes.vs",
+        "geometry/geometry.vs"
+    ]
+}

@@ -1,0 +1,6 @@
+{
+    "name": "combineShader",
+    "type": "shader/program",
+    "vertexShader": "basicVS.json",
+    "fragmentShader": "combineFS.json"
+}

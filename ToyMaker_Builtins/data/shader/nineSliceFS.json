@@ -1,0 +1,10 @@
+{
+    "name": "nineSliceFS",
+    "type": "shader/fragment",
+    "sources": [
+        "common/versionHeader.glsl",
+        "common/fragmentAttributes.fs",
+        "common/genericSampler.fs",
+        "nine_slice/nine_slice.fs"
+    ]
+}

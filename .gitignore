@@ -1,0 +1,26 @@
+# IDE Configs
+/.vscode
+
+#Build files
+# /**/*.o
+# /**/*.a
+# /**/*.dll
+# /**/*.exe
+build
+install
+docs/_generated
+
+#Local files
+user_data/
+
+#Media files
+# /**/*.png
+/**/*.jpg
+/**/*.fbx
+# /**/*.obj
+# /**/*.mtl
+# /**/*.txt
+/**/*.aseprite
+/**/*.dae
+/**/*.gltf 
+/**/*.blend*
