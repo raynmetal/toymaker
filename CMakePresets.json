@@ -2,7 +2,20 @@
     "version": 4,
     "configurePresets": [
         {
-            "name": "ToyMakerExampleBasic",
+            "name": "ToyMakerDebug",
+            "displayName": "ToyMaker Library Debug Build",
+            "description": "Build ToyMaker with debug flags enabled.",
+            "binaryDir": "${sourceDir}/build",
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "BUILD_EXAMPLE_PROJECT_BASIC": "OFF",
+                "TOYMAKER_USE_INSTALLED": "OFF"
+            }
+        },
+        {
+            "name": "ToyMakerExampleBasicFromBuild",
             "displayName": "Example Project Basic Debug Build",
             "description": "Build ExampleProjectBasic with debug flags enabled.",
             "binaryDir": "${sourceDir}/build",
@@ -10,7 +23,22 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "BUILD_EXAMPLE_PROJECT_BASIC": "ON"
+                "BUILD_EXAMPLE_PROJECT_BASIC": "ON",
+                "TOYMAKER_USE_INSTALLED": "OFF"
+            }
+        },
+        {
+            "name": "ToyMakerExampleBasicFromLocalInstall",
+            "displayName": "Example Project Basic Debug Build",
+            "description": "Build ExampleProjectBasic with debug flags enabled.",
+            "binaryDir": "${sourceDir}/build",
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_INSTALL_PREFIX": "install",
+                "CMAKE_BUILD_TYPE": "Debug",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "BUILD_EXAMPLE_PROJECT_BASIC": "ON",
+                "TOYMAKER_USE_INSTALLED": "ON"
             }
         }
     ]

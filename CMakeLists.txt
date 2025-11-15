@@ -1,57 +1,58 @@
 cmake_minimum_required(VERSION 3.23)
 project(ToyMaker VERSION 0.0.3)
 
-add_library(compiler_flags INTERFACE)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/install/lib/cmake/ToyMaker")
+message("CMAKE_MODULE_PATH Value: ${CMAKE_MODULE_PATH}")
 
-# set_target_properties(ToyMakerDemo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})
-# set_target_properties(ToyMakerDemo PROPERTIES RELWITHDEBINFO_POSTFIX ${CMAKE_RELWITHDEBINFO_POSTFIX})
-# set_target_properties(ToyMakerDemo PROPERTIES WIN32_EXECUTABLE $<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>>)
-# target_compile_definitions(ToyMakerDemo PRIVATE CMAKE_EXPORT_COMPILE_COMMANDS=1)
+if(NOT TOYMAKER_USE_INSTALLED)
+    add_library(ToyMakerCompilerFlags INTERFACE)
+    add_library(ToyMaker::ToyMakerCompilerFlags ALIAS ToyMakerCompilerFlags)
+    target_compile_features(ToyMakerCompilerFlags INTERFACE cxx_std_17)
 
-target_compile_features(compiler_flags INTERFACE cxx_std_17)
-
-add_subdirectory(ToyMaker_Main)
-add_subdirectory(ToyMaker_Builtins)
+    add_subdirectory(ToyMaker_Main)
+    add_subdirectory(ToyMaker_Builtins)
+endif()
 
 if(BUILD_EXAMPLE_PROJECT_BASIC)
     add_subdirectory(ExampleProject_Basic)
 endif()
 
-include(GNUInstallDirs)
+if(NOT TOYMAKER_USE_INSTALLED)
+    include(GNUInstallDirs)
 
-include(CMakePackageConfigHelpers)
-configure_package_config_file(cmake/ToyMakerConfig.cmake.in
-  ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfig.cmake
-  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker)
-write_basic_package_version_file(
-    ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfigVersion.cmake
-    COMPATIBILITY ExactVersion
-)
-
-install(
-    TARGETS
-        compiler_flags
-    EXPORT
-        LibToyMakerTargets
-)
-
-install(
-    EXPORT
-        LibToyMakerTargets
-    DESTINATION 
-        ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
-    NAMESPACE
-        ToyMaker::
-)
-
-include(GNUInstallDirs)
-install(
-    FILES
-        ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfig.cmake
+    include(CMakePackageConfigHelpers)
+    configure_package_config_file(cmake/ToyMakerConfig.cmake.in
+    ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfig.cmake
+    INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker)
+    write_basic_package_version_file(
         ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfigVersion.cmake
-    DESTINATION 
-        ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
-)
+        COMPATIBILITY ExactVersion
+    )
+    install(
+        TARGETS
+            ToyMakerCompilerFlags
+        EXPORT
+            LibToyMakerTargets
+    )
+
+    install(
+        EXPORT
+            LibToyMakerTargets
+        DESTINATION 
+            ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
+        NAMESPACE
+            ToyMaker::
+    )
+
+    include(GNUInstallDirs)
+    install(
+        FILES
+            ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfig.cmake
+            ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfigVersion.cmake
+        DESTINATION 
+            ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
+    )
+endif()
 
 # add_subdirectory(ToyMaker_Builtins)
 

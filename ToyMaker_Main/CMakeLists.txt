@@ -1,6 +1,18 @@
 add_library(ToyMaker STATIC)
 add_library(ToyMakerMain OBJECT)
 
+add_library(ToyMaker::ToyMaker ALIAS ToyMaker)
+if(TARGET ToyMaker::ToyMaker)
+    message("ToyMaker::ToyMaker is an existing alias")
+else()
+    message("WARNING: ToyMaker::ToyMaker does not exist!")
+endif()
+add_library(ToyMaker::ToyMakerMain ALIAS ToyMakerMain)
+if(TARGET ToyMaker::ToyMakerMain)
+    message("ToyMaker::ToyMakerMain is an existing alias")
+else()
+    message("WARNING: ToyMaker::ToyMakerMain does not exist!")
+endif()
 option(ZO_DUMB_DELAY "Relinquish CPU for 10 milliseconds between frames" ON)
 
 target_sources(ToyMaker
@@ -105,7 +117,7 @@ target_link_libraries(ToyMaker PUBLIC
     assimp::assimp
     nlohmann_json::nlohmann_json
 )
-target_link_libraries(ToyMaker PUBLIC compiler_flags)
+target_link_libraries(ToyMaker PUBLIC ToyMakerCompilerFlags)
 # Simply, use ToyMaker headers while building ToyMakerMain
 target_link_libraries(ToyMakerMain PRIVATE SDL2::SDL2main ToyMaker)
 

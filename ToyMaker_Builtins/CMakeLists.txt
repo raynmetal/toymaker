@@ -3,6 +3,20 @@ include(toymaker_copy_src_target_data.cmake)
 add_library(ToyMakerBuiltinsArchive STATIC)
 add_library(ToyMakerBuiltins INTERFACE)
 
+add_library(ToyMaker::ToyMakerBuiltinsArchive ALIAS ToyMakerBuiltinsArchive)
+if(TARGET ToyMaker::ToyMakerBuiltinsArchive)
+    message("ToyMaker::ToyMakerBuiltinsArchive is an existing alias")
+else()
+    message("WARNING: ToyMaker::ToyMakerBuiltinsArchive does not exist!")
+endif()
+
+add_library(ToyMaker::ToyMakerBuiltins ALIAS ToyMakerBuiltins)
+if(TARGET ToyMaker::ToyMakerBuiltins)
+    message("ToyMaker::ToyMakerBuiltins is an existing alias")
+else()
+    message("WARNING: ToyMaker::ToyMakerBuiltins does not exist!")
+endif()
+
 target_sources(ToyMakerBuiltinsArchive
     PRIVATE
         src/nine_slice_panel.cpp
@@ -47,12 +61,12 @@ foreach(data_file ${ToyMakerBuiltinsData_Relative})
 endforeach()
 
 add_custom_target(CopyToyMakerBuiltinsData DEPENDS "$<LIST:TRANSFORM,${ToyMakerBuiltinsData_Relative},PREPEND,${CMAKE_CURRENT_BINARY_DIR}/>")
-add_dependencies(ToyMakerBuiltins CopyToyMakerBuiltinsData)
+add_dependencies(ToyMakerBuiltinsArchive CopyToyMakerBuiltinsData)
 
 include(GNUInstallDirs)
 install(
     DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data
-    DESTINATION ${CMAKE_INSTALL_BINDIR}
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/toymaker
 )
 
 install(
@@ -62,6 +76,12 @@ install(
         LibToyMakerTargets
     FILE_SET HEADERS
 )
+
+install(FILES
+        toymaker_copy_src_target_data.cmake
+    DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
+)
+
 
 
 # set_target_properties(ToyMakerDemo PROPERTIES DEBUG_POSTFIX ${CMAKE_DEBUG_POSTFIX})

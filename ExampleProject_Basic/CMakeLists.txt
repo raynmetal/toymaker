@@ -1,3 +1,7 @@
+set(LOCAL_INSTALL_DIR "${PROJECT_SOURCE_DIR}/install")
+
+message("CMAKE_MODULE_PATH Value: ${CMAKE_MODULE_PATH}")
+
 include(GNUInstallDirs)
 include(InstallRequiredSystemLibraries)
 
@@ -11,7 +15,14 @@ target_sources(ExampleProjectBasic
         empty.cpp
 )
 
-toyMaker_copySrcTargetData(ToyMakerBuiltins ExampleProjectBasic)
+message("TOYMAKER_USE_INSTALLED Value: ${TOYMAKER_USE_INSTALLED}")
+if(TOYMAKER_USE_INSTALLED OR NOT TARGET ToyMaker::ToyMakerBuiltins OR NOT TARGET ToyMaker::ToyMakerMain)
+    message("Using installed version of ToyMaker")
+    find_package(ToyMaker REQUIRED PATHS ${LOCAL_INSTALL_DIR})
+    include(toymaker_copy_src_target_data)
+endif()
+
+toyMaker_copySrcTargetData(ToyMaker::ToyMakerBuiltinsArchive ExampleProjectBasic)
 
 # copy all data files over, creating dependency between copy and source
 # see: https://stackoverflow.com/questions/34799916/copy-file-from-source-directory-to-binary-directory-using-cmake
@@ -31,8 +42,8 @@ add_dependencies(ExampleProjectBasic build_time_make_directory CopyExampleProjec
 
 target_link_libraries(ExampleProjectBasic
     PRIVATE
-        ToyMakerBuiltins
-        ToyMakerMain
+        ToyMaker::ToyMakerBuiltins
+        ToyMaker::ToyMakerMain
 )
 
 
