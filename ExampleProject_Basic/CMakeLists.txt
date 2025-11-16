@@ -1,64 +1,18 @@
-set(LOCAL_INSTALL_DIR "${PROJECT_SOURCE_DIR}/install")
-
-message("CMAKE_MODULE_PATH Value: ${CMAKE_MODULE_PATH}")
-
 include(GNUInstallDirs)
 include(InstallRequiredSystemLibraries)
 
+message("TOYMAKER_USE_INSTALLED Value: ${TOYMAKER_USE_INSTALLED}")
+if(TOYMAKER_USE_INSTALLED OR NOT TARGET ToyMaker::ToyMakerBuiltins OR NOT TARGET ToyMaker::ToyMakerMain)
+    message("Using installed version of ToyMaker")
+    find_package(ToyMaker REQUIRED)
+    include(ToyMakerConfigureExecutable)
+endif()
+
 add_executable(ExampleProjectBasic)
-add_custom_target(build_time_make_directory ALL
-    COMMAND ${CMAKE_COMMAND} -E make_directory user_data
-)
 
 target_sources(ExampleProjectBasic
     PRIVATE
         empty.cpp
 )
 
-message("TOYMAKER_USE_INSTALLED Value: ${TOYMAKER_USE_INSTALLED}")
-if(TOYMAKER_USE_INSTALLED OR NOT TARGET ToyMaker::ToyMakerBuiltins OR NOT TARGET ToyMaker::ToyMakerMain)
-    message("Using installed version of ToyMaker")
-    find_package(ToyMaker REQUIRED PATHS ${LOCAL_INSTALL_DIR})
-    include(toymaker_copy_src_target_data)
-endif()
-
-toyMaker_copySrcTargetData(ToyMaker::ToyMakerBuiltinsArchive ExampleProjectBasic)
-
-# copy all data files over, creating dependency between copy and source
-# see: https://stackoverflow.com/questions/34799916/copy-file-from-source-directory-to-binary-directory-using-cmake
-file(GLOB_RECURSE ExampleProjectData RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "data/*")
-foreach(data_file ${ExampleProjectData})
-    add_custom_command(
-        OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${data_file}"
-        COMMAND ${CMAKE_COMMAND} -E copy
-            "${CMAKE_CURRENT_SOURCE_DIR}/${data_file}"
-            "${CMAKE_CURRENT_BINARY_DIR}/${data_file}"
-        DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${data_file}"
-    )
-endforeach()
-add_custom_target(CopyExampleProjectData DEPENDS "$<LIST:TRANSFORM,${ExampleProjectData},PREPEND,${CMAKE_CURRENT_BINARY_DIR}/>")
-
-add_dependencies(ExampleProjectBasic build_time_make_directory CopyExampleProjectData)
-
-target_link_libraries(ExampleProjectBasic
-    PRIVATE
-        ToyMaker::ToyMakerBuiltins
-        ToyMaker::ToyMakerMain
-)
-
-
-install(
-    TARGETS ExampleProjectBasic
-    RUNTIME_DEPENDENCY_SET deps
-)
-install(
-    RUNTIME_DEPENDENCY_SET deps
-    PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
-    POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
-    DIRECTORIES $ENV{PATH}
-    DESTINATION ${CMAKE_INSTALL_BINDIR}
-)
-install(
-    DIRECTORY
-    DESTINATION user_data
-)
+toymaker_configure_executable(ExampleProjectBasic)

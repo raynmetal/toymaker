@@ -1,20 +1,27 @@
 cmake_minimum_required(VERSION 3.23)
 project(ToyMaker VERSION 0.0.3)
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/install/lib/cmake/ToyMaker")
-message("CMAKE_MODULE_PATH Value: ${CMAKE_MODULE_PATH}")
+include(CMakeDependentOption)
+option(TOYMAKER_BUILD_EXAMPLE_BASIC "Build the executable for the basic toymaker example project" OFF)
+cmake_dependent_option(TOYMAKER_USE_INSTALLED "Use locally installed ToyMaker library for the basic example project" ON TOYMAKER_BUILD_EXAMPLE_BASIC OFF)
 
 if(NOT TOYMAKER_USE_INSTALLED)
+    message("ToyMaker library is configured to be built from source")
     add_library(ToyMakerCompilerFlags INTERFACE)
     add_library(ToyMaker::ToyMakerCompilerFlags ALIAS ToyMakerCompilerFlags)
     target_compile_features(ToyMakerCompilerFlags INTERFACE cxx_std_17)
 
     add_subdirectory(ToyMaker_Main)
     add_subdirectory(ToyMaker_Builtins)
+else()
+    message("Machine-local installation of ToyMaker will be used to build ToyMaker executables")
 endif()
 
-if(BUILD_EXAMPLE_PROJECT_BASIC)
+if(TOYMAKER_BUILD_EXAMPLE_BASIC)
+    message("The basic toymaker example project has been configured to be built")
     add_subdirectory(ExampleProject_Basic)
+else()
+    message("The basic ToyMaker example project will not be built in this configuration")
 endif()
 
 if(NOT TOYMAKER_USE_INSTALLED)
@@ -53,98 +60,3 @@ if(NOT TOYMAKER_USE_INSTALLED)
             ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
     )
 endif()
-
-# add_subdirectory(ToyMaker_Builtins)
-
-# set_target_properties(ToyMakerDemo
-#     PROPERTIES WIN32_EXECUTABLE
-#     $<NOT:$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>>
-# )
-
-# set(gcc_like_cxx $<COMPILE_LANG_AND_ID:CXX,ARMClang,AppleClang,Clang,GNU,LCC>)
-# set(msvc_cxx $<COMPILE_LANG_AND_ID:CXX,MSVC>)
-# target_compile_options(
-#     project_compiler_flags INTERFACE
-#     "$<$<CONFIG:Debug>:$<${gcc_like_cxx}:-Wall;-Wextra;-Wshadow;-Wformat=2;-Wunused;-g>>"
-#     "$<$<CONFIG:Debug>:$<${msvc_cxx}:-W3;-g>>"
-# )
-
-# target_include_directories(
-#     ToyMakerDemo PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src/app ${CMAKE_CURRENT_BINARY_DIR}/src/app
-# )
-
-# copy all data files over, creating dependency between copy and source
-# see: https://stackoverflow.com/questions/34799916/copy-file-from-source-directory-to-binary-directory-using-cmake
-# file(GLOB_RECURSE SRC_FILES "src/app/*.cpp")
-# file(GLOB_RECURSE DATA_FILES RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} "data/*")
-# foreach(data_file ${DATA_FILES})
-#     add_custom_command(
-#         OUTPUT "${CMAKE_CURRENT_BINARY_DIR}/${data_file}"
-#         COMMAND ${CMAKE_COMMAND} -E copy
-#             "${CMAKE_CURRENT_SOURCE_DIR}/${data_file}"
-#             "${CMAKE_CURRENT_BINARY_DIR}/${data_file}"
-#         DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/${data_file}"
-#     )
-# endforeach()
-# add_custom_target(build_time_make_directory ALL
-#     COMMAND ${CMAKE_COMMAND} -E make_directory user_data
-# )
-# add_custom_target(data_file_dependencies DEPENDS "$<LIST:TRANSFORM,${DATA_FILES},PREPEND,${CMAKE_CURRENT_BINARY_DIR}/>")
-
-# add_subdirectory(src/engine)
-
-# target_sources(
-#     ToyMakerDemo
-#     # Ur application sources
-#     PRIVATE
-#         ${SRC_FILES}
-#         src/main.cpp
-# )
-
-
-# find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
-# find_package(SDL2 REQUIRED CONFIG COMPONENTS SDL2main)
-# find_package(nlohmann_json 3.12.0 REQUIRED)
-# find_package(glm 1.0 REQUIRED)
-# find_package(assimp 6.0 REQUIRED)
-
-# if(TARGET SDL2::SDL2main)
-#     target_link_libraries(ToyMakerDemo PRIVATE SDL2::SDL2main)
-# endif()
-# target_link_libraries(ToyMakerDemo PRIVATE ToyMaker)
-
-# add_dependencies(ToyMakerDemo data_file_dependencies build_time_make_directory)
-
-# install(
-#     DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/data
-#     DESTINATION .
-# )
-
-# install(
-#     DIRECTORY
-#     DESTINATION user_data
-# )
-
-# install(
-#     TARGETS ToyMakerDemo
-#     RUNTIME_DEPENDENCY_SET deps
-#     DESTINATION .
-# )
-
-# install(
-#     RUNTIME_DEPENDENCY_SET deps
-#     PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
-#     POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
-#     DIRECTORIES $ENV{PATH}
-#     DESTINATION .
-# )
-
-# set(CMAKE_INSTALL_SYSTEM_RUNTIME_DESTINATION .)
-
-# include(InstallRequiredSystemLibraries)
-# set(CPACK_RESOURCE_FILE_LICENSE ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
-# set(CPACK_PACKAGE_VERSION_MAJOR "${ToyMakerDemo_VERSION_MAJOR}")
-# set(CPACK_PACKAGE_VERSION_MINOR "${ToyMakerDemo_VERSION_MINOR}")
-# set(CPACK_GENERATOR "ZIP")
-# set(CPACK_SOURCE_GENERATOR "ZIP")
-# include(CPack)
