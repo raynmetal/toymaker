@@ -1,6 +1,8 @@
 #include "toymaker/builtins/ui_text.hpp"
 #include "toymaker/builtins/ui_button.hpp"
 
+using namespace ToyMaker;
+
 std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIButton::create(const nlohmann::json& jsonAspectProperties) {
     const glm::vec2 anchor {
         jsonAspectProperties.find("anchor") != jsonAspectProperties.end()?

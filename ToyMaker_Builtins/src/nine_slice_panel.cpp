@@ -5,6 +5,8 @@
 
 #include "toymaker/builtins/nine_slice_panel.hpp"
 
+using namespace ToyMaker;
+
 NineSlicePanel::NineSlicePanel(
     std::shared_ptr<ToyMaker::Texture> baseTexture,
     SDL_FRect contentRegionUV

@@ -1,6 +1,8 @@
 #include "toymaker/builtins/nine_slice_panel.hpp"
 #include "toymaker/builtins/ui_panel.hpp"
 
+using namespace ToyMaker;
+
 std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIPanel::create(const nlohmann::json& jsonAspectProperties) {
     const std::string panelResourceName {
         jsonAspectProperties.at("panel_resource_name").get<std::string>()

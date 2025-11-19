@@ -6,6 +6,7 @@
 
 #include "toymaker/builtins/render_debug_viewer.hpp"
 
+using namespace ToyMaker;
 
 bool RenderDebugViewer::onUpdateGamma(const ToyMaker::ActionData& actionData, const ToyMaker::ActionDefinition& actionDefinition) {
     (void)actionDefinition; // prevent unused parameter warning

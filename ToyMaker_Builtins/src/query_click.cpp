@@ -5,6 +5,8 @@
 #include "toymaker/builtins/query_click.hpp"
 #include "toymaker/builtins/interface_pointer_callback.hpp"
 
+using namespace ToyMaker;
+
 ToyMaker::Ray QueryClick::rayFromClickCoordinates(glm::vec2 clickCoordinates) {
     const ToyMaker::CameraProperties cameraProps { getComponent<ToyMaker::CameraProperties>() };
     const ToyMaker::ObjectBounds bounds { getComponent<ToyMaker::ObjectBounds>() };

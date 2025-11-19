@@ -6,6 +6,8 @@
 
 #include "toymaker/builtins/ui_text.hpp"
 
+using namespace ToyMaker;
+
 std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIText::create(const nlohmann::json& jsonAspectProperties) {
     const std::string text { 
         jsonAspectProperties.find("text") != jsonAspectProperties.end()?

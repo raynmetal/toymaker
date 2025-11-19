@@ -6,6 +6,8 @@
 
 #include "toymaker/builtins/ui_image.hpp"
 
+using namespace ToyMaker;
+
 std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIImage::create(const nlohmann::json& jsonAspectProperties) {
     std::shared_ptr<UIImage> imageAspect { std::make_shared<UIImage>() };
     const std::string imageFilepath { 
