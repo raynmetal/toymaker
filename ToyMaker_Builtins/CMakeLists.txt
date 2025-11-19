@@ -30,6 +30,12 @@ target_sources(ToyMakerBuiltinsArchive
 )
 
 target_link_libraries(ToyMakerBuiltinsArchive PUBLIC ToyMaker)
+
+# Get the executable's linker to treat this as a collection of
+# object files rather than a proper static library.  We do this
+# because otherwise static initialization code will be optimized,
+# leading to the engine failing to recognize resources, systems,
+# and aspects that are defined here
 target_link_libraries(ToyMakerBuiltins INTERFACE
     -Wl,--whole-archive
     ToyMakerBuiltinsArchive

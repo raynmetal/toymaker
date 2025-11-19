@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.23)
-project(ToyMaker VERSION 0.0.3)
+project(
+    ToyMaker 
+    VERSION 0.1.0
+    DESCRIPTION "A simple game engine built using SDL2 and OpenGL."
+    LANGUAGES CXX
+)
 
 include(CMakeDependentOption)
 option(TOYMAKER_BUILD_EXAMPLE_BASIC "Build the executable for the basic toymaker example project" OFF)
@@ -58,5 +63,17 @@ if(NOT TOYMAKER_USE_INSTALLED)
             ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfigVersion.cmake
         DESTINATION 
             ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
+    )
+endif()
+
+if(NOT TARGET uninstall)
+    configure_file(
+        "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
+        "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
+        IMMEDIATE @ONLY
+    )
+
+    add_custom_target(uninstall
+        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
     )
 endif()

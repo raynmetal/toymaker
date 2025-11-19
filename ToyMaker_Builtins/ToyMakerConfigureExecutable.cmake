@@ -16,6 +16,7 @@ function(toymaker_configure_executable toymaker_project_executable)
     add_custom_command(
         TARGET ${toymaker_project_executable} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory "${toymaker_data_dir}" "${project_data_dir}"
+        VERBATIM
     )
 
 
@@ -34,6 +35,7 @@ function(toymaker_configure_executable toymaker_project_executable)
             OUTPUT "${project_bin_dir}/${data_file}"
             COMMAND ${CMAKE_COMMAND} -E copy "${project_src_dir}/${data_file}" "${project_bin_dir}/${data_file}"
             DEPENDS "${project_src_dir}/${data_file}"
+            VERBATIM
         )
     endforeach()
 

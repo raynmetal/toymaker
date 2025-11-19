@@ -1,6 +1,12 @@
 add_library(ToyMaker STATIC)
 add_library(ToyMakerMain OBJECT)
 
+set_target_properties(ToyMaker ToyMakerMain
+    PROPERTIES
+        VERSION ${PROJECT_VERSION}
+        SOVERSION ${PROJECT_VERSION_MAJOR}
+)
+
 add_library(ToyMaker::ToyMaker ALIAS ToyMaker)
 if(TARGET ToyMaker::ToyMaker)
     message("ToyMaker::ToyMaker is an existing alias")

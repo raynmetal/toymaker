@@ -2,10 +2,10 @@
     "version": 4,
     "configurePresets": [
         {
-            "name": "ToyMakerDebug",
-            "displayName": "ToyMaker Library Debug Build",
-            "description": "Build ToyMaker with debug flags enabled.",
-            "binaryDir": "${sourceDir}/build",
+            "name": "LibraryDebug",
+            "displayName": "Build ToyMaker Engine (Debug)",
+            "description": "Build ToyMaker Engine with debug flags enabled.",
+            "binaryDir": "${sourceDir}/../toymaker_build",
             "generator": "MinGW Makefiles",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
@@ -15,10 +15,10 @@
             }
         },
         {
-            "name": "ToyMakerExampleBasicFromBuild",
-            "displayName": "Example Project Basic Debug Build From ToyMaker Source",
-            "description": "Build ExampleProjectBasic with debug flags enabled.",
-            "binaryDir": "${sourceDir}/build",
+            "name": "ExampleBasicFromBuild",
+            "displayName": "Build Example Basic (Debug) from ToyMaker source",
+            "description": "Build ExampleProjectBasic with debug flags enabled from engine and project sources.",
+            "binaryDir": "${sourceDir}/../toymaker_build",
             "generator": "MinGW Makefiles",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
@@ -28,10 +28,10 @@
             }
         },
         {
-            "name": "ToyMakerExampleBasicFromLocalInstall",
-            "displayName": "Example Project Basic Debug Build From Local ToyMaker Installation",
-            "description": "Build ExampleProjectBasic with debug flags enabled.",
-            "binaryDir": "${sourceDir}/build",
+            "name": "ExampleBasicFromLocalInstall",
+            "displayName": "Build Example Basic (Debug) from ToyMaker installation",
+            "description": "Build ExampleProjectBasic with debug flags enabled from engine installation and project sources.",
+            "binaryDir": "${sourceDir}/../toymaker_build",
             "generator": "MinGW Makefiles",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
