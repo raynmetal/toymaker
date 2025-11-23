@@ -9,6 +9,7 @@
 build
 install
 docs/_generated
+_CPack_Packages
 
 #Local files
 user_data/

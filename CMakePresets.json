@@ -2,6 +2,19 @@
     "version": 4,
     "configurePresets": [
         {
+            "name": "LibraryRelease",
+            "displayName": "Build ToyMaker Engine",
+            "description": "Build ToyMaker Engine.",
+            "binaryDir": "${sourceDir}/../toymaker_build",
+            "generator": "MinGW Makefiles",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "TOYMAKER_BUILD_EXAMPLE_BASIC": "OFF",
+                "TOYMAKER_USE_INSTALLED": "OFF"
+            }
+        },
+        {
             "name": "LibraryDebug",
             "displayName": "Build ToyMaker Engine (Debug)",
             "description": "Build ToyMaker Engine with debug flags enabled.",

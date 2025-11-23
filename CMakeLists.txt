@@ -3,6 +3,7 @@ project(
     ToyMaker 
     VERSION 0.1.0
     DESCRIPTION "A simple game engine built using SDL2 and OpenGL."
+    HOMEPAGE_URL https://www.github.com/raynmetal/toymaker
     LANGUAGES CXX
 )
 
@@ -28,6 +29,8 @@ if(TOYMAKER_BUILD_EXAMPLE_BASIC)
 else()
     message("The basic ToyMaker example project will not be built in this configuration")
 endif()
+
+include(InstallRequiredSystemLibraries)
 
 if(NOT TOYMAKER_USE_INSTALLED)
     include(GNUInstallDirs)
@@ -61,11 +64,16 @@ if(NOT TOYMAKER_USE_INSTALLED)
         FILES
             ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfig.cmake
             ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfigVersion.cmake
+            LICENSE.txt
+            README.md
         DESTINATION 
             ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
     )
 endif()
 
+
+# Includes and uses uninstall script to remove files (but NOT directories)
+# created during installation from source.
 if(NOT TARGET uninstall)
     configure_file(
         "${CMAKE_CURRENT_SOURCE_DIR}/cmake_uninstall.cmake.in"
@@ -77,3 +85,10 @@ if(NOT TARGET uninstall)
         COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
     )
 endif()
+
+set(CPACK_PACKAGE_NAME "ToyMaker")
+set(CPACK_PACKAGE_VENDOR "Zoheb Shujauddin")
+set(CPACK_PACKAGE_INSTALL_DIRECTORY "ToyMaker/ToyMaker-${ToyMaker_VERSION_MAJOR}.${ToyMaker_VERSION_MINOR}")
+set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt")
+set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
+include(CPack)
