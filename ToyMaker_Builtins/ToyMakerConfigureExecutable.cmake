@@ -1,4 +1,5 @@
 function(toymaker_configure_executable toymaker_project_executable)
+    include(GNUInstallDirs)
     set(toymaker_is_imported "$<BOOL:$<TARGET_PROPERTY:ToyMaker::ToyMakerBuiltinsArchive,IMPORTED>>")
 
     set(toymaker_installation_dir "$<PATH:REMOVE_FILENAME,$<TARGET_PROPERTY:ToyMaker::ToyMakerBuiltinsArchive,LOCATION>>toymaker")
@@ -64,7 +65,7 @@ function(toymaker_configure_executable toymaker_project_executable)
     )
 
     install(
-        DIRECTORY "$<TARGET_PROPERTY:${toymaker_project_executable},BINARY_DIR>/data"
+        DIRECTORY "${project_source_dir}/data"
         DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 endfunction()

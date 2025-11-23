@@ -1,7 +1,10 @@
 @PACKAGE_INIT@
 
 include(CMakeFindDependencyMacro)
-include(${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake)
+# To make toymaker_configure_executable available to whoever 
+# includes this package
+include(${CMAKE_CURRENT_LIST_DIR}/LibToyMakerTargets.cmake)
+include(${CMAKE_CURRENT_LIST_DIR}/ToyMakerConfigureExecutable.cmake)
 
 find_dependency(SDL2)
 find_dependency(SDL2_image)
