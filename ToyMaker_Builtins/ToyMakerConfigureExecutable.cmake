@@ -65,7 +65,7 @@ function(toymaker_configure_executable toymaker_project_executable)
     )
 
     install(
-        DIRECTORY "${project_source_dir}/data"
+        DIRECTORY "${project_data_dir}"
         DESTINATION ${CMAKE_INSTALL_BINDIR}
     )
 endfunction()
