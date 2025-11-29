@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.23)
 project(
     ToyMaker 
-    VERSION 0.1.0
+    VERSION 0.1.1
     DESCRIPTION "A simple game engine built using SDL2 and OpenGL."
     HOMEPAGE_URL https://www.github.com/raynmetal/toymaker
     LANGUAGES CXX
