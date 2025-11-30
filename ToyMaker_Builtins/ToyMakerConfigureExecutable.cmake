@@ -1,11 +1,9 @@
 function(toymaker_configure_executable toymaker_project_executable)
     include(GNUInstallDirs)
+
     set(toymaker_is_imported "$<BOOL:$<TARGET_PROPERTY:ToyMaker::ToyMakerBuiltinsArchive,IMPORTED>>")
-
     set(toymaker_installation_dir "$<PATH:REMOVE_FILENAME,$<TARGET_PROPERTY:ToyMaker::ToyMakerBuiltinsArchive,LOCATION>>toymaker")
-
     set(toymaker_build_dir "$<TARGET_PROPERTY:ToyMaker::ToyMakerBuiltinsArchive,BINARY_DIR>")
-
     set(toymaker_data_dir "$<IF:${toymaker_is_imported},${toymaker_installation_dir},${toymaker_build_dir}>/data")
 
     get_property(project_bin_dir TARGET ${toymaker_project_executable} PROPERTY BINARY_DIR)
@@ -20,8 +18,8 @@ function(toymaker_configure_executable toymaker_project_executable)
         VERBATIM
     )
 
+    set_target_properties(${toymaker_project_executable} PROPERTIES WIN32_EXECUTABLE $<CONFIG:Release>)
 
-    # set(project_source $<TARGET_PROPERTY:${toymaker_project_executable},SOURCE_DIR>)
     get_property(project_src_dir TARGET ${toymaker_project_executable} PROPERTY SOURCE_DIR)
     message("Project source dir: ${project_src_dir}")
 
