@@ -6,7 +6,6 @@
             "displayName": "Build ToyMaker Engine",
             "description": "Build ToyMaker Engine.",
             "binaryDir": "${sourceDir}/../toymaker_build",
-            "generator": "MinGW Makefiles",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
@@ -19,7 +18,6 @@
             "displayName": "Build ToyMaker Engine (Debug)",
             "description": "Build ToyMaker Engine with debug flags enabled.",
             "binaryDir": "${sourceDir}/../toymaker_build",
-            "generator": "MinGW Makefiles",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
@@ -32,7 +30,6 @@
             "displayName": "Build Example Basic (Debug) from ToyMaker source",
             "description": "Build ExampleProjectBasic with debug flags enabled from engine and project sources.",
             "binaryDir": "${sourceDir}/../toymaker_build",
-            "generator": "MinGW Makefiles",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
@@ -45,7 +42,6 @@
             "displayName": "Build Example Basic (Debug) from ToyMaker installation",
             "description": "Build ExampleProjectBasic with debug flags enabled from engine installation and project sources.",
             "binaryDir": "${sourceDir}/../toymaker_build",
-            "generator": "MinGW Makefiles",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",

@@ -84,6 +84,14 @@ namespace ToyMaker {
         void execute();
 
         /**
+         * @brief Creates the single Application object used by the project and returns a reference to it.
+         * 
+         * @param projectPath The path to the file containing project level configuration data.
+         * @return std::shared_ptr<Application> A reference to the instantiated application object.
+         */
+        static std::shared_ptr<Application> instantiate(const std::string& projectPath);
+
+        /**
          * @brief Gets an object of a specific type by its scene path.
          * 
          * @tparam TObject The type of object being retrieved.
@@ -187,19 +195,10 @@ namespace ToyMaker {
         static bool s_instantiated;
 
         /**
-         * @brief Creates the single Application object used by the project and returns a reference to it.
-         * 
-         * @param projectPath The path to the file containing project level configuration data.
-         * @return std::shared_ptr<Application> A reference to the instantiated application object.
-         */
-        static std::shared_ptr<Application> instantiate(const std::string& projectPath);
-
-        /**
          * @brief A pointer to this project's scene system, valid throughout the project.
          * 
          */
         std::weak_ptr<SceneSystem> mSceneSystem {};
-    friend int ::main(int, char* []);
     };
 
     template <typename TObject>
