@@ -1,0 +1,36 @@
+var structToyMaker_1_1RenderSet =
+[
+    [ "RenderType", "structToyMaker_1_1RenderSet.html#a4405a9c8ccece52f1adf0dc4da953b35", [
+      [ "BASIC_3D", "structToyMaker_1_1RenderSet.html#a4405a9c8ccece52f1adf0dc4da953b35a4639d32bee9ca7246a07dd73a879ba07", null ],
+      [ "ADDITION", "structToyMaker_1_1RenderSet.html#a4405a9c8ccece52f1adf0dc4da953b35a8cc6c2a8240840901a7317b95658c073", null ]
+    ] ],
+    [ "addOrAssignRenderSource", "structToyMaker_1_1RenderSet.html#a1150597596a355f3f752278ede967a5a", null ],
+    [ "copyAndResize", "structToyMaker_1_1RenderSet.html#a0ed730f9fcea2f96befc3d06395121ca", null ],
+    [ "getCurrentScreenTexture", "structToyMaker_1_1RenderSet.html#a4b79c367fd026956f0026e800c561801", null ],
+    [ "getExposure", "structToyMaker_1_1RenderSet.html#acc26f1984f5d966cada32de63a59056d", null ],
+    [ "getGamma", "structToyMaker_1_1RenderSet.html#a368b42c47cca3dd699b4ed455fbd674a", null ],
+    [ "removeRenderSource", "structToyMaker_1_1RenderSet.html#a7afe7630a87a4074e3bea74ca47672f9", null ],
+    [ "renderNextTexture", "structToyMaker_1_1RenderSet.html#a74617550dfb72d36dc202dd8030dd896", null ],
+    [ "setCamera", "structToyMaker_1_1RenderSet.html#ab2dade87e12db725c526925f077bebc7", null ],
+    [ "setExposure", "structToyMaker_1_1RenderSet.html#a1e0dc17731e457d3b671d85df9f26595", null ],
+    [ "setGamma", "structToyMaker_1_1RenderSet.html#a0c659087e91ae239578c8f61d128797b", null ],
+    [ "setRenderProperties", "structToyMaker_1_1RenderSet.html#a4eb8c3afa7939eaed3feb8c733a9f3e1", null ],
+    [ "setSkybox", "structToyMaker_1_1RenderSet.html#a5bd9959096af73ded98b68c26784fd43", null ],
+    [ "mActiveCamera", "structToyMaker_1_1RenderSet.html#a2e69a8697245e8b24b70f26a836047df", null ],
+    [ "mAdditionRenderStage", "structToyMaker_1_1RenderSet.html#acb012c327e4bd3d6c5933da36d9b4ba0", null ],
+    [ "mBlurRenderStage", "structToyMaker_1_1RenderSet.html#a37d510e585b955578f45e4c3557312df", null ],
+    [ "mCurrentScreenTexture", "structToyMaker_1_1RenderSet.html#a3464d9055fa434b53369de548cfa713a", null ],
+    [ "mExposure", "structToyMaker_1_1RenderSet.html#a40db2830e63b310bfef8c60cc356c0b1", null ],
+    [ "mGamma", "structToyMaker_1_1RenderSet.html#a8691bffbfe60f9a6d95b074209540e38", null ],
+    [ "mGeometryRenderStage", "structToyMaker_1_1RenderSet.html#a1049250e26f8ee7bc5196bf881a746ca", null ],
+    [ "mLightingRenderStage", "structToyMaker_1_1RenderSet.html#a57dcf104649346dd13243a1233ce57fd", null ],
+    [ "mLightMaterialHandle", "structToyMaker_1_1RenderSet.html#a90e97d1a19c00abc01073a65cfa9d091", null ],
+    [ "mRenderSources", "structToyMaker_1_1RenderSet.html#a9c74ae68b5fa73324c4197063466452b", null ],
+    [ "mRenderType", "structToyMaker_1_1RenderSet.html#a79f5d76f2674e4474e25c298962e57f4", null ],
+    [ "mRerendered", "structToyMaker_1_1RenderSet.html#ae035dcdaf1a207123d518b5d7e2f7b80", null ],
+    [ "mResizeRenderStage", "structToyMaker_1_1RenderSet.html#a2c70500f9bf7d0679d9c680a40b5d2a9", null ],
+    [ "mScreenRenderStage", "structToyMaker_1_1RenderSet.html#a27030efa7b25a9b405d8452da4ac623b", null ],
+    [ "mScreenTextures", "structToyMaker_1_1RenderSet.html#a3d06b3d61963e4b24f0a113dcc6ed393", null ],
+    [ "mSkyboxRenderStage", "structToyMaker_1_1RenderSet.html#acd45059ad29aa0cdcdebdb228633905e", null ],
+    [ "mTonemappingRenderStage", "structToyMaker_1_1RenderSet.html#a68a485ae66c88141bd0eb6deac66e919", null ]
+];
