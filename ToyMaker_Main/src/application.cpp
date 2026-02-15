@@ -5,7 +5,7 @@
 #include <thread>
 #include <filesystem>
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <nlohmann/json.hpp>
 
 #include "toymaker/engine/core/ecs_world.hpp"
@@ -120,11 +120,10 @@ void Application::execute() {
     }};
     onWindowResized.connectTo(windowContext.mSigWindowResized);
 
-
     // Timing related variables
-    uint32_t previousTicks { SDL_GetTicks() };
-    uint32_t simulationTicks { previousTicks };
-    uint32_t nextUpdateTicks { previousTicks };
+    uint64_t previousTicks { SDL_GetTicks() };
+    uint64_t simulationTicks { previousTicks };
+    uint64_t nextUpdateTicks { previousTicks };
 
     // Application loop begins
     SDL_Event event;
@@ -137,10 +136,34 @@ void Application::execute() {
         while(SDL_PollEvent(&event)) {
             // TODO: We probably want to locate this elsewhere? I'm not sure. Let's see.
             switch(event.type) {
-                case SDL_QUIT:
+                case SDL_EVENT_QUIT:
                     quit=true;
                 break;
-                case SDL_WINDOWEVENT:
+                case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
+                case SDL_EVENT_WINDOW_DESTROYED:
+                case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
+                case SDL_EVENT_WINDOW_DISPLAY_SCALE_CHANGED:
+                case SDL_EVENT_WINDOW_ENTER_FULLSCREEN:
+                case SDL_EVENT_WINDOW_EXPOSED:
+                case SDL_EVENT_WINDOW_FOCUS_GAINED:
+                case SDL_EVENT_WINDOW_FOCUS_LOST:
+                case SDL_EVENT_WINDOW_HDR_STATE_CHANGED:
+                case SDL_EVENT_WINDOW_HIDDEN:
+                case SDL_EVENT_WINDOW_HIT_TEST:
+                case SDL_EVENT_WINDOW_ICCPROF_CHANGED:
+                case SDL_EVENT_WINDOW_LEAVE_FULLSCREEN:
+                case SDL_EVENT_WINDOW_MAXIMIZED:
+                case SDL_EVENT_WINDOW_METAL_VIEW_RESIZED:
+                case SDL_EVENT_WINDOW_MINIMIZED:
+                case SDL_EVENT_WINDOW_MOUSE_ENTER:
+                case SDL_EVENT_WINDOW_MOUSE_LEAVE:
+                case SDL_EVENT_WINDOW_MOVED:
+                case SDL_EVENT_WINDOW_OCCLUDED:
+                case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED:
+                case SDL_EVENT_WINDOW_RESIZED:
+                case SDL_EVENT_WINDOW_RESTORED:
+                case SDL_EVENT_WINDOW_SAFE_AREA_CHANGED:
+                case SDL_EVENT_WINDOW_SHOWN:
                     windowContext.handleWindowEvent(event.window);
                 break;
                 default:
@@ -152,25 +175,25 @@ void Application::execute() {
         if(quit) break;
 
         // update time related variables
-        const uint32_t currentTicks { SDL_GetTicks() };
-        const uint32_t variableStep { currentTicks - previousTicks };
+        const uint64_t currentTicks { SDL_GetTicks() };
+        const uint64_t variableStep { currentTicks - previousTicks };
         previousTicks = currentTicks;
 
         // apply simulation updates, if possible
         while(currentTicks - simulationTicks >= mSimulationStep) {
-            const uint32_t updatedSimulationTicks = simulationTicks + mSimulationStep;
+            const uint64_t updatedSimulationTicks = simulationTicks + mSimulationStep;
             sceneSystem->simulationStep(mSimulationStep, mInputManager.getTriggeredActions(updatedSimulationTicks));
             simulationTicks = updatedSimulationTicks;
         }
-        const uint32_t simulationLagMillis { currentTicks - simulationTicks};
-        const uint32_t simulationTimeOffset { mSimulationStep - simulationLagMillis };
+        const uint64_t simulationLagMillis { currentTicks - simulationTicks};
+        const uint64_t simulationTimeOffset { mSimulationStep - simulationLagMillis };
 
         // calculate progress towards the next simulation step, apply variable update
         const float simulationProgress { static_cast<float>(simulationLagMillis) / mSimulationStep};
         sceneSystem->variableStep(simulationProgress, simulationLagMillis, variableStep, mInputManager.getTriggeredActions(currentTicks));
 
         // render a frame (or, well, leave it up to the root viewport configuration really)
-        const uint32_t renderTimeOffset { sceneSystem->render(simulationProgress, variableStep) };
+        const uint64_t renderTimeOffset { sceneSystem->render(simulationProgress, variableStep) };
 
         // TODO: Implement this for better support for low power devices
         // NOTE: keep these around on the off chance we want it later, for eg., if
@@ -179,10 +202,10 @@ void Application::execute() {
         // or 
         //  `std::this_thread::sleep_for(std::chrono::milliseconds(time))`
 #ifdef ZO_DUMB_DELAY
-        const uint32_t frameEndTime { SDL_GetTicks() };
+        const uint64_t frameEndTime { SDL_GetTicks() };
         nextUpdateTicks = currentTicks + glm::min(renderTimeOffset, simulationTimeOffset);
         if(frameEndTime + kSleepThreshold < nextUpdateTicks) {
-            const uint32_t delayTime { (nextUpdateTicks - frameEndTime)/kSleepThreshold * kSleepThreshold };
+            const uint64_t delayTime { (nextUpdateTicks - frameEndTime)/kSleepThreshold * kSleepThreshold };
             SDL_Delay(delayTime);
         }
 #endif

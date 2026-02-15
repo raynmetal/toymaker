@@ -1,4 +1,4 @@
-#include <SDL2/SDL_ttf.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include "toymaker/engine/text_render.hpp"
 
@@ -35,9 +35,10 @@ std::shared_ptr<Texture> TextFont::renderText(
     glm::u8vec3 textColor,
     glm::u8vec3 backgroundColor
 ) const {
-    SDL_Surface* renderedText { TTF_RenderUTF8_Shaded(
+    SDL_Surface* renderedText { TTF_RenderText_Shaded(
         mFont, 
         text.c_str(),
+        text.length(),
         SDL_Color{
             .r { textColor.r },
             .g { textColor.g },
@@ -55,9 +56,10 @@ std::shared_ptr<Texture> TextFont::renderText(
 }
 
 std::shared_ptr<Texture> TextFont::renderText(const std::string& text, glm::u8vec4 textColor) const {
-    SDL_Surface* renderedText { TTF_RenderUTF8_Solid(
+    SDL_Surface* renderedText { TTF_RenderText_Solid(
         mFont, 
         text.c_str(),
+        text.length(),
         SDL_Color{
             .r { textColor.r },
             .g { textColor.g },
@@ -71,9 +73,10 @@ std::shared_ptr<Texture> TextFont::renderText(const std::string& text, glm::u8ve
 
 std::shared_ptr<Texture> TextFont::renderTextArea(const std::string& text, glm::u8vec4 textColor, uint32_t wrapLength) const {
     SDL_Surface* renderedText {
-        TTF_RenderUTF8_Blended_Wrapped(
+        TTF_RenderText_Blended_Wrapped(
             mFont,
             text.c_str(),
+            text.length(),
             SDL_Color {
                 .r { textColor.r },
                 .g { textColor.g },
@@ -84,7 +87,7 @@ std::shared_ptr<Texture> TextFont::renderTextArea(const std::string& text, glm::
         )
     };
     if(!renderedText) {
-        std::cout << "TTF text rendering error occurred: " << TTF_GetError() << "\n";
+        std::cout << "TTF text rendering error occurred: " << SDL_GetError() << "\n";
     }
 
     return MakeTexture(renderedText);
@@ -96,11 +99,11 @@ std::shared_ptr<Texture> TextFont::MakeTexture(SDL_Surface* renderedText) {
         .mComponentCount { 4 },
         .mUsesWebColors { true }
     };
-    SDL_Surface* pretexture { SDL_ConvertSurfaceFormat(renderedText, SDL_PIXELFORMAT_RGBA32, 0) };
+    SDL_Surface* pretexture { SDL_ConvertSurface(renderedText, SDL_PIXELFORMAT_RGBA32) };
     if(!pretexture) {
         std::cout << "SDL surface conversion error: " << SDL_GetError() << "\n";
     }
-    SDL_FreeSurface(renderedText);
+    SDL_DestroySurface(renderedText);
     renderedText = nullptr;
     assert(pretexture && "Could not convert SDL image to known image format");
 
@@ -115,7 +118,7 @@ std::shared_ptr<Texture> TextFont::MakeTexture(SDL_Surface* renderedText) {
         0, GL_RGBA, GL_UNSIGNED_BYTE,
         reinterpret_cast<void*>(pretexture->pixels)
     );
-    SDL_FreeSurface(pretexture);
+    SDL_DestroySurface(pretexture);
     pretexture = nullptr;
 
     // Check for OpenGL errors

@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <iostream>
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "toymaker/engine/util.hpp"
 #include "toymaker/engine/window_context_manager.hpp"
@@ -107,7 +107,7 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
                 case ControlType::BUTTON:
                     switch(inputFilter.mAxisFilter) {
                         case AxisFilter::SIMPLE:
-                            axisValue = inputEvent.button.state;
+                            axisValue = inputEvent.button.down;
                         break;
                         case AxisFilter::X_POS:
                             axisValue = RangeMapperLinear{0.f, static_cast<double>(windowWidth), 0.f, 1.f}(inputEvent.button.x);
@@ -181,7 +181,7 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
         // Extract raw value from keyboard events
         case DeviceType::KEYBOARD: {
            assert(inputFilter.mAxisFilter == AxisFilter::SIMPLE && "Invalid keyboard axis filter, keyboards only support `AxisFilter::SIMPLE`");
-            axisValue = inputEvent.key.state;
+            axisValue = inputEvent.key.down;
         }
         break;
 
@@ -192,13 +192,13 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
                 case ControlType::POINT:
                     switch(inputFilter.mAxisFilter) {
                         case AxisFilter::SIMPLE:
-                            axisValue = inputEvent.ctouchpad.pressure;
+                            axisValue = inputEvent.gtouchpad.pressure;
                         break;
                         case AxisFilter::X_POS:
-                            axisValue = inputEvent.ctouchpad.x;
+                            axisValue = inputEvent.gtouchpad.x;
                         break;
                         case AxisFilter::Y_POS:
-                            axisValue = inputEvent.ctouchpad.y;
+                            axisValue = inputEvent.gtouchpad.y;
                         break;
                         default:
                             assert(false && "This device control does not support this type of value");
@@ -208,7 +208,7 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
 
                 case ControlType::BUTTON:
                     assert(inputFilter.mAxisFilter == AxisFilter::SIMPLE);
-                    axisValue = inputEvent.cbutton.state;
+                    axisValue = inputEvent.button.down;
                 break;
 
                 case ControlType::AXIS:
@@ -216,7 +216,7 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
                         case X_POS:
                         case X_NEG: {
                             const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f};
-                            axisValue = RangeMapperLinear{0.f, 32768.f, 0.f, 1.f} (sign * inputEvent.caxis.value);
+                            axisValue = RangeMapperLinear{0.f, 32768.f, 0.f, 1.f} (sign * inputEvent.jaxis.value);
                         }
                         break;
                         default:
@@ -377,19 +377,19 @@ InputSourceDescription getInputIdentity(const SDL_Event& inputEvent) {
         /**
          * Mouse events
          */
-        case SDL_MOUSEBUTTONUP:
-        case SDL_MOUSEBUTTONDOWN:
+        case SDL_EVENT_MOUSE_BUTTON_UP:
+        case SDL_EVENT_MOUSE_BUTTON_DOWN:
             inputIdentity.mDeviceType = DeviceType::MOUSE;
             inputIdentity.mControlType = ControlType::BUTTON;
             inputIdentity.mDevice = inputEvent.button.which;
             inputIdentity.mControl = inputEvent.button.button;
         break;
-        case SDL_MOUSEMOTION:
+        case SDL_EVENT_MOUSE_MOTION:
             inputIdentity.mDeviceType = DeviceType::MOUSE;
             inputIdentity.mControlType = ControlType::POINT;
             inputIdentity.mDevice = inputEvent.motion.which;
         break;
-        case SDL_MOUSEWHEEL:
+        case SDL_EVENT_MOUSE_WHEEL:
             inputIdentity.mDeviceType = DeviceType::MOUSE;
             inputIdentity.mControlType = ControlType::MOTION;
             inputIdentity.mDevice = inputEvent.wheel.which;
@@ -398,57 +398,58 @@ InputSourceDescription getInputIdentity(const SDL_Event& inputEvent) {
         /** 
          * Keyboard events
          */
-        case SDL_KEYDOWN:
-        case SDL_KEYUP:
+        case SDL_EVENT_KEY_DOWN:
+        case SDL_EVENT_KEY_UP:
             inputIdentity.mDeviceType = DeviceType::KEYBOARD;
             inputIdentity.mControlType = ControlType::BUTTON;
-            inputIdentity.mControl = inputEvent.key.keysym.sym;
+            inputIdentity.mControl = inputEvent.key.key;
         break;
-        case SDL_FINGERUP:
-        case SDL_FINGERDOWN:
-        case SDL_FINGERMOTION:
+        case SDL_EVENT_FINGER_UP:
+        case SDL_EVENT_FINGER_DOWN:
+        case SDL_EVENT_FINGER_MOTION:
             inputIdentity.mDeviceType = DeviceType::TOUCH;
             inputIdentity.mControlType = ControlType::POINT;
-            inputIdentity.mControl = inputEvent.tfinger.touchId;
+            inputIdentity.mControl = inputEvent.tfinger.touchID;
         break;
 
         /**
          * Controller-like events
          */
-        case SDL_JOYAXISMOTION:
+        case SDL_EVENT_JOYSTICK_AXIS_MOTION:
             inputIdentity.mDeviceType = DeviceType::CONTROLLER;
             inputIdentity.mControlType = ControlType::AXIS;
             inputIdentity.mDevice = inputEvent.jaxis.which;
             inputIdentity.mControl = inputEvent.jaxis.axis;
         break;
-        case SDL_JOYHATMOTION:
+        case SDL_EVENT_JOYSTICK_HAT_MOTION:
             inputIdentity.mDeviceType = DeviceType::CONTROLLER;
             inputIdentity.mControlType = ControlType::RADIO;
             inputIdentity.mDevice = inputEvent.jhat.which;
             inputIdentity.mControl = inputEvent.jhat.hat;
         break;
-        case SDL_JOYBALLMOTION:
+        case SDL_EVENT_JOYSTICK_BALL_MOTION:
             inputIdentity.mDeviceType = DeviceType::CONTROLLER;
             inputIdentity.mControlType = ControlType::MOTION;
             inputIdentity.mControl = inputEvent.jball.ball;
             inputIdentity.mDevice = inputEvent.jball.which;
         break;
-        case SDL_JOYBUTTONDOWN:
-        case SDL_JOYBUTTONUP:
+        case SDL_EVENT_JOYSTICK_BUTTON_DOWN:
+        case SDL_EVENT_JOYSTICK_BUTTON_UP:
             inputIdentity.mDeviceType = DeviceType::CONTROLLER;
             inputIdentity.mControlType = ControlType::BUTTON;
             inputIdentity.mDevice = inputEvent.jbutton.which;
             inputIdentity.mControl = inputEvent.jbutton.button;
         break;
-        case SDL_CONTROLLERTOUCHPADDOWN:
-        case SDL_CONTROLLERTOUCHPADUP:
-        case SDL_CONTROLLERTOUCHPADMOTION:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_DOWN:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_UP:
+        case SDL_EVENT_GAMEPAD_TOUCHPAD_MOTION:
             inputIdentity.mDeviceType = DeviceType::CONTROLLER;
             inputIdentity.mControlType = ControlType::POINT;
-            inputIdentity.mControl = inputEvent.ctouchpad.touchpad;
-            inputIdentity.mDevice = inputEvent.ctouchpad.which;
+            inputIdentity.mControl = inputEvent.gtouchpad.touchpad;
+            inputIdentity.mDevice = inputEvent.gtouchpad.which;
         break;
         default:
+            std::cout << "Unsupported input event: \ttype: " << inputEvent.type << "\n";
             // assert (false && "This event is unsupported");
         break;
     }

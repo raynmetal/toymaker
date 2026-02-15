@@ -1,8 +1,8 @@
 #include <iostream>
 
-#include <SDL2/SDL.h>
-#include <SDL2/SDL_ttf.h>
-#include <SDL2/SDL_image.h>
+#include <SDL3/SDL.h>
+#include <SDL3_ttf/SDL_ttf.h>
+
 #include <GL/glew.h>
 #include <assimp/Importer.hpp>
 
@@ -14,22 +14,10 @@
 using namespace ToyMaker;
 
 WindowContext::WindowContext(const nlohmann::json& initialWindowConfiguration) {
-    const int setHint{
-        SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "1")
-    };
-    const int init{
-        SDL_Init(SDL_INIT_VIDEO) 
-    };
-    const int imgInit {
-        IMG_Init(IMG_INIT_JPG | IMG_INIT_PNG) >= -1 
-    };
-    const int ttfInit {
-        TTF_Init() >= 0 
-    };
+    const bool init{ SDL_Init(SDL_INIT_VIDEO) };
+    assert(init && "Could not initialise SDL2 library");
 
-    assert(setHint && "Could not enable DPI awareness for this SDL app");
-    assert(init  >= 0 && "Could not initialise SDL2 library");
-    assert(imgInit && "Could not initialise SDL_image library");
+    const bool ttfInit { TTF_Init() };
     assert(ttfInit && "Could not initialise SDL_ttf library");
 
     const std::string& applicationTitle { initialWindowConfiguration.at("application_title") };
@@ -38,9 +26,8 @@ WindowContext::WindowContext(const nlohmann::json& initialWindowConfiguration) {
 
     mpSDLWindow = SDL_CreateWindow(
         applicationTitle.c_str(),
-        SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
         windowWidth, windowHeight,
-        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI
+        SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_HIGH_PIXEL_DENSITY
     );
     assert(mpSDLWindow && "Could not create an SDL window");
 
@@ -86,10 +73,9 @@ WindowContext::WindowContext(const nlohmann::json& initialWindowConfiguration) {
 
 WindowContext::~WindowContext() {
     std::cout << "Time to say goodbye" << std::endl;
-    SDL_GL_DeleteContext(mpGLContext);
+    SDL_GL_DestroyContext(mpGLContext);
     SDL_DestroyWindow(mpSDLWindow);
     TTF_Quit();
-    IMG_Quit();
     SDL_Quit();
     delete mpAssetImporter;
 }
@@ -99,62 +85,57 @@ void WindowContext::swapBuffers() {
 }
 
 void WindowContext::handleWindowEvent(const SDL_WindowEvent& windowEvent) {
-    assert(windowEvent.type == SDL_WINDOWEVENT && "Window context cannot handle non-window related events");
+    // assert(windowEvent.type == SDL_WINDOWEVENT && "Window context cannot handle non-window related events");
+
     refreshWindowProperties();
-    switch(windowEvent.event) {
-        case SDL_WINDOWEVENT_ENTER:
+    switch(windowEvent.type) {
+        case SDL_EVENT_WINDOW_MOUSE_ENTER:
             mSigWindowMouseEntered.emit();
         break;
-        case SDL_WINDOWEVENT_LEAVE:
+        case SDL_EVENT_WINDOW_MOUSE_LEAVE:
             mSigWindowMouseExited.emit();
         break;
-        case SDL_WINDOWEVENT_MINIMIZED:
+        case SDL_EVENT_WINDOW_MINIMIZED:
             mSigWindowMinimized.emit();
         break;
-        case SDL_WINDOWEVENT_MAXIMIZED:
+        case SDL_EVENT_WINDOW_MAXIMIZED:
             mSigWindowMaximized.emit();
         break;
-        case SDL_WINDOWEVENT_RESIZED:
+        case SDL_EVENT_WINDOW_RESIZED:
             mSigWindowResized.emit();
         break;
-        case SDL_WINDOWEVENT_MOVED:
+        case SDL_EVENT_WINDOW_MOVED:
             mSigWindowMoved.emit();
         break;
-        case SDL_WINDOWEVENT_SHOWN:
+        case SDL_EVENT_WINDOW_SHOWN:
             mSigWindowShown.emit();
         break;
-        case SDL_WINDOWEVENT_HIDDEN:
+        case SDL_EVENT_WINDOW_HIDDEN:
             mSigWindowHidden.emit();
         break;
-        case SDL_WINDOWEVENT_EXPOSED:
+        case SDL_EVENT_WINDOW_EXPOSED:
             mSigWindowExposed.emit();
         break;
-        case SDL_WINDOWEVENT_SIZE_CHANGED:
-            mSigWindowSizeChanged.emit();
-        break;
-        case SDL_WINDOWEVENT_RESTORED:
+        case SDL_EVENT_WINDOW_RESTORED:
             mSigWindowRestored.emit();
         break;
-        case SDL_WINDOWEVENT_FOCUS_GAINED:
+        case SDL_EVENT_WINDOW_FOCUS_GAINED:
             mSigWindowKeyFocusGained.emit();
         break;
-        case SDL_WINDOWEVENT_FOCUS_LOST:
+        case SDL_EVENT_WINDOW_FOCUS_LOST:
             mSigWindowKeyFocusLost.emit();
         break;
-        case SDL_WINDOWEVENT_TAKE_FOCUS:
-            mSigWindowKeyFocusOffered.emit();
-        break;
-        case SDL_WINDOWEVENT_CLOSE:
+        case SDL_EVENT_WINDOW_CLOSE_REQUESTED:
             mSigWindowCloseRequested.emit();
         break;
-        case SDL_WINDOWEVENT_ICCPROF_CHANGED:
+        case SDL_EVENT_WINDOW_ICCPROF_CHANGED:
             mSigWindowICCProfileChanged.emit();
         break;
-        case SDL_WINDOWEVENT_DISPLAY_CHANGED:
+        case SDL_EVENT_WINDOW_DISPLAY_CHANGED:
             mSigWindowDisplayChanged.emit();
         break;
         default:
-            std::cout << "WindowContext: Unrecognized window event\n";
+            std::cout << "WindowContext: Unrecognized window event: " << windowEvent.type << "\n";
         break;
     }
 }
@@ -176,7 +157,7 @@ void WindowContext::clear() {
 
 void WindowContext::refreshWindowProperties() {
     mCachedWindowFlags = static_cast<SDL_WindowFlags>(SDL_GetWindowFlags(mpSDLWindow));
-    mCachedDisplayID = SDL_GetWindowDisplayIndex(mpSDLWindow);
+    mCachedDisplayID = SDL_GetDisplayForWindow(mpSDLWindow);
     SDL_GetWindowPosition(mpSDLWindow, reinterpret_cast<int*>(&mCachedWindowPosition.x), reinterpret_cast<int*>(&mCachedWindowPosition.y));
     SDL_GetWindowSizeInPixels(mpSDLWindow, reinterpret_cast<int*>(&mCachedWindowDimensions.x), reinterpret_cast<int*>(&mCachedWindowDimensions.y));
     SDL_GetWindowMinimumSize(mpSDLWindow, reinterpret_cast<int*>(&mCachedWindowMinimumDimensions.x), reinterpret_cast<int*>(&mCachedWindowMinimumDimensions.y));
@@ -185,39 +166,40 @@ void WindowContext::refreshWindowProperties() {
 }
 
 bool WindowContext::isMaximized() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_MAXIMIZED;
+    return mCachedWindowFlags&SDL_WINDOW_MAXIMIZED;
 }
 bool WindowContext::isMinimized() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_MINIMIZED;
+    return mCachedWindowFlags&SDL_WINDOW_MINIMIZED;
 }
 bool WindowContext::isResizable() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_RESIZABLE;
+    return mCachedWindowFlags&SDL_WINDOW_RESIZABLE;
 }
 bool WindowContext::isHidden() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_HIDDEN;
+    return mCachedWindowFlags&SDL_WINDOW_HIDDEN;
 }
 bool WindowContext::hasKeyFocus() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_INPUT_FOCUS;
+    return mCachedWindowFlags&SDL_WINDOW_INPUT_FOCUS;
 }
 bool WindowContext::hasCapturedMouse() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_MOUSE_CAPTURE;
+    return mCachedWindowFlags&SDL_WINDOW_MOUSE_CAPTURE;
 }
 bool WindowContext::hasMouseFocus() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_MOUSE_FOCUS;
+    return mCachedWindowFlags&SDL_WINDOW_MOUSE_FOCUS;
 }
 bool WindowContext::isBorderless() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_BORDERLESS;
+    return mCachedWindowFlags&SDL_WINDOW_BORDERLESS;
 }
 bool WindowContext::isFullscreen() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_FULLSCREEN;
+    return mCachedWindowFlags&SDL_WINDOW_FULLSCREEN;
 }
 bool WindowContext::isExclusiveFullscreen() const {
     return 
-        mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_FULLSCREEN
-        && !(mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_FULLSCREEN_DESKTOP);
+        mCachedWindowFlags&SDL_WINDOW_FULLSCREEN
+        && SDL_GetWindowFullscreenMode(mpSDLWindow)
+    ;
 }
 bool WindowContext::isShown() const {
-    return mCachedWindowFlags&SDL_WindowFlags::SDL_WINDOW_SHOWN;
+    return !(mCachedWindowFlags&SDL_WINDOW_HIDDEN);
 }
 int WindowContext::getDisplayID() const {
     return mCachedDisplayID;
@@ -247,7 +229,7 @@ void WindowContext::setDimensions(const glm::uvec2& newDimensions) {
     refreshWindowProperties();
 }
 void WindowContext::setResizeAllowed(bool allowed) {
-    SDL_SetWindowResizable(mpSDLWindow, allowed? SDL_TRUE: SDL_FALSE);
+    SDL_SetWindowResizable(mpSDLWindow, allowed);
     refreshWindowProperties();
 }
 void WindowContext::setDimensionsMinimum(const glm::uvec2& newMinimum) {
@@ -271,7 +253,7 @@ void WindowContext::restore() {
     refreshWindowProperties();
 }
 void WindowContext::setBorder(bool state) {
-    SDL_SetWindowBordered(mpSDLWindow, state? SDL_TRUE: SDL_FALSE);
+    SDL_SetWindowBordered(mpSDLWindow, state);
     refreshWindowProperties();
 }
 void WindowContext::setTitle(const std::string& newTitle) {
@@ -287,12 +269,8 @@ void WindowContext::setHidden(bool hide) {
 
     refreshWindowProperties();
 }
-void WindowContext::setFullscreen(bool fullscreen, bool exclusive) {
-    if(!fullscreen) {
-        SDL_SetWindowFullscreen(mpSDLWindow, 0);
-    } else {
-        SDL_SetWindowFullscreen(mpSDLWindow, exclusive? SDL_WINDOW_FULLSCREEN: SDL_WINDOW_FULLSCREEN_DESKTOP);
-    }
+void WindowContext::setFullscreen(bool fullscreen) {
+    SDL_SetWindowFullscreen(mpSDLWindow, fullscreen);
     refreshWindowProperties();
 }
 

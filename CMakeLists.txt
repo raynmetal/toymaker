@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.23)
 project(
     ToyMaker 
-    VERSION 0.1.2
-    DESCRIPTION "A simple game engine built using SDL2 and OpenGL."
+    VERSION 0.2.0
+    DESCRIPTION "A simple game engine built using SDL3 and OpenGL."
     HOMEPAGE_URL https://www.github.com/raynmetal/toymaker
     LANGUAGES CXX
 )
@@ -70,7 +70,6 @@ if(NOT TOYMAKER_USE_INSTALLED)
             ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
     )
 endif()
-
 
 # Includes and uses uninstall script to remove files (but NOT directories)
 # created during installation from source.
