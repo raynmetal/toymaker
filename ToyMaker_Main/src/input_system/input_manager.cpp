@@ -533,7 +533,7 @@ void InputManager::queueInput(const SDL_Event& inputEvent) {
             }
 
             // Convert timestamp nanoseconds to milliseconds before storing
-            newComboState.mTimestamp = inputEvent.common.timestamp / 1000;
+            newComboState.mTimestamp = inputEvent.common.timestamp / 1000000;
 
             //  Add input to queue to be consumed by subscribed action contexts when value ...
             if(
