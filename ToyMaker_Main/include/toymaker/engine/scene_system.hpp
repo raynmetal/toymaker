@@ -1328,7 +1328,7 @@ namespace ToyMaker {
          * @brief Number dictating when this viewport should be computed relative to other viewports, especially when it is used by a RenderSet::RenderType::ADDITION viewport parent.
          * 
          */
-        uint32_t mViewportLoadOrdinal { std::numeric_limits<uint32_t>::max() };
+        uint64_t mViewportLoadOrdinal { std::numeric_limits<uint64_t>::max() };
 
         /**
          * @brief A number that is incremented whenever a child viewport is added to this viewport, guaranteeing uniqueness in child viewport values.

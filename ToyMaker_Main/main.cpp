@@ -4,7 +4,8 @@
 #include <iostream>
 #include <vector>
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
+#include <SDL3/SDL_main.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/type_ptr.hpp>

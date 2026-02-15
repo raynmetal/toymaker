@@ -19,7 +19,7 @@
 #ifndef FOOLSENGINE_TEXTRENDER_H
 #define FOOLSENGINE_TEXTRENDER_H
 
-#include <SDL2/SDL_ttf.h>
+#include <SDL3_ttf/SDL_ttf.h>
 
 #include "core/resource_database.hpp"
 #include "texture.hpp"

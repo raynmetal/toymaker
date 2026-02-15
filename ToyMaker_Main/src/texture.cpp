@@ -3,10 +3,10 @@
 #include <iostream>
 #include <map>
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-#include <SDL2/SDL_image.h>
+#include <SDL3_image/SDL_image.h>
 
 #include "toymaker/engine/texture.hpp"
 
@@ -230,8 +230,8 @@ std::shared_ptr<IResource> TextureFromFile::createResource(const nlohmann::json&
     assert(textureImage && "SDL image loading failed");
 
     // Convert the image from its present format to RGBA
-    SDL_Surface* pretexture { SDL_ConvertSurfaceFormat(textureImage, SDL_PIXELFORMAT_RGBA32, 0) };
-    SDL_FreeSurface(textureImage);
+    SDL_Surface* pretexture { SDL_ConvertSurface(textureImage, SDL_PIXELFORMAT_RGBA32) };
+    SDL_DestroySurface(textureImage);
     textureImage = nullptr;
     assert(pretexture && "Could not convert SDL image to known image format");
 
@@ -248,7 +248,7 @@ std::shared_ptr<IResource> TextureFromFile::createResource(const nlohmann::json&
         0, GL_RGBA, GL_UNSIGNED_BYTE,
         reinterpret_cast<void*>(pretexture->pixels)
     );
-    SDL_FreeSurface(pretexture);
+    SDL_DestroySurface(pretexture);
     pretexture=nullptr;
 
     // Check for OpenGL errors

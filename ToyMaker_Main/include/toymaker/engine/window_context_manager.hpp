@@ -14,7 +14,7 @@
 
 #include <memory>
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <GL/glew.h>
 
 #include <assimp/Importer.hpp>
@@ -295,9 +295,8 @@ namespace ToyMaker {
          * @brief Makes this window fullscreen.
          * 
          * @param fullscreen Whether or not to enable fullscreen.
-         * @param exclusive Use exclusive fullscreen, borderless windowed mode otherwise.
          */
-        void setFullscreen(bool fullscreen, bool exclusive=false);
+        void setFullscreen(bool fullscreen);
 
         /**
          * @brief Maximizes this window.
@@ -474,6 +473,13 @@ namespace ToyMaker {
          * 
          */
         SDL_WindowFlags mCachedWindowFlags {};
+
+        /**
+         * @brief Immutable pointer to the current display mode for this window, whose data is managed by
+         * SDL
+         * 
+         */
+        SDL_DisplayMode* const mDisplayMode {};
 
         /**
          * @brief The cached position of this window, in screen coordinates.

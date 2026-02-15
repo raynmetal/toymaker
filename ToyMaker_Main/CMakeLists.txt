@@ -103,10 +103,10 @@ if(ZO_DUMB_DELAY)
     target_compile_definitions(ToyMaker PRIVATE ZO_DUMB_DELAY)
 endif()
 
-find_package(SDL2 REQUIRED CONFIG REQUIRED COMPONENTS SDL2)
-find_package(SDL2 REQUIRED CONFIG COMPONENTS SDL2main)
-find_package(SDL2_image REQUIRED)
-find_package(SDL2_ttf REQUIRED)
+find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
+
+find_package(SDL3_image REQUIRED)
+find_package(SDL3_ttf REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW 2.0 REQUIRED)
 find_package(glm 1.0 REQUIRED)
@@ -115,17 +115,17 @@ find_package(nlohmann_json 3.12.0 REQUIRED)
 
 target_link_libraries(ToyMaker PUBLIC
     OpenGL::GL
-    SDL2::SDL2
+    SDL3::SDL3
     GLEW::GLEW
     glm::glm
-    SDL2_image::SDL2_image
-    SDL2_ttf::SDL2_ttf
+    SDL3_image::SDL3_image
+    SDL3_ttf::SDL3_ttf
     assimp::assimp
     nlohmann_json::nlohmann_json
 )
 target_link_libraries(ToyMaker PUBLIC ToyMakerCompilerFlags)
 # Simply, use ToyMaker headers while building ToyMakerMain
-target_link_libraries(ToyMakerMain PRIVATE SDL2::SDL2main ToyMaker)
+target_link_libraries(ToyMakerMain PRIVATE ToyMaker)
 
 include(GNUInstallDirs)
 install(

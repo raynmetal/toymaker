@@ -15,7 +15,7 @@
 #include <map>
 #include <queue>
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 
 #include "texture.hpp"
 #include "shader_program.hpp"
