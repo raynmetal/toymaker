@@ -531,7 +531,9 @@ void InputManager::queueInput(const SDL_Event& inputEvent) {
                 newComboState.mButtonValue = 0.f;
                 newComboState.mActivated = false;
             }
-            newComboState.mTimestamp = inputEvent.common.timestamp;
+
+            // Convert timestamp nanoseconds to milliseconds before storing
+            newComboState.mTimestamp = inputEvent.common.timestamp / 1000;
 
             //  Add input to queue to be consumed by subscribed action contexts when value ...
             if(
