@@ -363,6 +363,20 @@ std::array<glm::vec3, 8> ObjectBounds::getWorldOrientedBoxCorners() const {
     return worldCorners;
 }
 
+bool ObjectBounds::isSensible() const {
+    switch(mType) {
+        case TrueVolumeType::BOX:
+            return mTrueVolume.mBox.isSensible();
+        case TrueVolumeType::SPHERE:
+            return mTrueVolume.mSphere.isSensible();
+        case TrueVolumeType::CAPSULE:
+            return mTrueVolume.mCapsule.isSensible();
+        default:
+            assert(false && "Unrecognized true volume type specified");
+            return mTrueVolume.mBox.isSensible();
+    }
+}
+
 AxisAlignedBounds::AxisAlignedBounds(): 
 mExtents { glm::vec3{0.f}, glm::vec3{0.f} }
 {}

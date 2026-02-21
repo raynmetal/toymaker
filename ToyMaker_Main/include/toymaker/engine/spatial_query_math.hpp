@@ -205,7 +205,7 @@ namespace ToyMaker {
          * 
          */
         TrueVolume mTrueVolume {};
-        
+
         /**
          * @brief The position, in the real world, of the scene node this data is attached to.
          * 
@@ -300,6 +300,13 @@ namespace ToyMaker {
          * 
          */
         std::array<AreaTriangle, 12> getWorldOrientedBoxFaceTriangles() const { return computeBoxFaceTriangles(getWorldOrientedBoxCorners()); };
+
+        /**
+         * @brief Returns whether the underlying volume has sensible parameters (i.e., finite, non-degenerate, non-negative
+         * parameters)
+         * 
+         */
+        bool isSensible() const;
     protected:
     };
 

@@ -154,16 +154,32 @@ namespace ToyMaker {
         }
 
         /** 
-         * @brief Poor man's vtable which doesn't break Volume's ability to be aggregate initialized.
-         * 
+         * @brief Gets corners of the object-relative bounding box that encapsulates the derived volume.
+         *
+         * Forces subclasses to implement their own version of this function without breaking
+         * their ability to be aggregate initialized.
+         *
          * @see Volume::getVolumeRelativeBoxCorners()
-         * 
-         * @todo I forget why I was doing this in the first place.  Do we have a problem here?
-         * 
+         *
          */
         template <typename TDerived>
         inline std::array<glm::vec3, 8> getVolumeRelativeBoxCorners() const {
             return Volume<TDerived>::getVolumeRelativeBoxCorners();
+        }
+
+        /**
+         * @brief Returns whether or not the derived volume has sensible parameters (i.e., isn't infinite or
+         * degenerate).
+         *
+         * Forces subclasses to implement their own version of this function without breaking
+         * their ability to be aggregate initialized.
+         *
+         * @see Volume::isSensible()
+         *
+         */
+        template <typename TDerived>
+        inline bool isSensible() const {
+            return Volume<TDerived>::isSensible();
         }
     };
 
@@ -178,6 +194,16 @@ namespace ToyMaker {
          */
         inline std::array<glm::vec3, 8> getVolumeRelativeBoxCorners() const {
             return TDerived::getVolumeRelativeBoxCorners();
+        }
+
+        /**
+         * @brief Poor man's vtable cont'd
+         *
+         * @see VolumeBase_::isSensible()
+         *
+         */
+        inline bool isSensible() const {
+            return TDerived::isSensible();
         }
     };
 
