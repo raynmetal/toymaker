@@ -47,6 +47,8 @@ On your platform, download the following packages and place them somewhere disco
 
 - [Assimp](https://github.com/assimp/assimp) -- For importing assets of various kinds, mainly 3D models.
 
+- [Doctest](https://github.com/doctest/doctest/) -- As testing framework
+
 If you'd like to generate and tinker with the documentation generated for the project, also install [Doxygen](https://www.doxygen.nl/).
 
 Finally, [clone this repository,](https://github.com/raynmetal/toymaker) or download its snapshot.

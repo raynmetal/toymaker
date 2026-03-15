@@ -849,8 +849,8 @@ bool checkBoxContains(const glm::vec3& point, const ObjectBounds& box) {
     const glm::vec3 pointRelativeBox {
         static_cast<glm::vec3>(boxTransformInverse * point4)
     };
-    return overlaps(point, AxisAlignedBounds{
-        glm::vec3{0.f, 0.f, 0.f},
+    return overlaps(pointRelativeBox, AxisAlignedBounds{
+        glm::vec3{ 0.f },
         box.mTrueVolume.mBox.mDimensions
     });
 }
