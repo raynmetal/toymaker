@@ -339,9 +339,9 @@ namespace ToyMaker {
                     isFinite(mPoints[0]) && isFinite(mPoints[1]) && isFinite(mPoints[2])
                 ) && (
                     isPositive(
-                        glm::cross(
+                        glm::length(glm::cross(
                             mPoints[2] - mPoints[0], mPoints[1] - mPoints[0]
-                        ).length()
+                        ))
                     )
                 )
             );
@@ -383,7 +383,7 @@ namespace ToyMaker {
                 (
                     isFinite(mRadius) && isPositive(mRadius)
                 ) && (
-                    isFinite(mNormal) && isPositive(mNormal.length())
+                    isFinite(mNormal) && isPositive(glm::length(mNormal))
                 ) && (
                     isFinite(mCenter)
                 )
@@ -425,7 +425,7 @@ namespace ToyMaker {
         inline bool isSensible() const {
             return (
                 (
-                    isFinite(mDirection) && isPositive(mDirection.length())
+                    isFinite(mDirection) && isPositive(glm::length(mDirection))
                 ) && (
                     isFinite(mStart)
                 ) && (
@@ -462,7 +462,7 @@ namespace ToyMaker {
         inline bool isSensible() const {
             return (
                 (
-                    isFinite(mNormal) && isPositive(mNormal.length())
+                    isFinite(mNormal) && isPositive(glm::length(mNormal))
                 ) && (
                     isFinite(mPointOnPlane)
                 )

@@ -30,6 +30,19 @@ else()
     message("The basic ToyMaker example project will not be built in this configuration")
 endif()
 
+# Provide ctest related options IF the project being built is ToyMaker
+# itself
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+    include(CTest)
+endif()
+# Prevent the compilation of test drivers when ToyMaker is a vendored
+# library
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND BUILD_TESTING)
+    message("Test drivers have been configured to be built")
+    enable_testing()
+    add_subdirectory(tests)
+endif()
+
 include(InstallRequiredSystemLibraries)
 
 if(NOT TOYMAKER_USE_INSTALLED)

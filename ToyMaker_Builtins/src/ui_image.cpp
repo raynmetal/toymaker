@@ -67,7 +67,7 @@ void UIImage::updateImage(const std::string& imageFilepath) {
 
 void UIImage::recomputeTexture() {
     // if no image or dimensions specified, remove associated model
-    if(mImageFilepath.empty() || (mDimensions.length() == 0)) {
+    if(mImageFilepath.empty() || mDimensions.x == 0 || mDimensions.y == 0) {
         if(hasComponent<std::shared_ptr<ToyMaker::StaticModel>>()) {
             removeComponent<std::shared_ptr<ToyMaker::StaticModel>>();
         }
