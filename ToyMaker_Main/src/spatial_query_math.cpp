@@ -323,7 +323,7 @@ bool ToyMaker::contains(const Ray& ray, const ObjectBounds& bounds) {
     return contains(ray.mStart, bounds) && contains(rayEnd, bounds);
 }
 
-ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::vec3& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
     return ObjectBounds {
         .mType { TrueVolumeType::BOX },
         .mTrueVolume { .mBox { box } },
@@ -332,7 +332,7 @@ ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positio
     };
 }
 
-ObjectBounds ObjectBounds::create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::vec3& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
     return ObjectBounds {
         .mType { TrueVolumeType::SPHERE },
         .mTrueVolume { .mSphere { sphere } },
@@ -341,7 +341,7 @@ ObjectBounds ObjectBounds::create(const VolumeSphere& sphere, const glm::vec3& p
     };
 }
 
-ObjectBounds ObjectBounds::create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::vec3& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
     return ObjectBounds {
         .mType { TrueVolumeType::CAPSULE },
         .mTrueVolume { .mCapsule { capsule } },
@@ -590,7 +590,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getSphereIntersections(const
     const float qdrtcA { 1.f };
     const float qdrtcB { 2.f * glm::dot(originDifference, rayDirection) };
     const float qdrtcC { glm::dot(originDifference, originDifference) - sphere.mTrueVolume.mSphere.mRadius * sphere.mTrueVolume.mSphere.mRadius };
-    const float discriminant { qdrtcB * qdrtcB - 4.f * qdrtcA * qdrtcA };
+    const float discriminant { qdrtcB * qdrtcB - 4.f * qdrtcA * qdrtcC };
 
     // Ignore single intersection and no intersection cases
     if(discriminant <= 0) {
@@ -644,7 +644,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCapsuleIntersections(cons
             ObjectBounds::create(
                 VolumeSphere { .mRadius {capsule.mTrueVolume.mCapsule.mRadius } },
                 capsuleEnds[0],
-                capsuleAxis
+                capsuleRotation
             )
         )
     };
@@ -677,7 +677,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCapsuleIntersections(cons
         ObjectBounds::create(
             VolumeSphere { .mRadius { capsule.mTrueVolume.mCapsule.mRadius } },
             capsuleEnds[1],
-            capsuleAxis
+            capsuleRotation
         )
     );
     if(
@@ -823,7 +823,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCylinderIntersections(
         };
         const float hitHeight { glm::length(intersectionPointSpine - cylinderLowerBound) };
         if(hitHeight <= cylinderHeight && dotRelativeHitCylinderBottom >= 0) {
-            intersectionPoints[nIntersections++] = ray.mStart + solution0 * directionRay;
+            intersectionPoints[nIntersections++] = ray.mStart + solution1 * directionRay;
         }
     }
 
@@ -881,12 +881,12 @@ bool checkCapsuleContains(const glm::vec3& point, const ObjectBounds& capsule) {
     const ObjectBounds sphere0 { ObjectBounds::create(
         VolumeSphere { .mRadius { capsuleRadius } },
         capsuleEnds[0],
-        capsuleAxis
+        capsuleRotation
     ) };
     const ObjectBounds sphere1 { ObjectBounds::create(
         VolumeSphere { .mRadius { capsuleRadius } },
         capsuleEnds[1],
-        capsuleAxis
+        capsuleRotation
     ) };
 
     const glm::vec3 projectedAlong {

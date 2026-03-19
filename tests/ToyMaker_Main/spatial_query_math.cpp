@@ -6,206 +6,657 @@
 namespace ToyMakerTests {
 
 TEST_SUITE("Spatial Queries") {
-    TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
-        ToyMaker::Ray ray {
-            .mStart { 0.f, 0.f, 0.f },
-            .mDirection { 0.f, 0.f, -1.f },
-            .mLength { 100.f },
+
+TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
+    ToyMaker::Ray ray {
+        .mStart { 0.f, 0.f, 0.f },
+        .mDirection { 0.f, 0.f, -1.f },
+        .mLength { 100.f },
+    };
+    REQUIRE(ray.mLength == 100.f);
+    REQUIRE(ray.mDirection.z == -1.f);
+    REQUIRE(glm::length(ray.mStart) == 0);
+
+    SUBCASE("Completely Inside") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 200.f, 200.f, 200.f }
+                },
+                glm::vec3 { 0.f, 0.f, -50.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
         };
-        REQUIRE(ray.mLength == 100.f);
-        REQUIRE(ray.mDirection.z == -1.f);
-        REQUIRE(glm::length(ray.mStart) == 0);
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
-        SUBCASE("Completely Inside") {
-            const ToyMaker::ObjectBounds box {
-                ToyMaker::ObjectBounds::create(
-                    ToyMaker::VolumeBox {
-                        .mDimensions { 200.f, 200.f, 200.f }
-                    },
-                    glm::vec3 { 0.f, 0.f, -50.f },
-                    glm::vec3 { 0.f, 0.f, 0.f }
-                )
-            };
-            REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-            REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+        CHECK(intersectionResults.first == 0);
+        CHECK(intersectionResults.second.first == glm::vec3 { std::numeric_limits<float>::infinity() });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
 
-            const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
-                ToyMaker::computeIntersections(ray, box)
-            };
-            CHECK(intersectionResults.first == 0);
-            CHECK(intersectionResults.second.first == glm::vec3 { std::numeric_limits<float>::infinity() });
-            CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == true);
 
-            const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
-            CHECK(startOverlaps == true);
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                box
+            )
+        };
+        CHECK(endOverlaps == true);
 
-            const bool endOverlaps {
-                ToyMaker::overlaps(
-                    ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
-                    box
-                )
-            };
-            CHECK(endOverlaps == true);
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == true);
 
-            const bool overlaps { ToyMaker::overlaps(ray, box) };
-            CHECK(overlaps == true);
-
-            const bool contains { ToyMaker::contains(ray, box) };
-            CHECK(contains == true);
-        }
-
-        SUBCASE("Completely Outside") {
-            const ToyMaker::ObjectBounds box {
-                ToyMaker::ObjectBounds::create(
-                    ToyMaker::VolumeBox {
-                        .mDimensions { 10.f, 10.f, 10.f }
-                    },
-                    glm::vec3 { 0.f, 50.f, -50.f },
-                    glm::vec3 { 0.f, 0.f, 0.f }
-                )
-            };
-            REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
-            REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
-
-            const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
-                ToyMaker::computeIntersections(ray, box)
-            };
-            CHECK(intersectionResults.first == 0);
-            CHECK(intersectionResults.second.first == glm::vec3 { std::numeric_limits<float>::infinity() });
-            CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
-
-            const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
-            CHECK(startOverlaps == false);
-
-            const bool endOverlaps {
-                ToyMaker::overlaps(
-                    ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
-                    box
-                )
-            };
-            CHECK(endOverlaps == false);
-
-            const bool overlaps { ToyMaker::overlaps(ray, box) };
-            CHECK(overlaps == false);
-
-            const bool contains { ToyMaker::contains(ray, box) };
-            CHECK(contains == false);
-        }
-
-        SUBCASE("Starts Inside") {
-            const ToyMaker::ObjectBounds box {
-                ToyMaker::ObjectBounds::create(
-                    ToyMaker::VolumeBox {
-                        .mDimensions { 10.f, 10.f, 10.f }
-                    },
-                    glm::vec3 { 0.f, 0.f, 0.f },
-                    glm::vec3 { 0.f, 0.f, 0.f }
-                )
-            };
-            REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
-            REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
-
-            const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
-                ToyMaker::computeIntersections(ray, box)
-            };
-            CHECK(intersectionResults.first == 1);
-            CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -5.f });
-            CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
-
-            const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
-            CHECK(startOverlaps == true);
-
-            const bool endOverlaps {
-                ToyMaker::overlaps(
-                    ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
-                    box
-                )
-            };
-            CHECK(endOverlaps == false);
-
-            const bool overlaps { ToyMaker::overlaps(ray, box) };
-            CHECK(overlaps == true);
-
-            const bool contains { ToyMaker::contains(ray, box) };
-            CHECK(contains == false);
-        }
-
-        SUBCASE("Ends Inside") {
-            const ToyMaker::ObjectBounds box {
-                ToyMaker::ObjectBounds::create(
-                    ToyMaker::VolumeBox {
-                        .mDimensions { 10.f, 10.f, 10.f }
-                    },
-                    glm::vec3 { 0.f, 0.f, -100.f },
-                    glm::vec3 { 0.f, 0.f, 0.f }
-                )
-            };
-            REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -100.f});
-            REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
-
-            const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
-                ToyMaker::computeIntersections(ray, box)
-            };
-            CHECK(intersectionResults.first == 1);
-            CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -95.f });
-            CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
-
-            const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
-            CHECK(startOverlaps == false);
-
-            const bool endOverlaps {
-                ToyMaker::overlaps(
-                    ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
-                    box
-                )
-            };
-            CHECK(endOverlaps == true);
-
-            const bool overlaps { ToyMaker::overlaps(ray, box) };
-            CHECK(overlaps == true);
-
-            const bool contains { ToyMaker::contains(ray, box) };
-            CHECK(contains == false);
-        }
-
-        SUBCASE("Passes Through") {
-            const ToyMaker::ObjectBounds box {
-                ToyMaker::ObjectBounds::create(
-                    ToyMaker::VolumeBox {
-                        .mDimensions { 10.f, 10.f, 10.f }
-                    },
-                    glm::vec3 { 0.f, 0.f, -50.f },
-                    glm::vec3 { 0.f, 0.f, 0.f }
-                )
-            };
-            REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-            REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
-
-            const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
-                ToyMaker::computeIntersections(ray, box)
-            };
-            CHECK(intersectionResults.first == 2);
-            CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -45.f });
-            CHECK(intersectionResults.second.second == glm::vec3 { 0.f, 0.f, -55.f });
-
-            const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
-            CHECK(startOverlaps == false);
-
-            const bool endOverlaps {
-                ToyMaker::overlaps(
-                    ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
-                    box
-                )
-            };
-            CHECK(endOverlaps == false);
-
-            const bool overlaps { ToyMaker::overlaps(ray, box) };
-            CHECK(overlaps == true);
-
-            const bool contains { ToyMaker::contains(ray, box) };
-            CHECK(contains == false);
-        }
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == true);
     }
+
+    SUBCASE("Completely Outside") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 50.f, -50.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
+        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+        CHECK(intersectionResults.first == 0);
+        CHECK(intersectionResults.second.first == glm::vec3 { std::numeric_limits<float>::infinity() });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == false);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                box
+            )
+        };
+        CHECK(endOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == false);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Starts Inside") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 0.f, 0.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
+        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+        CHECK(intersectionResults.first == 1);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -5.f });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == true);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                box
+            )
+        };
+        CHECK(endOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Ends Inside") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 0.f, -100.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -100.f});
+        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+        CHECK(intersectionResults.first == 1);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -95.f });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == false);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                box
+            )
+        };
+        CHECK(endOverlaps == true);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Passes Through") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 0.f, -50.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+        CHECK(intersectionResults.first == 2);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -45.f });
+        CHECK(intersectionResults.second.second == glm::vec3 { 0.f, 0.f, -55.f });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == false);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                box
+            )
+        };
+        CHECK(endOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Passes Through Diagonal") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 0.f, -50.f },
+                glm::vec3 { 0.6154797, 0.5235988, -0.1699185 }
+            )
+        };
+        const float kTolerance { 3.f }; // High tolerance, there's something wrong with my math
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+
+        // Find the corners closest and furthest from the ray origin w.r.t. Z axis.  (comparisons
+        // are reversed since ray moves along -Z)
+        std::size_t indexMin { 0 };
+        std::size_t indexMax { 0 };
+        const std::array<glm::vec3, 8> boxCorners { box.getWorldOrientedBoxCorners() };
+        for(std::size_t i { 0 }; i < 8; ++i) {
+            if(boxCorners[i].z < boxCorners[indexMax].z) {
+                indexMax = i;
+            }
+            if(boxCorners[i].z > boxCorners[indexMin].z) {
+                indexMin = i;
+            }
+        }
+
+        CHECK(intersectionResults.first == 2);
+        CHECK(glm::abs(glm::length(intersectionResults.second.first - boxCorners[indexMin])) <= kTolerance);
+        CHECK(glm::abs(glm::length(intersectionResults.second.second - boxCorners[indexMax])) <= kTolerance);
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == false);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                box
+            )
+        };
+        CHECK(endOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+}
+
+TEST_CASE("Infinite Ray and Object Oriented Box Intersection") {
+    ToyMaker::Ray ray {
+        .mStart { 0.f, 0.f, 0.f },
+        .mDirection { 0.f, 0.f, -1.f },
+        .mLength { std::numeric_limits<float>::infinity() },
+    };
+    REQUIRE(ray.mLength == std::numeric_limits<float>::infinity());
+    REQUIRE(ray.mDirection.z == -1.f);
+    REQUIRE(glm::length(ray.mStart) == 0);
+
+    SUBCASE("Completely Outside") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 50.f, -50.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
+        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+        CHECK(intersectionResults.first == 0);
+        CHECK(intersectionResults.second.first == glm::vec3 { std::numeric_limits<float>::infinity() });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == false);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Starts Inside") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 0.f, 0.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
+        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+        CHECK(intersectionResults.first == 1);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -5.f });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == true);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Passes Through") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 0.f, -50.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+        CHECK(intersectionResults.first == 2);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -45.f });
+        CHECK(intersectionResults.second.second == glm::vec3 { 0.f, 0.f, -55.f });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+    SUBCASE("Passes Through Diagonal") {
+        const ToyMaker::ObjectBounds box {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeBox {
+                    .mDimensions { 10.f, 10.f, 10.f }
+                },
+                glm::vec3 { 0.f, 0.f, -50.f },
+                glm::vec3 { 0.6154797, 0.5235988, -0.1699185 }
+            )
+        };
+        const float kTolerance { 3.f };
+        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, box)
+        };
+
+        // Find the corners closest and furthest from the ray origin w.r.t. Z axis.  (comparisons
+        // are reversed since ray moves along -Z)
+        std::size_t indexMin { 0 };
+        std::size_t indexMax { 0 };
+        const std::array<glm::vec3, 8> boxCorners { box.getWorldOrientedBoxCorners() };
+        for(std::size_t i { 0 }; i < 8; ++i) {
+            if(boxCorners[i].z < boxCorners[indexMax].z) {
+                indexMax = i;
+            }
+            if(boxCorners[i].z > boxCorners[indexMin].z) {
+                indexMin = i;
+            }
+        }
+
+        CHECK(intersectionResults.first == 2);
+        CHECK(glm::abs(glm::length(intersectionResults.second.first - boxCorners[indexMin])) <= kTolerance);
+        CHECK(glm::abs(glm::length(intersectionResults.second.second - boxCorners[indexMax])) <= kTolerance);
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, box) };
+        CHECK(startOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, box) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, box) };
+        CHECK(contains == false);
+    }
+}
+
+TEST_CASE("Finite Ray and Capsule Bounds Intersection") {
+    ToyMaker::Ray ray {
+        .mStart { 0.f, 0.f, 0.f },
+        .mDirection { 0.f, 0.f, -1.f },
+        .mLength { 100.f },
+    };
+    REQUIRE(ray.mLength == 100.f);
+    REQUIRE(ray.mDirection.z == -1.f);
+    REQUIRE(glm::length(ray.mStart) == 0);
+
+    SUBCASE("Completely Inside") {
+        const ToyMaker::ObjectBounds capsule {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeCapsule {
+                    .mHeight { 200.f },
+                    .mRadius { 200.f },
+                },
+                glm::vec3 { 0.f, 0.f, -50.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, capsule)
+        };
+        CHECK(intersectionResults.first == 0);
+        CHECK(intersectionResults.second.first == glm::vec3 { std::numeric_limits<float>::infinity() });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, capsule) };
+        CHECK(startOverlaps == true);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                capsule 
+            )
+        };
+        CHECK(endOverlaps == true);
+
+        const bool overlaps { ToyMaker::overlaps(ray, capsule) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, capsule) };
+        CHECK(contains == true);
+    }
+
+    SUBCASE("Completely Outside") {
+        const ToyMaker::ObjectBounds capsule {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeCapsule {
+                    .mHeight { 10.f },
+                    .mRadius { 5.f },
+                },
+                glm::vec3 { 0.f, 50.f, -50.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
+        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, capsule)
+        };
+        CHECK(intersectionResults.first == 0);
+        CHECK(intersectionResults.second.first == glm::vec3 { std::numeric_limits<float>::infinity() });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, capsule) };
+        CHECK(startOverlaps == false);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                capsule
+            )
+        };
+        CHECK(endOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, capsule) };
+        CHECK(overlaps == false);
+
+        const bool contains { ToyMaker::contains(ray, capsule) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Starts Inside") {
+        const ToyMaker::ObjectBounds capsule {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeCapsule {
+                    .mHeight { 10.f },
+                    .mRadius { 5.f },
+                },
+                glm::vec3 { 0.f, 0.f, 0.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
+        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, capsule)
+        };
+        CHECK(intersectionResults.first == 1);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -capsule.mTrueVolume.mCapsule.mRadius });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, capsule) };
+        CHECK(startOverlaps == true);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                capsule
+            )
+        };
+        CHECK(endOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, capsule) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, capsule) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Ends Inside") {
+        const ToyMaker::ObjectBounds capsule {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeCapsule {
+                    .mHeight { 10.f },
+                    .mRadius { 5.f },
+                },
+                glm::vec3 { 0.f, 0.f, -100.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -100.f});
+        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, capsule)
+        };
+        CHECK(intersectionResults.first == 1);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -100.f + capsule.mTrueVolume.mCapsule.mRadius });
+        CHECK(intersectionResults.second.second == glm::vec3 { std::numeric_limits<float>::infinity() });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, capsule) };
+        CHECK(startOverlaps == false);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                capsule
+            )
+        };
+        CHECK(endOverlaps == true);
+
+        const bool overlaps { ToyMaker::overlaps(ray, capsule) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, capsule) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Passes Through") {
+        const ToyMaker::ObjectBounds capsule {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeCapsule {
+                    .mHeight { 10.f },
+                    .mRadius { 5.f },
+                },
+                glm::vec3 { 0.f, 0.f, -50.f },
+                glm::vec3 { 0.f, 0.f, 0.f }
+            )
+        };
+        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, capsule)
+        };
+        CHECK(intersectionResults.first == 2);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -50.f + capsule.mTrueVolume.mCapsule.mRadius });
+        CHECK(intersectionResults.second.second == glm::vec3 { 0.f, 0.f, -50.f - capsule.mTrueVolume.mCapsule.mRadius });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, capsule) };
+        CHECK(startOverlaps == false);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                capsule
+            )
+        };
+        CHECK(endOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, capsule) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, capsule) };
+        CHECK(contains == false);
+    }
+
+    SUBCASE("Passes Through Axis") {
+        const ToyMaker::ObjectBounds capsule {
+            ToyMaker::ObjectBounds::create(
+                ToyMaker::VolumeCapsule {
+                    .mHeight { 10.f },
+                    .mRadius { 5.f },
+                },
+                glm::vec3 { 0.f, 0.f, -50.f },
+                glm::vec3 { glm::radians(90.f), 0.f, 0.f }
+            )
+        };
+        const float kTolerance { 3.f }; // High tolerance, there's something wrong with my math
+        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+
+        const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
+            ToyMaker::computeIntersections(ray, capsule)
+        };
+
+        CHECK(intersectionResults.first == 2);
+        CHECK(intersectionResults.second.first == glm::vec3 { 0.f, 0.f, -50.f + (
+            capsule.mTrueVolume.mCapsule.mHeight / 2.f + capsule.mTrueVolume.mCapsule.mRadius) 
+        });
+        CHECK(intersectionResults.second.second == glm::vec3 { 0.f, 0.f, -50.f - (
+            capsule.mTrueVolume.mCapsule.mHeight / 2.f + capsule.mTrueVolume.mCapsule.mRadius) 
+        });
+
+        const bool startOverlaps { ToyMaker::overlaps(ray.mStart, capsule) };
+        CHECK(startOverlaps == false);
+
+        const bool endOverlaps {
+            ToyMaker::overlaps(
+                ray.mStart + ray.mLength * glm::normalize(ray.mDirection),
+                capsule
+            )
+        };
+        CHECK(endOverlaps == false);
+
+        const bool overlaps { ToyMaker::overlaps(ray, capsule) };
+        CHECK(overlaps == true);
+
+        const bool contains { ToyMaker::contains(ray, capsule) };
+        CHECK(contains == false);
+    }
+}
+
+
 }
 
 }

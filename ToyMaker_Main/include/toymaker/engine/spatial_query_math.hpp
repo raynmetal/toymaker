@@ -214,39 +214,39 @@ namespace ToyMaker {
          * 
          * @param box The data defining the volume itself, independent of its placement.
          * @param positionOffset The offset of the center of the box, relative to the owning entity's position per its Transform.
-         * @param orientationOffset The direction that is considered "forward" when the object is in model space.
+         * @param orientationOffset The quaternion specifying the angle offset for these bounds
          * @return ObjectBounds The constructed object bounds.
          * 
          * @todo Oriention offset should just be a quaternion.  Multiple quaternions may produce the same forward vector while still altering the up and right vectors.
          * 
          */
-        static ObjectBounds create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::vec3& orientationOffset);
+        static ObjectBounds create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::quat& orientationOffset);
 
         /**
          * @brief Creates bounds for an object in the shape of a capsule.
          * 
          * @param capsule The data defining the volume itself.
          * @param positionOffset The offset of the center of the capsule, relative to the owning entity's position per its Transform.
-         * @param orientationOffset The direction that is considered "forward" when the object is in model space.
+         * @param orientationOffset The quaternion specifying the angle offset for these bounds
          * @return ObjectBounds The constructed object bounds.
          * 
          * @todo Oriention offset should just be a quaternion.  Multiple quaternions may produce the same forward vector while still altering the up and right vectors.
          * 
          */
-        static ObjectBounds create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::vec3& orientationOffset);
+        static ObjectBounds create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::quat& orientationOffset);
 
         /**
          * @brief Creates bounds for an object in the shape of a sphere.
          * 
          * @param sphere The data defining the volume itself.
          * @param positionOffset The offset of the center of the sphere, relative to the owning entity's position per its Transform.
-         * @param orientationOffset The direction that is considered "forward" when the object is in model space.
+         * @param orientationOffset The quaternion specifying the angle offset for these bounds
          * @return ObjectBounds The constructed object bounds.
          * 
          * @todo Oriention offset should just be a quaternion.  Multiple quaternions may produce the same forward vector while still altering the up and right vectors.
          * 
          */
-        static ObjectBounds create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::vec3& orientationOffset);
+        static ObjectBounds create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::quat& orientationOffset);
 
         /**
          * @brief Value indicating the type of the volume represented by this object.
