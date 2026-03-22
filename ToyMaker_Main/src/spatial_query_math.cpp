@@ -5,17 +5,17 @@ using namespace ToyMaker;
 
 inline float squareDistance(const glm::vec3& vector) { return glm::dot(vector, vector); }
 
-bool ToyMaker::ObjectBounds::isPositive() const {
+bool ToyMaker::ObjectBounds::isPositiveStrict() const {
     bool isBoundsNonZero;
     switch(mType) {
         case ToyMaker::ObjectBounds::TrueVolumeType::BOX:
-            isBoundsNonZero = ToyMaker::isPositive(mTrueVolume.mBox.mDimensions);
+            isBoundsNonZero = mTrueVolume.mBox.isPositiveStrict();
             break;
         case ToyMaker::ObjectBounds::TrueVolumeType::CAPSULE:
-            isBoundsNonZero = ToyMaker::isPositive(mTrueVolume.mCapsule.mRadius);
+            isBoundsNonZero = mTrueVolume.mCapsule.isPositiveStrict();
             break;
         case ToyMaker::ObjectBounds::TrueVolumeType::SPHERE:
-            isBoundsNonZero = ToyMaker::isPositive(mTrueVolume.mSphere.mRadius);
+            isBoundsNonZero = mTrueVolume.mSphere.isPositiveStrict();
             break;
         default:
             assert(false && "Unrecognized shape passed");
@@ -134,7 +134,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> ToyMaker::computeIntersectio
     );
 
     // box with no volume provided
-    if(!isPositive(bounds.getDimensions())) {
+    if(!bounds.isPositiveStrict()) {
         return {false, {glm::vec3{std::numeric_limits<float>::infinity()}, glm::vec3{std::numeric_limits<float>::infinity()}}};
     }
 
@@ -147,7 +147,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> ToyMaker::computeIntersectio
 
     // Bounds should be greater than zero, representing a real volume in the 
     // scene
-    if(!bounds.isPositive()) {
+    if(!bounds.isPositiveStrict()) {
         return {false, {glm::vec3{std::numeric_limits<float>::infinity()}, glm::vec3{std::numeric_limits<float>::infinity()}}};
     }
 
@@ -177,7 +177,7 @@ bool ToyMaker::overlaps(const Ray& ray, const AxisAlignedBounds& bounds) {
     assert(bounds.isSensible() && "Invalid axis aligned box provided");
 
     // box with no volume provided
-    if(!isPositive(bounds.getDimensions())) {
+    if(!bounds.isPositiveStrict()) {
         return false;
     }
 
@@ -197,7 +197,7 @@ bool ToyMaker::overlaps(const Ray& ray, const ObjectBounds& bounds) {
     assert(bounds.isSensible() && "Invalid object bounds provided");
 
     // exit early if bounds with no volume provided
-    if(!bounds.isPositive()) {
+    if(!bounds.isPositiveStrict()) {
         return false;
     }
 
@@ -287,7 +287,7 @@ bool ToyMaker::contains(const glm::vec3& point, const ObjectBounds& bounds) {
 
     // Bounds should be greater than zero, representing a real volume in the 
     // scene
-    if(!bounds.isPositive()) {
+    if(!bounds.isPositiveStrict()) {
         return false;
     }
 
@@ -310,7 +310,7 @@ bool ToyMaker::contains(const Ray& ray, const ObjectBounds& bounds) {
 
     // Bounds should be greater than zero, representing a real volume in the 
     // scene
-    if(!bounds.isPositive()) {
+    if(!bounds.isPositiveStrict()) {
         return false;
     }
 

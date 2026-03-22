@@ -367,7 +367,7 @@ namespace ToyMaker {
          * @brief Checks whether underlying bounds is non-trivial, as in each important
          * parameter that represents the volume is greater than 0
          */
-        bool isPositive() const;
+        bool isPositiveStrict() const;
     protected:
     };
 
@@ -471,7 +471,7 @@ namespace ToyMaker {
         inline glm::vec3 getPosition() const { return mExtents.second + .5f * getDimensions(); }; 
 
         /**
-         * @brief Tests whether this box is sensible (it has a finite position, and finite positive dimensions).
+         * @brief Tests whether this box is sensible (it has a finite position, and finite non-negative dimensions).
          * 
          * @retval true This box is sensible;
          * @retval false This box is not sensible;
@@ -479,6 +479,19 @@ namespace ToyMaker {
         inline bool isSensible() const {
             return (
                 isFinite(mExtents.first) && isFinite(mExtents.second)
+                && isNonNegative(mExtents.first - mExtents.second)
+            );
+        }
+
+        /**
+         * @brief Tests whether this box has strictly positive parameters and hence encloses some region in space.
+         * 
+         * @retval true This box encloses some real region;
+         * @retval false This box does not enclose any real region;
+         */
+        inline bool isPositiveStrict() const {
+            return (
+                ToyMaker::isPositiveStrict(mExtents.first - mExtents.second)
             );
         }
 

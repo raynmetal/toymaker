@@ -166,7 +166,7 @@ void SpatialQuerySystem::rebuildOctree() {
     }
     assert(isFinite(regionToEncompass.getPosition()) && "Start position must be finite");
     assert(isFinite(regionToEncompass.getDimensions()) && "Region to encompass is too large to be bound in an octree");
-    if(!isPositive(regionToEncompass.getDimensions())) {
+    if(!regionToEncompass.isPositiveStrict()) {
         regionToEncompass.setDimensions(glm::vec3{1.f});
     }
 

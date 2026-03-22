@@ -33,7 +33,7 @@ std::shared_ptr<OctreeNode> OctreeNode::CreateRootNode(
     AxisAlignedBounds boundRegion
 ) {
     assert(boundRegion.isSensible() && "Invalid world bounds provided");
-    assert(isPositive(boundRegion.getDimensions()) && "Octree node must have bounds that encapsulate a volume");
+    assert(boundRegion.isPositiveStrict() && "Octree node must have bounds that encapsulate a volume");
 
     const glm::vec3 boundsDimensions { boundRegion.getDimensions() };
     const float maxDimensionLength { std::max({boundsDimensions.x, boundsDimensions.y, boundsDimensions.z}) };
@@ -142,7 +142,7 @@ OctreeNode::Address OctreeNode::insertEntity(EntityID entityID, const AxisAligne
         getDepth() < kMaxDepthInclusive 
         && mEntities.size() + 1 >= mSubdivisionThreshold
         // account for floating point errors in oddly placed or extremely sized bounds
-        && isPositive(.5f * mWorldBounds.getDimensions())
+        && isPositiveStrict(.5f * mWorldBounds.getDimensions())
     ) {
         bool anyOctantsCreated { false };
         for(Octant octant {0x0}; octant < 0x8; ++octant) {
