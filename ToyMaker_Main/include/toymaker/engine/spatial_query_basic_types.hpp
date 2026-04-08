@@ -61,26 +61,25 @@ namespace ToyMaker {
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Tests whether a number is positive.
+     * @brief Tests whether a number is strictly positive.
      * 
      * @param number The number being tested.
-     * @retval true The number is positive;
+     * @retval true The number is strictly positive;
      * @retval false The number is not positive;
      */
-    inline bool isPositive(float number) {
+    inline bool isPositiveStrict(float number) {
         return number > 0.f;
     }
-
     /**
      * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Tests whether a set of 3 numbers is positive.
+     * @brief Tests whether a set of 3 numbers is strictly positive.
      * 
      * @param vector The numbers being tested.
-     * @retval true The numbers are (all) positive;
+     * @retval true The numbers are (all) strictly positive;
      * @retval false One or more numbers are not positive;
      */
-    inline bool isPositive(const glm::vec3& vector) {
-        return isPositive(vector.x) && isPositive(vector.y) && isPositive(vector.z);
+    inline bool isPositiveStrict(const glm::vec3& vector) {
+        return isPositiveStrict(vector.x) && isPositiveStrict(vector.y) && isPositiveStrict(vector.z);
     }
 
     /**
@@ -154,16 +153,46 @@ namespace ToyMaker {
         }
 
         /** 
-         * @brief Poor man's vtable which doesn't break Volume's ability to be aggregate initialized.
-         * 
+         * @brief Gets corners of the object-relative bounding box that encapsulates the derived volume.
+         *
+         * Forces subclasses to implement their own version of this function without breaking
+         * their ability to be aggregate initialized.
+         *
          * @see Volume::getVolumeRelativeBoxCorners()
-         * 
-         * @todo I forget why I was doing this in the first place.  Do we have a problem here?
-         * 
+         *
          */
         template <typename TDerived>
         inline std::array<glm::vec3, 8> getVolumeRelativeBoxCorners() const {
             return Volume<TDerived>::getVolumeRelativeBoxCorners();
+        }
+
+        /**
+         * @brief Returns whether or not the derived volume has sensible parameters (i.e., isn't infinite or
+         * invalid).
+         *
+         * Forces subclasses to implement their own version of this function without breaking
+         * their ability to be aggregate initialized.
+         *
+         * @see Volume::isSensible()
+         *
+         */
+        template <typename TDerived>
+        inline bool isSensible() const {
+            return Volume<TDerived>::isSensible();
+        }
+
+        /**
+         * @brief Returns whether or not the derived volume has strictly positive parameters.
+         * 
+         * Forces subclasses to implement their own version of this function without breaking
+         * their ability to be aggregate initialized
+         * 
+         * @see Volume::isPositiveStrict()
+         * 
+         */
+        template <typename TDerived>
+        inline bool isPositiveStrict() const {
+            return Volume<TDerived>::isPositiveStrict();
         }
     };
 
@@ -178,6 +207,26 @@ namespace ToyMaker {
          */
         inline std::array<glm::vec3, 8> getVolumeRelativeBoxCorners() const {
             return TDerived::getVolumeRelativeBoxCorners();
+        }
+
+        /**
+         * @brief Poor man's vtable cont'd
+         *
+         * @see VolumeBase_::isSensible()
+         *
+         */
+        inline bool isSensible() const {
+            return TDerived::isSensible();
+        }
+
+        /**
+         * @brief Poor man's vtable cont'd
+         * 
+         * @see VolumeBase_::isPositiveStrict()
+         * 
+         */
+        inline bool isPositiveStrict() const {
+            return TDerived::isPositiveStrict();
         }
     };
 
@@ -203,13 +252,23 @@ namespace ToyMaker {
         }
 
         /**
-         * @brief Tests whether the values representing the box are valid (as opposed to invalid, infinite, or degenerate).
+         * @brief Tests whether the values representing the box are valid (as opposed to invalid or infinite).
          * 
          * @retval true The box is sensible;
          * @retval false The box is not sensible;
          */
         inline bool isSensible() const {
-            return isPositive(mDimensions) && isFinite(mDimensions);
+            return isNonNegative(mDimensions) && isFinite(mDimensions);
+        }
+
+        /**
+         * @brief Tests whether the values representing the box are strictly positive
+         * 
+         * @retval true The box's parameters are all strictly positive;
+         * @retval false The box's parameters are not all strictly positive;
+         */
+        inline bool isPositiveStrict() const {
+            return ToyMaker::isPositiveStrict(mDimensions);
         }
     };
 
@@ -242,7 +301,7 @@ namespace ToyMaker {
         }
 
         /**
-         * @brief Tests whether the values representing the capsule make sense (as opposed to being invalid, infinite, or degenerate.)
+         * @brief Tests whether the values representing the capsule make sense (as opposed to being invalid or infinite.)
          * 
          * @retval true The capsule parameters are sensible;
          * 
@@ -251,8 +310,23 @@ namespace ToyMaker {
          */
         inline bool isSensible() const {
             return (
-                isPositive(mHeight) && isFinite(mHeight)
-                && isPositive(mRadius) && isFinite(mRadius)
+                isNonNegative(mHeight) && isFinite(mHeight)
+                && isNonNegative(mRadius) && isFinite(mRadius)
+            );
+        }
+
+        /**
+         * @brief Tests whether the values representing the capsule are all strictly positive
+         * 
+         * @retval true The capsule parameters are strictly positive;
+         * @retval false The capsule's parameters are not strictly positive
+         * 
+         */
+        inline bool isPositiveStrict() const {
+            return (
+                ToyMaker::isPositiveStrict(mRadius)
+                // You can still have a capsule which occupies space even if its
+                // spine is length 0, so no test for mHeight
             );
         }
     };
@@ -279,13 +353,24 @@ namespace ToyMaker {
         }
 
         /**
-         * @brief Tests whether this volumes parameters are sensible (as opposed to invalid, infinite, or degenerate).
+         * @brief Tests whether this volume's parameters are sensible (as opposed to invalid or infinite).
          * 
          * @retval true The sphere is sensible;
          * @retval false The sphere is not sensible;
          */
         inline bool isSensible() const {
-            return isPositive(mRadius) && isFinite(mRadius);
+            return isNonNegative(mRadius) && isFinite(mRadius);
+        }
+
+        /**
+         * @brief Tests whether this volume's parameters are strictly positive
+         * 
+         * @retval true The sphere's radius is strictly positive;
+         * @retval false The sphere's radius is not strictly positive;
+         * 
+         */
+        inline bool isPositiveStrict() const {
+            return ToyMaker::isPositiveStrict(mRadius);
         }
     };
 
@@ -302,7 +387,7 @@ namespace ToyMaker {
         std::array<glm::vec3, 3> mPoints {};
 
         /**
-         * @brief Tests whether the points describing the triangle are sensible (as opposed to invalid, infinite, or degenerate).
+         * @brief Tests whether the points describing the triangle are sensible (as opposed to invalid or infinite).
          * 
          * @retval true The triangle is sensible;
          * @retval false The triangle is not sensible;
@@ -312,10 +397,29 @@ namespace ToyMaker {
                 (
                     isFinite(mPoints[0]) && isFinite(mPoints[1]) && isFinite(mPoints[2])
                 ) && (
-                    isPositive(
+                    isNonNegative(
+                        glm::length(glm::cross(
+                            mPoints[2] - mPoints[0], mPoints[1] - mPoints[0]
+                        ))
+                    )
+                )
+            );
+        }
+
+        /**
+         * @brief Tests whether the points of this triangle encapsulate some area in space
+         * 
+         * @retval true This triangle is non-trivial, and covers some definite space
+         * @retval false This triangle is trivial, degenerate, and covers no real area
+         * 
+         */
+        inline bool isPositiveStrict() const {
+            return (
+                ToyMaker::isPositiveStrict(
+                    glm::length(
                         glm::cross(
                             mPoints[2] - mPoints[0], mPoints[1] - mPoints[0]
-                        ).length()
+                        )
                     )
                 )
             );
@@ -347,7 +451,7 @@ namespace ToyMaker {
         glm::vec3 mNormal { 0.f, -1.f, 0.f };
 
         /**
-         * @brief Tests whether the circle described by these parameters is valid (as opposed to invalid, infinite, or degenerate)
+         * @brief Tests whether the circle described by these parameters is valid (as opposed to invalid or infinite)
          * 
          * @retval true The circle is sensible;
          * @retval false The circle is not sensible;
@@ -355,16 +459,28 @@ namespace ToyMaker {
         inline bool isSensible() const {
             return (
                 (
-                    isFinite(mRadius) && isPositive(mRadius)
+                    isFinite(mRadius) && isNonNegative(mRadius)
                 ) && (
-                    isFinite(mNormal) && isPositive(mNormal.length())
+                    isFinite(mNormal) && ToyMaker::isPositiveStrict(glm::length(mNormal))
                 ) && (
                     isFinite(mCenter)
                 )
             );
         }
-    };
 
+        /**
+         * @brief Tests whether the circle's parameters are strictly positive, and hence
+         * whether the circle encloses some real region in space
+         * 
+         * @retval true The circle is strictly positive;
+         * @retval false The circle is not strictly positive;
+         */
+        inline bool isPositiveStrict() const {
+            return (
+                ToyMaker::isPositiveStrict(mRadius)
+            );
+        }
+    };
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
@@ -391,7 +507,7 @@ namespace ToyMaker {
         float mLength { std::numeric_limits<float>::infinity() };
 
         /**
-         * @brief Tests whether the ray is sensible (as opposed to invalid or degenerate).
+         * @brief Tests whether the ray is sensible (as opposed to invalid).
          * 
          * @retval true The ray is sensible;
          * @retval false The ray isn't sensible;
@@ -399,13 +515,23 @@ namespace ToyMaker {
         inline bool isSensible() const {
             return (
                 (
-                    isFinite(mDirection) && isPositive(mDirection.length())
+                    isFinite(mDirection) && ToyMaker::isPositiveStrict(glm::length(mDirection))
                 ) && (
                     isFinite(mStart)
                 ) && (
-                    isPositive(mLength)
+                    isNonNegative(mLength)
                 )
             );
+        }
+
+        /**
+         * @brief Tests whether the ray actually travels any distance from its origin
+         * 
+         * @retval true The ray travels some length away from its origin;
+         * @retval false The ray does not travel any length away from its origin
+         */
+        inline bool isPositiveStrict() const {
+            return ToyMaker::isPositiveStrict(mLength);
         }
     };
 
@@ -436,11 +562,23 @@ namespace ToyMaker {
         inline bool isSensible() const {
             return (
                 (
-                    isFinite(mNormal) && isPositive(mNormal.length())
+                    isFinite(mNormal) && ToyMaker::isPositiveStrict(glm::length(mNormal))
                 ) && (
                     isFinite(mPointOnPlane)
                 )
             );
+        }
+
+        /**
+         * @brief Same as Plane::isSensible()
+         * 
+         * @see Plane::isSensible()
+         * 
+         * @retval true Plane is sensible.
+         * @retval false Plane isn't sensible.
+         */
+        inline bool isPositiveStrict() const {
+            return isSensible();
         }
     };
 }

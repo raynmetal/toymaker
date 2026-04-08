@@ -41,7 +41,6 @@ namespace ToyMaker {
      * @warning Error if invalid ray or plane specified (plane with no normal, or ray with no direction)
      */
     std::pair<bool, glm::vec3> computeIntersection(const Ray& ray, const Plane& plane);
-
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns a bool-vector pair, with bool indicating whether a point of intersection was found, and the vector containing the point of intersection
@@ -49,7 +48,6 @@ namespace ToyMaker {
      * @warning Error if invalid ray or triangle specified (triangle with no area, or ray with no direction)
      */
     std::pair<bool, glm::vec3> computeIntersection(const Ray& ray, const AreaTriangle& triangle);
-
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns an unsigned int and vector-pair pair, with unsigned indicating whether any and how many points of intersection were found with the AABB, and the vector containing the points of intersection.
@@ -60,8 +58,6 @@ namespace ToyMaker {
      * 
      */
     std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> computeIntersections(const Ray& ray, const AxisAlignedBounds& axisAlignedBounds);
-
-
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns an unsigned int and vector pair pair, with int indicating whether and how many points of intersection were found, and the vector containing the points of intersection
@@ -69,54 +65,123 @@ namespace ToyMaker {
      * Object bounds only supports convex shapes, and so one can expect that if a point of intersection exists, then there will be a second to go with it. (provided the ray is long enough) (and also unless the ray "glances off" the volume, which counts as no intersection per my implementation)
      * 
      */
-    // std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> computeIntersections(const Ray& ray, const ObjectBounds& objectbounds);
+    std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> computeIntersections(const Ray& ray, const ObjectBounds& objectbounds);
 
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns a bool value indicating whether `point` is contained by `bounds`
+     */
+    bool overlaps(const glm::vec3& point, const ObjectBounds& bounds);
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns a bool value indicating whether `point` is contained by `bounds`
+     */
+    inline bool overlaps(const ObjectBounds& bounds, const glm::vec3& point) {
+        return overlaps(point, bounds);
+    }
     /**
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns a bool value indicating whether the ray passes through the object volume
      */
-    // bool overlaps(const Ray& ray, const ObjectBounds& objectBounds);
-
+    bool overlaps(const Ray& ray, const ObjectBounds& bounds);
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns a bool value indicating whether the ray passes through the object volume
+     */
+    inline bool overlaps(const ObjectBounds& bounds, const Ray& ray) {
+        return overlaps(ray, bounds);
+    }
     /**
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `point` is contained by `bounds`.
      * 
      */
     bool overlaps(const glm::vec3& point, const AxisAlignedBounds& bounds);
-
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `point` is contained by `bounds`.
+     * 
+     */
+    inline bool overlaps(const AxisAlignedBounds& bounds, const glm::vec3& point) {
+        return overlaps(point, bounds);
+    }
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `ray` overlaps with `bounds`.
      * 
      */
     bool overlaps(const Ray& ray, const AxisAlignedBounds& bounds);
-
+    /** 
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `ray` overlaps with `bounds`.
+     * 
+     */
+    inline bool overlaps(const AxisAlignedBounds& bounds, const Ray& ray) {
+        return overlaps(ray, bounds);
+    }
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `one` overlaps `two`. 
      * 
      */
     bool overlaps(const AxisAlignedBounds& one, const AxisAlignedBounds& two);
+    /** 
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `one` overlaps `two`. 
+     * 
+     */
+    bool overlaps(const ObjectBounds& one, const ObjectBounds& two);
+    /** 
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `one` overlaps `two`. 
+     * 
+     */
+    bool overlaps(const AxisAlignedBounds& one, const ObjectBounds& two);
+    /** 
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `one` overlaps `two`. 
+     * 
+     */
+    inline bool overlaps(const ObjectBounds& one, const AxisAlignedBounds& two) {
+        return overlaps(two, one);
+    }
 
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `point` is contained by `bounds`
+     * 
+     */
+    bool contains(const glm::vec3& point, const ObjectBounds& bounds);
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `point` is contained by `bounds`. 
      * 
      */
     bool contains(const glm::vec3& point, const AxisAlignedBounds& bounds);
-
     /**
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `ray` is contained by `bounds`. 
      * 
      */
     bool contains(const Ray& ray, const AxisAlignedBounds& bounds);
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `ray` is contained by `bounds`. 
+     * 
+     */
+    bool contains(const Ray& ray, const ObjectBounds& bounds);
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `one` is contained by `two`. 
      * 
      */
     bool contains(const AxisAlignedBounds& one, const AxisAlignedBounds& two);
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `one` is contained by `two`
+     * 
+     */
+    bool contains(const ObjectBounds& one, const AxisAlignedBounds& two);
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
@@ -140,7 +205,7 @@ namespace ToyMaker {
          * 
          */
         enum class TrueVolumeType: uint8_t {
-            BOX,
+            BOX=0,
             SPHERE,
             CAPSULE,
         };
@@ -160,39 +225,39 @@ namespace ToyMaker {
          * 
          * @param box The data defining the volume itself, independent of its placement.
          * @param positionOffset The offset of the center of the box, relative to the owning entity's position per its Transform.
-         * @param orientationOffset The direction that is considered "forward" when the object is in model space.
+         * @param orientationOffset The quaternion specifying the angle offset for these bounds
          * @return ObjectBounds The constructed object bounds.
          * 
          * @todo Oriention offset should just be a quaternion.  Multiple quaternions may produce the same forward vector while still altering the up and right vectors.
          * 
          */
-        static ObjectBounds create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::vec3& orientationOffset);
+        static ObjectBounds create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::quat& orientationOffset);
 
         /**
          * @brief Creates bounds for an object in the shape of a capsule.
          * 
          * @param capsule The data defining the volume itself.
          * @param positionOffset The offset of the center of the capsule, relative to the owning entity's position per its Transform.
-         * @param orientationOffset The direction that is considered "forward" when the object is in model space.
+         * @param orientationOffset The quaternion specifying the angle offset for these bounds
          * @return ObjectBounds The constructed object bounds.
          * 
          * @todo Oriention offset should just be a quaternion.  Multiple quaternions may produce the same forward vector while still altering the up and right vectors.
          * 
          */
-        static ObjectBounds create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::vec3& orientationOffset);
+        static ObjectBounds create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::quat& orientationOffset);
 
         /**
          * @brief Creates bounds for an object in the shape of a sphere.
          * 
          * @param sphere The data defining the volume itself.
          * @param positionOffset The offset of the center of the sphere, relative to the owning entity's position per its Transform.
-         * @param orientationOffset The direction that is considered "forward" when the object is in model space.
+         * @param orientationOffset The quaternion specifying the angle offset for these bounds
          * @return ObjectBounds The constructed object bounds.
          * 
          * @todo Oriention offset should just be a quaternion.  Multiple quaternions may produce the same forward vector while still altering the up and right vectors.
          * 
          */
-        static ObjectBounds create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::vec3& orientationOffset);
+        static ObjectBounds create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::quat& orientationOffset);
 
         /**
          * @brief Value indicating the type of the volume represented by this object.
@@ -205,7 +270,7 @@ namespace ToyMaker {
          * 
          */
         TrueVolume mTrueVolume {};
-        
+
         /**
          * @brief The position, in the real world, of the scene node this data is attached to.
          * 
@@ -300,6 +365,39 @@ namespace ToyMaker {
          * 
          */
         std::array<AreaTriangle, 12> getWorldOrientedBoxFaceTriangles() const { return computeBoxFaceTriangles(getWorldOrientedBoxCorners()); };
+
+
+        /**
+         * @brief Returns the point on this object's surface furthest along a given axis from the origin of 
+         * this object.
+         * 
+         * Strongly related to the Gilbert-Johnson-Keerthi (GJK) algorithm for detecting intersections
+         * of convex shapes.
+         * 
+         */
+        glm::vec3 getSupportAlong(const glm::vec3& axis) const;
+
+        /**
+         * @brief Returns this shape's projection along some unit vector.
+         * 
+         * @return std::pair<float, float> The minimum and maximum points of this shape on the vector
+         * 
+         */
+        std::pair<float, float> getProjectionAlong(const glm::vec3& axis) const;
+
+        /**
+         * @brief Returns whether the underlying volume has sensible parameters (i.e., finite, non-degenerate, non-negative
+         * parameters)
+         * 
+         */
+        bool isSensible() const;
+
+        /**
+         * @ingroup ToyMakerSpatialQuerySystem
+         * @brief Checks whether underlying bounds is non-trivial, as in each important
+         * parameter that represents the volume is greater than 0
+         */
+        bool isPositiveStrict() const;
     protected:
     };
 
@@ -396,14 +494,14 @@ namespace ToyMaker {
         inline glm::vec3 getDimensions() const { return mExtents.first - mExtents.second; }
 
         /**
-         * @brief Gets the position of the origin of this box.
+         * @brief Gets the coordinates of the center of this box
          * 
-         * @return glm::vec3 
+         * @return glm::vec3 The coordinates of the center of this box
          */
-        inline glm::vec3 getPosition() const { return mExtents.second + .5f * getDimensions(); }; 
+        inline glm::vec3 getComputedWorldPosition() const { return mExtents.second + .5f * getDimensions(); }
 
         /**
-         * @brief Tests whether this box is sensible (it has a finite position, and finite positive dimensions).
+         * @brief Tests whether this box is sensible (it has a finite position, and finite non-negative dimensions).
          * 
          * @retval true This box is sensible;
          * @retval false This box is not sensible;
@@ -411,6 +509,29 @@ namespace ToyMaker {
         inline bool isSensible() const {
             return (
                 isFinite(mExtents.first) && isFinite(mExtents.second)
+                && isNonNegative(mExtents.first - mExtents.second)
+            );
+        }
+
+        /**
+         * @brief Returns the point on this object's surface furthest along a given axis from the origin of 
+         * this object.
+         * 
+         * Strongly related to the Gilbert-Johnson-Keerthi (GJK) algorithm for detecting intersections
+         * of convex shapes.
+         * 
+         */
+        glm::vec3 getSupportAlong(const glm::vec3& axis) const;
+
+        /**
+         * @brief Tests whether this box has strictly positive parameters and hence encloses some region in space.
+         * 
+         * @retval true This box encloses some real region;
+         * @retval false This box does not enclose any real region;
+         */
+        inline bool isPositiveStrict() const {
+            return (
+                ToyMaker::isPositiveStrict(mExtents.first - mExtents.second)
             );
         }
 
@@ -421,7 +542,7 @@ namespace ToyMaker {
          */
         inline void setPosition(const glm::vec3& position) {
             assert(isFinite(position) && "Invalid position specified. Position must be finite");
-            const glm::vec3 deltaPosition { position - getPosition() };
+            const glm::vec3 deltaPosition { position - getComputedWorldPosition() };
             mExtents.first += deltaPosition;
             mExtents.second += deltaPosition;
         }
@@ -433,7 +554,7 @@ namespace ToyMaker {
          */
         inline void setDimensions(const glm::vec3& dimensions) {
             assert(isNonNegative(dimensions) && isFinite(dimensions) && "Invalid dimensions provided.  Dimensions must be non negative and finite");
-            const glm::vec3 position { getPosition() };
+            const glm::vec3 position { getComputedWorldPosition() };
             const glm::vec3 deltaDimensions { dimensions - getDimensions() };
             mExtents.first += .5f * deltaDimensions;
             mExtents.second -= .5f * deltaDimensions;

@@ -85,7 +85,7 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
 
     // Make sure that objects with 1 or 2 dimensions still get bounding boxes with 
     // 3 dimensions
-    if(box.mDimensions.length() > 0.f && (
+    if(glm::length(box.mDimensions) > 0.f && (
         box.mDimensions.x == 0.f
         || box.mDimensions.y == 0.f
         || box.mDimensions.z == 0.f
@@ -164,9 +164,9 @@ void SpatialQuerySystem::rebuildOctree() {
         }
         regionToEncompass = regionToEncompass + getComponent<AxisAlignedBounds>(entity);
     }
-    assert(isFinite(regionToEncompass.getPosition()) && "Start position must be finite");
+    assert(isFinite(regionToEncompass.getComputedWorldPosition()) && "Start position must be finite");
     assert(isFinite(regionToEncompass.getDimensions()) && "Region to encompass is too large to be bound in an octree");
-    if(!isPositive(regionToEncompass.getDimensions())) {
+    if(!regionToEncompass.isPositiveStrict()) {
         regionToEncompass.setDimensions(glm::vec3{1.f});
     }
 
