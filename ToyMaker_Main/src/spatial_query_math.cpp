@@ -54,7 +54,9 @@ std::pair<float, float> axisProjectCapsule(const glm::vec3& axis, const ObjectBo
 
 template<typename T, typename U>
 inline glm::vec3 minkowskiDifference(const T& one, const U& two, const glm::vec3& along) {
-    return one.getSupportAlong(along) - two.getSupportAlong(-along);
+    const glm::vec3 supportOne { one.getSupportAlong(along) };
+    const glm::vec3 supportTwo { two.getSupportAlong(-along) };
+    return supportOne - supportTwo;
 }
 
 // Finds the next search direction for a simplex, mutating the simplex as it does so
@@ -286,7 +288,7 @@ bool ToyMaker::overlaps(const ObjectBounds& one, const ObjectBounds& two) {
     assert(one.isSensible() && two.isSensible() && "Invalid object bounds provided");
 
     // Both need to be non-degenerate bounds to actually overlap
-    if(!(one.isPositiveStrict() && two.isPositiveStrict())) {
+    if(!one.isPositiveStrict() || !two.isPositiveStrict()) {
         return false;
     }
 
@@ -610,7 +612,7 @@ std::pair<float, float> ObjectBounds::getProjectionAlong(const glm::vec3& axis) 
 glm::vec3 ObjectBounds::getSupportAlong(const glm::vec3& axis) const {
     // Reject invalid axes
     assert(isSensible() && "Invalid bounds provided");
-    assert(squareDistance(axis) != 0 && "Axis must be non-zero vector");
+    assert(squareDistance(axis) && "Axis must be non-zero vector");
     assert(isFinite(axis) && "Axis must be finite");
 
     // Degenerate shapes yield origin
@@ -1070,7 +1072,7 @@ inline bool gjkOverlaps(const T& one, const U& two) {
     uint8_t nSimplexPoints { 1 };
 
     // we go towards the origin from the first point we found
-    searchDirection = -simplex[0]; 
+    searchDirection = squareDistance(simplex[0]) ? -simplex[0]: glm::vec3 { 1.f, 0.f, 0.f };
     bool found { false };
     while(true) {
         const glm::vec3 candidatePoint { minkowskiDifference(one, two, searchDirection) };
@@ -1084,7 +1086,7 @@ inline bool gjkOverlaps(const T& one, const U& two) {
         assert(nSimplexPoints <= 4 && nSimplexPoints >= 2 && "Within the loop, we must always have between 2 and 4 points in the simplex");
 
         searchDirection = doSimplex(simplex, nSimplexPoints, found);
-        if(found) {
+        if(found || !squareDistance(searchDirection)) {
             return true;
         }
     }
@@ -1266,7 +1268,7 @@ glm::vec3 getSupportCapsule(const glm::vec3& vector, const ObjectBounds& capsule
         ) * height * capsuleAxis
     };
 
-    return origin + offset + equivalentSphereSupport;
+    return offset + equivalentSphereSupport;
 }
 
 glm::vec3 doSimplex(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found) {
@@ -1364,7 +1366,7 @@ glm::vec3 doSimplex4(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints,
     const glm::vec3 lineAB { pointB - pointA };
     // Each cross below is a normal pointing outward from the triangle that forms a
     // face of the simplex tetrahedron
-    const glm::vec3 crossABAC { glm::cross(lineAD, lineAB) };
+    const glm::vec3 crossABAC { glm::cross(lineAB, lineAC) };
     const glm::vec3 crossACAD { glm::cross(lineAC, lineAD) };
     const glm::vec3 crossADAB { glm::cross(lineAD, lineAB) };
     // note: we don't care about crossBCBD -- we already know we're above it
