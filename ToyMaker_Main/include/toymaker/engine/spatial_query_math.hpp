@@ -86,16 +86,39 @@ namespace ToyMaker {
     bool overlaps(const Ray& ray, const ObjectBounds& bounds);
     /**
      * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns a bool value indicating whether the ray passes through the object volume
+     */
+    inline bool overlaps(const ObjectBounds& bounds, const Ray& ray) {
+        return overlaps(ray, bounds);
+    }
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `point` is contained by `bounds`.
      * 
      */
     bool overlaps(const glm::vec3& point, const AxisAlignedBounds& bounds);
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `point` is contained by `bounds`.
+     * 
+     */
+    inline bool overlaps(const AxisAlignedBounds& bounds, const glm::vec3& point) {
+        return overlaps(point, bounds);
+    }
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `ray` overlaps with `bounds`.
      * 
      */
     bool overlaps(const Ray& ray, const AxisAlignedBounds& bounds);
+    /** 
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns whether `ray` overlaps with `bounds`.
+     * 
+     */
+    inline bool overlaps(const AxisAlignedBounds& bounds, const Ray& ray) {
+        return overlaps(ray, bounds);
+    }
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `one` overlaps `two`. 
@@ -158,19 +181,7 @@ namespace ToyMaker {
      * @brief Returns whether `one` is contained by `two`
      * 
      */
-    bool contains(const AxisAlignedBounds& one, const ObjectBounds& two);
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Returns whether `one` is contained by `two`
-     * 
-     */
     bool contains(const ObjectBounds& one, const AxisAlignedBounds& two);
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Returns whether `one` is contained by `two`
-     * 
-     */
-    bool contains(const ObjectBounds& one, const ObjectBounds& two);
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
@@ -194,7 +205,7 @@ namespace ToyMaker {
          * 
          */
         enum class TrueVolumeType: uint8_t {
-            BOX,
+            BOX=0,
             SPHERE,
             CAPSULE,
         };
@@ -355,6 +366,17 @@ namespace ToyMaker {
          */
         std::array<AreaTriangle, 12> getWorldOrientedBoxFaceTriangles() const { return computeBoxFaceTriangles(getWorldOrientedBoxCorners()); };
 
+
+        /**
+         * @brief Returns the point on this object's surface furthest along a given axis from the origin of 
+         * this object.
+         * 
+         * Strongly related to the Gilbert-Johnson-Keerthi (GJK) algorithm for detecting intersections
+         * of convex shapes.
+         * 
+         */
+        glm::vec3 getSupportAlong(const glm::vec3& axis) const;
+
         /**
          * @brief Returns whether the underlying volume has sensible parameters (i.e., finite, non-degenerate, non-negative
          * parameters)
@@ -464,11 +486,11 @@ namespace ToyMaker {
         inline glm::vec3 getDimensions() const { return mExtents.first - mExtents.second; }
 
         /**
-         * @brief Gets the position of the origin of this box.
+         * @brief Gets the coordinates of the center of this box
          * 
-         * @return glm::vec3 
+         * @return glm::vec3 The coordinates of the center of this box
          */
-        inline glm::vec3 getPosition() const { return mExtents.second + .5f * getDimensions(); }; 
+        inline glm::vec3 getComputedWorldPosition() const { return mExtents.second + .5f * getDimensions(); }
 
         /**
          * @brief Tests whether this box is sensible (it has a finite position, and finite non-negative dimensions).
@@ -482,6 +504,16 @@ namespace ToyMaker {
                 && isNonNegative(mExtents.first - mExtents.second)
             );
         }
+
+        /**
+         * @brief Returns the point on this object's surface furthest along a given axis from the origin of 
+         * this object.
+         * 
+         * Strongly related to the Gilbert-Johnson-Keerthi (GJK) algorithm for detecting intersections
+         * of convex shapes.
+         * 
+         */
+        glm::vec3 getSupportAlong(const glm::vec3& axis) const;
 
         /**
          * @brief Tests whether this box has strictly positive parameters and hence encloses some region in space.
@@ -502,7 +534,7 @@ namespace ToyMaker {
          */
         inline void setPosition(const glm::vec3& position) {
             assert(isFinite(position) && "Invalid position specified. Position must be finite");
-            const glm::vec3 deltaPosition { position - getPosition() };
+            const glm::vec3 deltaPosition { position - getComputedWorldPosition() };
             mExtents.first += deltaPosition;
             mExtents.second += deltaPosition;
         }
@@ -514,7 +546,7 @@ namespace ToyMaker {
          */
         inline void setDimensions(const glm::vec3& dimensions) {
             assert(isNonNegative(dimensions) && isFinite(dimensions) && "Invalid dimensions provided.  Dimensions must be non negative and finite");
-            const glm::vec3 position { getPosition() };
+            const glm::vec3 position { getComputedWorldPosition() };
             const glm::vec3 deltaDimensions { dimensions - getDimensions() };
             mExtents.first += .5f * deltaDimensions;
             mExtents.second -= .5f * deltaDimensions;

@@ -23,6 +23,11 @@ bool ToyMaker::ObjectBounds::isPositiveStrict() const {
     return isBoundsNonZero;
 }
 
+glm::vec3 getSupportBox(const glm::vec3& axis, const AxisAlignedBounds& box);
+glm::vec3 getSupportBox(const glm::vec3& axis, const ObjectBounds& box);
+glm::vec3 getSupportSphere(const glm::vec3& axis, const ObjectBounds& sphere);
+glm::vec3 getSupportCapsule(const glm::vec3& axis, const ObjectBounds& capsule);
+
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getBoxIntersections(const Ray& ray, const std::array<AreaTriangle, 12>& boxTriangles);
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCapsuleIntersections(const Ray& ray, const ObjectBounds& capsule);
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getSphereIntersections(const Ray& ray, const ObjectBounds& sphere);
@@ -40,9 +45,51 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getBoxIntersections(const Ra
     return getBoxIntersections(ray, bounds.getAxisAlignedBoxFaceTriangles());
 }
 
-bool checkBoxContains(const glm::vec3& point, const ObjectBounds& box);
-bool checkCapsuleContains(const glm::vec3& point, const ObjectBounds& capsule);
-bool checkSphereContains(const glm::vec3& point, const ObjectBounds& sphere);
+// Gets the minimum and maximum points of a 3D box projected on an axis
+std::pair<float, float> axisProjectBox(const glm::vec3& axis, const ObjectBounds& box);
+// Gets the minimum and maximum points of a sphere projected on an axis
+std::pair<float, float> axisProjectSphere(const glm::vec3& axis, const ObjectBounds& sphere);
+// Gets the minimum and maximum points of a capsule projected on an axis
+std::pair<float, float> axisProjectCapsule(const glm::vec3& axis, const ObjectBounds& capsule);
+
+template<typename T, typename U>
+inline glm::vec3 minkowskiDifference(const T& one, const U& two, const glm::vec3& along) {
+    return one.getSupportAlong(along) - two.getSupportAlong(-along);
+}
+
+// Finds the next search direction for a simplex, mutating the simplex as it does so
+glm::vec3  doSimplex(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found);
+// Finds the next search direction for a simplex comprised of 2 points, mutating the simplex as it does so
+glm::vec3 doSimplex2(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints);
+// Finds the next search direction for a simplex comprised of 3 points, mutating the simplex as it does so
+glm::vec3 doSimplex3(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints);
+// Finds the next search direction for a simplex comprised of 4 points, mutating the simplex as it does so
+glm::vec3 doSimplex4(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found);
+
+// Gets the global orientation vectors of a box
+std::array<glm::vec3, 3> getBoxEdgeAxes(const ObjectBounds& box);
+
+/** 
+ * Gets the point closest to some arbitrary point inside a box
+ */
+glm::vec3 getClosestPointOnBox(const glm::vec3& point, const ObjectBounds& box);
+
+bool checkContainsPointBox(const glm::vec3& point, const ObjectBounds& box);
+bool checkContainsPointCapsule(const glm::vec3& point, const ObjectBounds& capsule);
+bool checkContainsPointSphere(const glm::vec3& point, const ObjectBounds& sphere);
+
+/** 
+ * @brief GJK implementation based on Casey Muratori's YouTube video on the same, which
+ * is available [here](https://www.youtube.com/watch?v=Qupqu1xe7Io)
+ */
+template <typename T, typename U>
+bool gjkOverlaps(const T& one, const U& two);
+bool checkOverlaps1D(float shape1Min, float shape1Max, float shape2Min, float shape2Max);
+
+/** 
+ * Check whether 1d shape 1 is contained by 1d shape 2
+ */
+bool checkContains1D(float shape1Min, float shape1Max, float shape2Min, float shape2Max);
 
 std::pair<bool, glm::vec3> ToyMaker::computeIntersection(const Ray& ray, const Plane& plane) {
     assert(ray.isSensible() && "Invalid ray provided");
@@ -227,12 +274,34 @@ bool ToyMaker::overlaps(const AxisAlignedBounds& one, const AxisAlignedBounds& t
 
     return (
         // overlap in x
-        otherBottomCorner.x <= topCorner.x && otherTopCorner.x >= bottomCorner.x 
+        checkOverlaps1D(otherBottomCorner.x, otherTopCorner.x, bottomCorner.x, topCorner.x)
         // overlap in y
-        && otherBottomCorner.y <= topCorner.y && otherTopCorner.y >= bottomCorner.y
+        && checkOverlaps1D(otherBottomCorner.y, otherTopCorner.y, bottomCorner.y, topCorner.y)
         // overlap in z
-        && otherBottomCorner.z <= topCorner.z && otherTopCorner.z >= bottomCorner.z
+        && checkOverlaps1D(otherBottomCorner.z, otherTopCorner.z, bottomCorner.z, topCorner.z)
     );
+}
+
+bool ToyMaker::overlaps(const ObjectBounds& one, const ObjectBounds& two) {
+    assert(one.isSensible() && two.isSensible() && "Invalid object bounds provided");
+
+    // Both need to be non-degenerate bounds to actually overlap
+    if(!(one.isPositiveStrict() && two.isPositiveStrict())) {
+        return false;
+    }
+
+    return gjkOverlaps(one, two);
+}
+
+bool ToyMaker::overlaps(const AxisAlignedBounds& one, const ObjectBounds& two) {
+    assert(one.isSensible() && two.isSensible() && "Invalid object bounds provided");
+
+    // Both need to be non-degenerate bounds to actually overlap
+    if(!(one.isPositiveStrict() && two.isPositiveStrict())) {
+        return false;
+    }
+
+    return gjkOverlaps(one, two);
 }
 
 bool ToyMaker::contains(const glm::vec3& point, const AxisAlignedBounds& bounds) {
@@ -273,11 +342,11 @@ bool ToyMaker::contains(const AxisAlignedBounds& one, const AxisAlignedBounds& t
 
     return (
         // contained in x
-        bottomCorner.x <= otherBottomCorner.x && topCorner.x >= otherTopCorner.x
+        checkContains1D(otherBottomCorner.x, otherTopCorner.x, bottomCorner.x, topCorner.x)
         // contained in y
-        && bottomCorner.y <= otherBottomCorner.y && topCorner.y >= otherTopCorner.y
+        && checkContains1D(otherBottomCorner.y, otherTopCorner.y, bottomCorner.y, topCorner.y)
         // contained in z
-        && bottomCorner.z <= otherBottomCorner.z && topCorner.z >= otherTopCorner.z
+        && checkContains1D(otherBottomCorner.z, otherTopCorner.z, bottomCorner.z, topCorner.z)
     );
 }
 
@@ -293,15 +362,14 @@ bool ToyMaker::contains(const glm::vec3& point, const ObjectBounds& bounds) {
 
     switch(bounds.mType) {
         case ToyMaker::ObjectBounds::TrueVolumeType::BOX:
-            return checkBoxContains(point, bounds);
+            return checkContainsPointBox(point, bounds);
         case ToyMaker::ObjectBounds::TrueVolumeType::CAPSULE:
-            return checkCapsuleContains(point, bounds);
+            return checkContainsPointCapsule(point, bounds);
         case ToyMaker::ObjectBounds::TrueVolumeType::SPHERE:
-            return checkSphereContains(point, bounds);
+            return checkContainsPointSphere(point, bounds);
         default:
             assert(false && "Unrecognized shape passed");
     }
-
 }
 
 bool ToyMaker::contains(const Ray& ray, const ObjectBounds& bounds) {
@@ -321,6 +389,53 @@ bool ToyMaker::contains(const Ray& ray, const ObjectBounds& bounds) {
     const glm::vec3 rayStart { ray.mStart };
     const glm::vec3 rayEnd { rayStart + glm::normalize(ray.mDirection) * ray.mLength };
     return contains(ray.mStart, bounds) && contains(rayEnd, bounds);
+}
+
+bool ToyMaker::contains(const ObjectBounds& one, const AxisAlignedBounds& two) {
+    assert(one.isSensible() && "Invalid object bounds provided");
+    assert(two.isSensible() && "Invalid axis aligned bounds provided");
+
+    // Always return false if either volume is degenerate
+    if(!two.isPositiveStrict() || !one.isPositiveStrict()) {
+        return false;
+    }
+
+    std::pair<float, float> oneProjectedX;
+    std::pair<float, float> oneProjectedY;
+    std::pair<float, float> oneProjectedZ;
+    switch(one.mType) {
+    case ObjectBounds::TrueVolumeType::BOX:
+        oneProjectedX = axisProjectBox(glm::vec3(1.f, 0.f, 0.f), one);
+        oneProjectedY = axisProjectBox(glm::vec3(0.f, 1.f, 0.f), one);
+        oneProjectedZ = axisProjectBox(glm::vec3(0.f, 0.f, 1.f), one);
+        break;
+    case ObjectBounds::TrueVolumeType::CAPSULE:
+        oneProjectedX = axisProjectCapsule(glm::vec3(1.f, 0.f, 0.f), one);
+        oneProjectedY = axisProjectCapsule(glm::vec3(0.f, 1.f, 0.f), one);
+        oneProjectedZ = axisProjectCapsule(glm::vec3(0.f, 0.f, 1.f), one);
+        break;
+    case ObjectBounds::TrueVolumeType::SPHERE:
+        oneProjectedX = axisProjectSphere(glm::vec3(1.f, 0.f, 0.f), one);
+        oneProjectedY = axisProjectSphere(glm::vec3(0.f, 1.f, 0.f), one);
+        oneProjectedZ = axisProjectSphere(glm::vec3(0.f, 0.f, 1.f), one);
+        break;
+    default:
+        assert(false && "Unknown bounds type provided");
+        break;
+    }
+
+    const AxisAlignedBounds::Extents ourExtents { two.getAxisAlignedBoxExtents() };
+    const glm::vec3& bottomCorner { ourExtents.second };
+    const glm::vec3& topCorner { ourExtents.first };
+
+    return (
+        // contained in x
+        checkContains1D(oneProjectedX.first, oneProjectedX.second, bottomCorner.x, topCorner.x)
+        // contained in y
+        && checkContains1D(oneProjectedY.first, oneProjectedY.second, bottomCorner.y, topCorner.y)
+        // contained in z
+        && checkContains1D(oneProjectedZ.first, oneProjectedZ.second, bottomCorner.z, topCorner.z)
+    );
 }
 
 ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
@@ -478,6 +593,42 @@ bool ObjectBounds::isSensible() const {
         default:
             assert(false && "Unrecognized true volume type specified");
             return mTrueVolume.mBox.isSensible();
+    }
+}
+
+glm::vec3 AxisAlignedBounds::getSupportAlong(const glm::vec3& axis) const {
+    // Reject invalid axes
+    assert(squareDistance(axis) != 0 && "Axis must be non-zero vector");
+    assert(isFinite(axis) && "Axis must be finite");
+
+    // Degenerate shapes yield origin
+    if(!isPositiveStrict()) {
+        return getComputedWorldPosition();
+    }
+
+    return getSupportBox(axis, *this);
+}
+
+glm::vec3 ObjectBounds::getSupportAlong(const glm::vec3& axis) const {
+    // Reject invalid axes
+    assert(squareDistance(axis) != 0 && "Axis must be non-zero vector");
+    assert(isFinite(axis) && "Axis must be finite");
+
+    // Degenerate shapes yield origin
+    if(!isPositiveStrict()) {
+        return getComputedWorldPosition();
+    }
+
+    switch(mType) {
+        case TrueVolumeType::BOX:
+            return getSupportBox(axis, *this);
+        case TrueVolumeType::SPHERE:
+            return getSupportSphere(axis, *this);
+        case TrueVolumeType::CAPSULE:
+            return getSupportCapsule(axis, *this);
+        default:
+            assert(false && "Unrecognized true volume type specified");
+            return glm::vec3(std::numeric_limits<float>::infinity());
     }
 }
 
@@ -839,7 +990,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCylinderIntersections(
     return { nIntersections, { intersectionPoints[0], intersectionPoints[1] } };
 }
 
-bool checkBoxContains(const glm::vec3& point, const ObjectBounds& box) {
+bool checkContainsPointBox(const glm::vec3& point, const ObjectBounds& box) {
     const glm::quat boxOrientation { box.getComputedWorldOrientation() };
     const glm::vec3 boxPosition { box.getComputedWorldPosition() };
     const glm::mat4 boxTransformInverse {
@@ -855,7 +1006,7 @@ bool checkBoxContains(const glm::vec3& point, const ObjectBounds& box) {
     });
 }
 
-bool checkSphereContains(const glm::vec3& point, const ObjectBounds& sphere) {
+bool checkContainsPointSphere(const glm::vec3& point, const ObjectBounds& sphere) {
     const glm::vec3 sphereCenterToPoint {
         point - sphere.getComputedWorldPosition()
     };
@@ -866,7 +1017,7 @@ bool checkSphereContains(const glm::vec3& point, const ObjectBounds& sphere) {
     );
 }
 
-bool checkCapsuleContains(const glm::vec3& point, const ObjectBounds& capsule) {
+bool checkContainsPointCapsule(const glm::vec3& point, const ObjectBounds& capsule) {
     // Cache some specifics about our capsule
     const glm::vec3 capsulePosition { capsule.getComputedWorldPosition() };
     const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getComputedWorldOrientation()) };
@@ -901,7 +1052,399 @@ bool checkCapsuleContains(const glm::vec3& point, const ObjectBounds& capsule) {
 
     return (
         (withinCylinderHeight && withinCylinderRadius)
-        || checkSphereContains(point, sphere0)
-        || checkSphereContains(point, sphere1)
+        || checkContainsPointSphere(point, sphere0)
+        || checkContainsPointSphere(point, sphere1)
     );
+}
+
+template <typename T, typename U>
+inline bool gjkOverlaps(const T& one, const U& two) {
+    glm::vec3 searchDirection { two.getComputedWorldPosition() - one.getComputedWorldPosition() };
+
+    // Two non-degenerate objects share the same origin, obviously they overlap
+    if(squareDistance(searchDirection) == 0.f) {
+        return true;
+    }
+
+    std::array<glm::vec3, 4> simplex {};
+    simplex[0] = minkowskiDifference(one, two, searchDirection);
+    uint8_t nSimplexPoints { 1 };
+
+    // we go towards the origin from the first point we found
+    searchDirection = -simplex[0]; 
+    bool found { false };
+    while(true) {
+        const glm::vec3 candidatePoint { minkowskiDifference(one, two, searchDirection) };
+
+        // We couldn't find a point past the origin in this direction, so obviously there is no intersection
+        if(glm::dot(candidatePoint, searchDirection) <= 0) {
+            return false;
+        }
+
+        simplex[nSimplexPoints++] = candidatePoint;
+        assert(nSimplexPoints <= 4 && nSimplexPoints >= 2 && "Within the loop, we must always have between 2 and 4 points in the simplex");
+
+        searchDirection = doSimplex(simplex, nSimplexPoints, found);
+        if(found) {
+            return true;
+        }
+    }
+}
+
+std::pair<float, float> axisProjectBox(const glm::vec3& axis, const ObjectBounds& box) {
+    const glm::vec3 axisNormalized { glm::normalize(axis) };
+    float minimum { std::numeric_limits<float>::infinity() };
+    float maximum { -std::numeric_limits<float>::infinity() };
+
+    for(const glm::vec3& point : box.getWorldOrientedBoxCorners()) {
+        const float projectedPoint { glm::dot(axisNormalized, point) };
+        if(projectedPoint < minimum) {
+            minimum = projectedPoint;
+        }
+        if(projectedPoint > maximum) {
+            maximum = projectedPoint;
+        }
+    }
+    return { minimum, maximum };
+}
+
+std::pair<float, float> axisProjectSphere(const glm::vec3& axis, const ObjectBounds& sphere) {
+    const glm::vec3 axisNormalized { glm::normalize(axis) };
+
+    const float pointOne { 
+        glm::dot(axisNormalized, sphere.getComputedWorldPosition())
+        + sphere.mTrueVolume.mSphere.mRadius
+    };
+    const float pointTwo {
+        glm::dot(axisNormalized, sphere.getComputedWorldPosition())
+        + sphere.mTrueVolume.mSphere.mRadius
+    };
+
+    if(pointOne > pointTwo) {
+        return { pointTwo, pointOne };
+    }
+    return { pointOne, pointTwo };
+}
+
+std::pair<float, float> axisProjectCapsule(const glm::vec3& axis, const ObjectBounds& capsule) {
+    const glm::vec3 capsulePosition { capsule.getComputedWorldPosition() };
+    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getComputedWorldOrientation()) };
+    const glm::vec3 capsuleAxis { capsuleRotation * glm::vec3 { 0.f, 1.f, 0.f } };
+    const std::array<glm::vec3, 2> capsuleEnds {
+        capsulePosition - capsule.mTrueVolume.mCapsule.mHeight * .5f * capsuleAxis,
+        capsulePosition + capsule.mTrueVolume.mCapsule.mHeight * .5f * capsuleAxis
+    };
+
+    const glm::vec3 axisNormalized { glm::normalize(axis) };
+    float minimum { std::numeric_limits<float>::infinity() };
+    float maximum { -std::numeric_limits<float>::infinity() };
+    for(const auto& point: capsuleEnds) {
+        const float projectedPoint { glm::dot(axisNormalized, point) };
+        if(projectedPoint > maximum) {
+            maximum = projectedPoint;
+        }
+        if(projectedPoint < minimum) {
+            minimum = projectedPoint;
+        }
+    }
+
+    return {
+        minimum - capsule.mTrueVolume.mCapsule.mRadius,
+        maximum + capsule.mTrueVolume.mCapsule.mRadius
+    };
+}
+
+std::array<glm::vec3, 3> getBoxEdgeAxes(const ObjectBounds& box) {
+    const glm::vec3 localForward { 0.f, 0.f, -1.f };
+    const glm::vec3 localRight { 1.f, 0.f, 0.f };
+    const glm::vec3 localUp { 0.f, 1.f, 0.f };
+
+    const glm::mat3 boxOrientation { box.getComputedWorldOrientation() };
+    std::array<glm::vec3, 3> boxAxes {{
+        { boxOrientation * localForward },
+        { boxOrientation * localRight },
+        { boxOrientation * localUp }
+    }};
+
+    return boxAxes;
+}
+
+bool checkOverlaps1D(float shape1Min, float shape1Max, float shape2Min, float shape2Max) {
+    return shape1Min < shape2Max && shape1Max > shape2Min;
+}
+
+bool checkContains1D(float shape1Min, float shape1Max, float shape2Min, float shape2Max) {
+    return shape1Max <= shape2Max && shape1Min > shape2Min;
+}
+
+
+glm::vec3 getClosestPointOnBox(const glm::vec3& point, const ObjectBounds& box) {
+    const std::array<glm::vec3, 8> boxCorners { box.getWorldOrientedBoxCorners() };
+    const std::array<glm::vec3, 3> boxAxes {{
+        boxCorners[BoxCornerSpecifier::RIGHT] - boxCorners[0],
+        boxCorners[BoxCornerSpecifier::TOP] - boxCorners[0],
+        boxCorners[BoxCornerSpecifier::FRONT] - boxCorners[0]
+    }};
+
+    const glm::vec3 projectedPoint {
+        glm::dot(point - boxCorners[0], boxAxes[0]) / squareDistance(boxAxes[0]),
+        glm::dot(point - boxCorners[0], boxAxes[1]) / squareDistance(boxAxes[1]),
+        glm::dot(point - boxCorners[0], boxAxes[2]) / squareDistance(boxAxes[2]),
+    };
+
+    const glm::vec3 saturatedPoint {
+        (projectedPoint.x > 1.f ? 1.f : (projectedPoint.x < 0.f ? 0.f : projectedPoint.x)),
+        (projectedPoint.y > 1.f ? 1.f : (projectedPoint.y < 0.f ? 0.f : projectedPoint.y)),
+        (projectedPoint.z > 1.f ? 1.f : (projectedPoint.z < 0.f ? 0.f : projectedPoint.z)),
+    };
+
+    return boxCorners[0] + (
+        saturatedPoint.x * boxAxes[0]
+        + saturatedPoint.y * boxAxes[1]
+        + saturatedPoint.z * boxAxes[2]
+    );
+}
+
+glm::vec3 getSupportBox(const glm::vec3& axis, const AxisAlignedBounds& box) {
+    const glm::vec3 origin { box.getComputedWorldPosition() };
+    const std::array<glm::vec3, 8> corners { box.getAxisAlignedBoxCorners() };
+
+    // the point we're looking for _must_ be one of the corners of the box
+    std::size_t answer;
+    float greatestDistance { -std::numeric_limits<float>::infinity() };
+    for(std::size_t i { 0 }; i < 8; ++i) {
+        const float newDistance { glm::dot(corners[i] - origin, axis) };
+        if(newDistance > greatestDistance) {
+            greatestDistance = newDistance;
+            answer = i;
+        }
+    }
+
+    return corners[answer];
+}
+
+glm::vec3 getSupportBox(const glm::vec3& axis, const ObjectBounds& box) {
+    const glm::vec3 origin { box.getComputedWorldPosition() };
+    const std::array<glm::vec3, 8> corners { box.getWorldOrientedBoxCorners() };
+
+    // the point we're looking for _must_ be one of the corners of the box
+    std::size_t answer;
+    float greatestDistance { -std::numeric_limits<float>::infinity() };
+    for(std::size_t i { 0 }; i < 8; ++i) {
+        const float newDistance { glm::dot(corners[i] - origin, axis) };
+        if(newDistance > greatestDistance) {
+            greatestDistance = newDistance;
+            answer = i;
+        }
+    }
+
+    return corners[answer];
+}
+
+glm::vec3 getSupportSphere(const glm::vec3& axis, const ObjectBounds& sphere) {
+    const glm::vec3 origin { sphere.getComputedWorldPosition() };
+    const float radius { sphere.mTrueVolume.mSphere.mRadius };
+
+    return origin + radius * glm::normalize(axis);
+}
+
+glm::vec3 getSupportCapsule(const glm::vec3& vector, const ObjectBounds& capsule) {
+    const glm::vec3 origin { capsule.getComputedWorldPosition() };
+    const glm::vec3 capsuleAxis { glm::normalize(
+        capsule.getComputedWorldOrientation() * glm::vec3 { 0.f, 1.f, 0.f }
+    ) };
+    const float radius { capsule.mTrueVolume.mCapsule.mRadius };
+    const float height { capsule.mTrueVolume.mCapsule.mHeight };
+
+    // The point we're looking for is the same as the one on a sphere, but offset
+    // towards one of the capsule's end caps
+    const glm::vec3 equivalentSphereSupport { origin + radius * glm::normalize(vector) };
+    const float dotAxisVector { glm::dot(capsuleAxis, vector) };
+    const glm::vec3 offset {
+        dotAxisVector == 0.f ? glm::vec3(0.f) : (
+            dotAxisVector > 0.f ? .5f : -.5f
+        ) * height * capsuleAxis
+    };
+
+    return origin + offset + equivalentSphereSupport;
+}
+
+glm::vec3 doSimplex(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found) {
+    assert(!found && "What are we doing if we found our enclosing simplex already?");
+    switch(nSimplexPoints) {
+    case 2:
+        return doSimplex2(simplex, nSimplexPoints);
+    case 3:
+        return doSimplex3(simplex, nSimplexPoints);
+    case 4:
+        return doSimplex4(simplex, nSimplexPoints, found);
+    default:
+        assert(false && "There is no reason whatsoever that a 3D simplex should have more than 4 or less than 2 points");
+        return glm::vec3{ std::numeric_limits<float>::infinity() };
+    }
+}
+
+glm::vec3 doSimplex2(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints) {
+    assert(nSimplexPoints == 2 && "This function should only be called when the simplex contains 2 points");
+
+    const glm::vec3 pointA { simplex[1] };
+    const glm::vec3 pointB { simplex[0] };
+
+    // This constant shows up multiple times
+    const glm::vec3 lineAB { pointB - pointA };
+
+    // Note: we already know that A is beyond origin relative to B, so we can jump
+    // straight to computing the perpendicular to AB
+
+    // If B from A is the same direction as origin from A, go along
+    // perpendicular to AB towards origin
+    return glm::cross(glm::cross(lineAB, -pointA), lineAB);
+}
+
+glm::vec3 doSimplex3(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints) {
+    assert(nSimplexPoints == 3 && "This function should only be called when the simplex contains 3 points");
+
+    const glm::vec3 pointA { simplex[2] };
+    const glm::vec3 pointB { simplex[1] };
+    const glm::vec3 pointC { simplex[0] };
+
+    // A few constants which show up on multiple conditions
+    const glm::vec3 lineAC { pointC - pointA };
+    const glm::vec3 lineAB { pointB - pointA };
+    const glm::vec3 crossABAC { glm::cross(lineAB, lineAC) };
+
+    // See if our origin is past the triangle beyond lineAC
+    if(glm::dot(glm::cross(crossABAC, lineAC), -pointA) > 0) {
+        if(glm::dot(lineAC, -pointA) > 0) {
+            nSimplexPoints = 2;
+            simplex[0] = pointC;
+            simplex[1] = pointA;
+            return glm::cross(glm::cross(lineAC, -pointA), lineAC);
+
+        // We now know we're closest to AB
+        } else {
+            nSimplexPoints = 2;
+            simplex[0] = pointB;
+            simplex[1] = pointA;
+            return glm::cross(glm::cross(lineAB, -pointA), lineAB);
+        }
+
+    // See if we're beyond the triangle beyond lineAB
+    } else if(glm::dot(glm::cross(lineAB, crossABAC), -pointA) > 0) {
+        // We now know we're closest to AB (and by the first if we've already ruled out AC)
+        nSimplexPoints = 2;
+        simplex[0] = pointB;
+        simplex[1] = pointA;
+        return glm::cross(glm::cross(lineAB, -pointA), lineAB);
+
+    // Test if origin is above the triangle
+    } else if(glm::dot(crossABAC, -pointA) > 0) {
+        return crossABAC;
+
+    // We now know our origin is *below* the triangle
+    } else {
+        simplex[0] = pointB;
+        simplex[1] = pointC;
+        return -crossABAC;
+    }
+}
+
+glm::vec3 doSimplex4(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found) {
+    assert(!found && "What are we even doing here if we've already found an enclosing simplex?");
+    assert(nSimplexPoints == 4 && "This function should only be called when the simplex contains 4 points");
+
+    const glm::vec3 pointA { simplex[3] };
+    const glm::vec3 pointB { simplex[2] };
+    const glm::vec3 pointC { simplex[1] };
+    const glm::vec3 pointD { simplex[0] };
+
+    // A few constants which show up on multiple conditions
+    const glm::vec3 lineAD { pointD - pointA };
+    const glm::vec3 lineAC { pointC - pointA };
+    const glm::vec3 lineAB { pointB - pointA };
+    // Each cross below is a normal pointing outward from the triangle that forms a
+    // face of the simplex tetrahedron
+    const glm::vec3 crossABAC { glm::cross(lineAD, lineAB) };
+    const glm::vec3 crossACAD { glm::cross(lineAC, lineAD) };
+    const glm::vec3 crossADAB { glm::cross(lineAD, lineAB) };
+    // note: we don't care about crossBCBD -- we already know we're above it
+
+    // see if we're beyond face ABC
+    if(glm::dot(crossABAC, -pointA) > 0) {
+        // Are we closest to the region near line AC
+        if(glm::dot(glm::cross(crossABAC, lineAC), -pointA) > 0) {
+            // continue the search near line AC
+            nSimplexPoints = 2;
+            simplex[0] = pointC;
+            simplex[1] = pointA;
+            return glm::cross(glm::cross(lineAC, -pointA), lineAC);
+
+        // Are we closest to the region near line AB?
+        } else if(glm::dot(glm::cross(lineAB, crossABAC), -pointA) > 0) {
+            nSimplexPoints = 2;
+            simplex[0] = pointB;
+            simplex[1] = pointA;
+            return glm::cross(glm::cross(lineAB, -pointA), lineAB);
+        }
+
+        // We are directly above the face ABC of the tetrahedron
+        nSimplexPoints = 3;
+        simplex[0] = pointC;
+        simplex[1] = pointB;
+        simplex[2] = pointA;
+        return crossABAC;
+
+    // See if we're above the tetrahedron face ACD
+    } else if(glm::dot(crossACAD, -pointA) > 0) {
+        // Are we closest to line AD?
+        if(glm::dot(glm::cross(crossACAD, lineAD), -pointA) > 0) {
+            nSimplexPoints = 2;
+            simplex[0] = pointD;
+            simplex[1] = pointA;
+            return glm::cross(glm::cross(lineAD, -pointA), lineAD);
+
+        // Are we closest to line AC?
+        } else if(glm::dot(glm::cross(lineAC, crossACAD), -pointA) > 0) {
+            nSimplexPoints = 2;
+            simplex[0] = pointC;
+            simplex[1] = pointA;
+            return glm::cross(glm::cross(lineAC, -pointA), lineAC);
+        }
+
+        // We are directly above face ACD of the tetrahedron
+        nSimplexPoints = 3;
+        simplex[0] = pointD;
+        simplex[1] = pointC;
+        simplex[2] = pointA;
+        return crossACAD;
+
+    // Finally check if we're above face ADB
+    } else if(glm::dot(crossADAB, -pointA) > 0) {
+        // Are we closest to line AB?
+        if(glm::dot(glm::cross(crossADAB, lineAB), -pointA) > 0) {
+            nSimplexPoints = 2;
+            simplex[0] = pointB;
+            simplex[1] = pointA;
+            return glm::cross(glm::cross(lineAB, -pointA), lineAB);
+
+        // ... or line AD?
+        } else if(glm::dot(glm::cross(lineAD, crossADAB), -pointA) > 0) {
+            nSimplexPoints = 2;
+            simplex[0] = pointD;
+            simplex[1] = pointA;
+            return glm::cross(glm::cross(lineAD, -pointA), lineAD);
+        }
+
+        // We are certainly directly above face ADB of the tetrahedron
+        nSimplexPoints = 3;
+        simplex[0] = pointB;
+        simplex[1] = pointD;
+        simplex[2] = pointA;
+        return crossADAB;
+    }
+
+    // We've exhausted every other option, we _know_ now
+    // that we're in the tetrahedron
+    found = true;
+    return glm::vec3 { 0.f };
 }

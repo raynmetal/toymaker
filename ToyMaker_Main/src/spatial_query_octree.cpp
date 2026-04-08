@@ -149,7 +149,7 @@ OctreeNode::Address OctreeNode::insertEntity(EntityID entityID, const AxisAligne
             // see earlier loop
             if(mChildren[octant]) continue;
             AxisAlignedBounds::Extents newExtents { mWorldBounds.getAxisAlignedBoxExtents() };
-            glm::vec3 center { mWorldBounds.getPosition() };
+            glm::vec3 center { mWorldBounds.getComputedWorldPosition() };
             octant&RIGHT? newExtents.second.x = center.x: newExtents.first.x = center.x;
             octant&TOP? newExtents.second.y = center.y: newExtents.first.y = center.y;
             octant&FRONT? newExtents.second.z = center.z: newExtents.first.z = center.z;
