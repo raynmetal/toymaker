@@ -378,6 +378,14 @@ namespace ToyMaker {
         glm::vec3 getSupportAlong(const glm::vec3& axis) const;
 
         /**
+         * @brief Returns this shape's projection along some unit vector.
+         * 
+         * @return std::pair<float, float> The minimum and maximum points of this shape on the vector
+         * 
+         */
+        std::pair<float, float> getProjectionAlong(const glm::vec3& axis) const;
+
+        /**
          * @brief Returns whether the underlying volume has sensible parameters (i.e., finite, non-degenerate, non-negative
          * parameters)
          * 

@@ -400,29 +400,9 @@ bool ToyMaker::contains(const ObjectBounds& one, const AxisAlignedBounds& two) {
         return false;
     }
 
-    std::pair<float, float> oneProjectedX;
-    std::pair<float, float> oneProjectedY;
-    std::pair<float, float> oneProjectedZ;
-    switch(one.mType) {
-    case ObjectBounds::TrueVolumeType::BOX:
-        oneProjectedX = axisProjectBox(glm::vec3(1.f, 0.f, 0.f), one);
-        oneProjectedY = axisProjectBox(glm::vec3(0.f, 1.f, 0.f), one);
-        oneProjectedZ = axisProjectBox(glm::vec3(0.f, 0.f, 1.f), one);
-        break;
-    case ObjectBounds::TrueVolumeType::CAPSULE:
-        oneProjectedX = axisProjectCapsule(glm::vec3(1.f, 0.f, 0.f), one);
-        oneProjectedY = axisProjectCapsule(glm::vec3(0.f, 1.f, 0.f), one);
-        oneProjectedZ = axisProjectCapsule(glm::vec3(0.f, 0.f, 1.f), one);
-        break;
-    case ObjectBounds::TrueVolumeType::SPHERE:
-        oneProjectedX = axisProjectSphere(glm::vec3(1.f, 0.f, 0.f), one);
-        oneProjectedY = axisProjectSphere(glm::vec3(0.f, 1.f, 0.f), one);
-        oneProjectedZ = axisProjectSphere(glm::vec3(0.f, 0.f, 1.f), one);
-        break;
-    default:
-        assert(false && "Unknown bounds type provided");
-        break;
-    }
+    std::pair<float, float> oneProjectedX { one.getProjectionAlong(glm::vec3(1.f, 0.f, 0.f)) };
+    std::pair<float, float> oneProjectedY { one.getProjectionAlong(glm::vec3(0.f, 1.f, 0.f)) };
+    std::pair<float, float> oneProjectedZ { one.getProjectionAlong(glm::vec3(0.f, 0.f, 1.f)) };
 
     const AxisAlignedBounds::Extents ourExtents { two.getAxisAlignedBoxExtents() };
     const glm::vec3& bottomCorner { ourExtents.second };
@@ -609,8 +589,27 @@ glm::vec3 AxisAlignedBounds::getSupportAlong(const glm::vec3& axis) const {
     return getSupportBox(axis, *this);
 }
 
+std::pair<float, float> ObjectBounds::getProjectionAlong(const glm::vec3& axis) const {
+    assert(isSensible() && "Invalid bounds provided");
+    assert(squareDistance(axis) != 0 && "Axis must be non-zero vector");
+    assert(isFinite(axis) && "Axis must be finite");
+
+    switch(mType) {
+    case TrueVolumeType::BOX:
+        return axisProjectBox(axis, *this);
+    case TrueVolumeType::CAPSULE:
+        return axisProjectCapsule(axis, *this);
+    case TrueVolumeType::SPHERE:
+        return axisProjectSphere(axis, *this);
+    default:
+        assert(false && "Unknown object type specified");
+        return { std::numeric_limits<float>::infinity(), std::numeric_limits<float>::infinity() };
+    }
+}
+
 glm::vec3 ObjectBounds::getSupportAlong(const glm::vec3& axis) const {
     // Reject invalid axes
+    assert(isSensible() && "Invalid bounds provided");
     assert(squareDistance(axis) != 0 && "Axis must be non-zero vector");
     assert(isFinite(axis) && "Axis must be finite");
 
@@ -637,14 +636,14 @@ mExtents { glm::vec3{0.f}, glm::vec3{0.f} }
 {}
 
 AxisAlignedBounds::AxisAlignedBounds(const ObjectBounds& objectBounds): AxisAlignedBounds{} {
-    Extents axisAlignedExtents{
-        glm::vec3{ -std::numeric_limits<float>::infinity() },
-        glm::vec3{ std::numeric_limits<float>::infinity()  },
+    const std::pair<float, float> projectedOnX { objectBounds.getProjectionAlong(glm::vec3{ 1.f, 0.f, 0.f }) };
+    const std::pair<float, float> projectedOnY { objectBounds.getProjectionAlong(glm::vec3{ 0.f, 1.f, 0.f }) };
+    const std::pair<float, float> projectedOnZ { objectBounds.getProjectionAlong(glm::vec3{ 0.f, 0.f, 1.f }) };
+
+    const Extents axisAlignedExtents {
+        { projectedOnX.second, projectedOnY.second, projectedOnZ.second },
+        {  projectedOnX.first,  projectedOnY.first,  projectedOnZ.first },
     };
-    for(auto& corner: objectBounds.getWorldOrientedBoxCorners()) {
-        axisAlignedExtents.first = glm::max(axisAlignedExtents.first, corner);
-        axisAlignedExtents.second = glm::min(axisAlignedExtents.second, corner);
-    }
     setByExtents(axisAlignedExtents);
 }
 
@@ -1105,6 +1104,7 @@ std::pair<float, float> axisProjectBox(const glm::vec3& axis, const ObjectBounds
             maximum = projectedPoint;
         }
     }
+
     return { minimum, maximum };
 }
 
@@ -1117,7 +1117,7 @@ std::pair<float, float> axisProjectSphere(const glm::vec3& axis, const ObjectBou
     };
     const float pointTwo {
         glm::dot(axisNormalized, sphere.getComputedWorldPosition())
-        + sphere.mTrueVolume.mSphere.mRadius
+        - sphere.mTrueVolume.mSphere.mRadius
     };
 
     if(pointOne > pointTwo) {
@@ -1174,7 +1174,7 @@ bool checkOverlaps1D(float shape1Min, float shape1Max, float shape2Min, float sh
 }
 
 bool checkContains1D(float shape1Min, float shape1Max, float shape2Min, float shape2Max) {
-    return shape1Max <= shape2Max && shape1Min > shape2Min;
+    return shape1Max <= shape2Max && shape1Min >= shape2Min;
 }
 
 
