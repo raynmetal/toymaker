@@ -15,8 +15,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_RENDERSYSTEM_H
-#define FOOLSENGINE_RENDERSYSTEM_H
+#ifndef TOYMAKERENGINE_RENDERSYSTEM_H
+#define TOYMAKERENGINE_RENDERSYSTEM_H
 
 #include <vector>
 #include <map>

@@ -15,8 +15,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_SIGNALS_H
-#define FOOLSENGINE_SIGNALS_H
+#ifndef TOYMAKERENGINE_SIGNALS_H
+#define TOYMAKERENGINE_SIGNALS_H
 
 #include <memory>
 #include <cassert>

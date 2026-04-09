@@ -14,8 +14,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_SCENESYSTEM_H
-#define FOOLSENGINE_SCENESYSTEM_H
+#ifndef TOYMAKERENGINE_SCENESYSTEM_H
+#define TOYMAKERENGINE_SCENESYSTEM_H
 
 #include <vector>
 #include <memory>

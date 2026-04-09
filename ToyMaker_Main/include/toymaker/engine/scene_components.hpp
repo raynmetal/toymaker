@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_SCENECOMPONENTS_H
-#define FOOLSENGINE_SCENECOMPONENTS_H
+#ifndef TOYMAKERENGINE_SCENECOMPONENTS_H
+#define TOYMAKERENGINE_SCENECOMPONENTS_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>

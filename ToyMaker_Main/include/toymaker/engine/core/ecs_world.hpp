@@ -11,8 +11,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_ECSWORLD_H
-#define FOOLSENGINE_ECSWORLD_H
+#ifndef TOYMAKERENGINE_ECSWORLD_H
+#define TOYMAKERENGINE_ECSWORLD_H
 
 #include <cstdint>
 #include <typeinfo>

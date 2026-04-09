@@ -15,8 +15,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_SIMSYSTEM_H
-#define FOOLSENGINE_SIMSYSTEM_H
+#ifndef TOYMAKERENGINE_SIMSYSTEM_H
+#define TOYMAKERENGINE_SIMSYSTEM_H
 
 #include <memory>
 #include <set>

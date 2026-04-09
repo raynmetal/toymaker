@@ -13,8 +13,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_INPUTSYSTEM_H
-#define FOOLSENGINE_INPUTSYSTEM_H
+#ifndef TOYMAKERENGINE_INPUTSYSTEM_H
+#define TOYMAKERENGINE_INPUTSYSTEM_H
 
 #include <string>
 #include <map>

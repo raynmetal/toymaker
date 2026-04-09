@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_TEXTURE_H
-#define FOOLSENGINE_TEXTURE_H
+#ifndef TOYMAKERENGINE_TEXTURE_H
+#define TOYMAKERENGINE_TEXTURE_H
 
 #include <string>
 

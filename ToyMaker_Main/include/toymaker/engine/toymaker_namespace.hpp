@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_NAMESPACE_H
-#define FOOLSENGINE_NAMESPACE_H
+#ifndef TOYMAKERENGINE_NAMESPACE_H
+#define TOYMAKERENGINE_NAMESPACE_H
 
 /**
  * @defgroup ToyMakerEngine ToyMaker Engine

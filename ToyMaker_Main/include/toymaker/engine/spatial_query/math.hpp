@@ -10,8 +10,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_SPATIALQUERYMATH_H
-#define FOOLSENGINE_SPATIALQUERYMATH_H
+#ifndef TOYMAKERENGINE_SPATIALQUERYMATH_H
+#define TOYMAKERENGINE_SPATIALQUERYMATH_H
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>

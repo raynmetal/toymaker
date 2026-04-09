@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_CAMERASYSTEM_H
-#define FOOLSENGINE_CAMERASYSTEM_H
+#ifndef TOYMAKERENGINE_CAMERASYSTEM_H
+#define TOYMAKERENGINE_CAMERASYSTEM_H
 
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>

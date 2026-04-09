@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_UTIL_H
-#define FOOLSENGINE_UTIL_H
+#ifndef TOYMAKERENGINE_UTIL_H
+#define TOYMAKERENGINE_UTIL_H
 
 #include <glm/glm.hpp>
 

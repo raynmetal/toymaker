@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_MODEL_H
-#define FOOLSENGINE_MODEL_H
+#ifndef TOYMAKERENGINE_MODEL_H
+#define TOYMAKERENGINE_MODEL_H
 
 #include <vector>
 #include <string>

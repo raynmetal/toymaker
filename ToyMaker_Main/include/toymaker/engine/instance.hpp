@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_INSTANCE
-#define FOOLSENGINE_INSTANCE
+#ifndef TOYMAKERENGINE_INSTANCE
+#define TOYMAKERENGINE_INSTANCE
 
 #include <vector>
 #include <string>
