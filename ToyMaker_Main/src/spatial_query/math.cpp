@@ -1,5 +1,5 @@
 #include <cmath>
-#include "toymaker/engine/spatial_query_math.hpp"
+#include "toymaker/engine/spatial_query/math.hpp"
 
 using namespace ToyMaker;
 

@@ -29,6 +29,10 @@ target_sources(ToyMaker
     # Input system sources
         src/input_system/action_context.cpp
         src/input_system/input_manager.cpp
+    # Spatial query sources
+        src/spatial_query/math.cpp
+        src/spatial_query/octree.cpp
+        src/spatial_query/system.cpp
     # Everything else
         src/application.cpp
         src/camera_system.cpp
@@ -46,9 +50,6 @@ target_sources(ToyMaker
         src/shapegen.cpp
         src/signals.cpp
         src/sim_system.cpp
-        src/spatial_query_math.cpp
-        src/spatial_query_octree.cpp
-        src/spatial_query_system.cpp
         src/text_render.cpp
         src/texture.cpp
         src/util.cpp
@@ -65,6 +66,11 @@ target_sources(ToyMaker
             # Input system sources
             include/toymaker/engine/input_system/input_data.hpp
             include/toymaker/engine/input_system/input_system.hpp
+            # Spatial query sources
+            include/toymaker/engine/spatial_query/basic_types.hpp
+            include/toymaker/engine/spatial_query/math.hpp
+            include/toymaker/engine/spatial_query/octree.hpp
+            include/toymaker/engine/spatial_query/system.hpp
             # Misc. internals 
             include/toymaker/engine/camera_system.hpp
             include/toymaker/engine/framebuffer.hpp
@@ -83,10 +89,6 @@ target_sources(ToyMaker
             include/toymaker/engine/shapegen.hpp
             include/toymaker/engine/signals.hpp
             include/toymaker/engine/sim_system.hpp
-            include/toymaker/engine/spatial_query_basic_types.hpp
-            include/toymaker/engine/spatial_query_math.hpp
-            include/toymaker/engine/spatial_query_octree.hpp
-            include/toymaker/engine/spatial_query_system.hpp
             include/toymaker/engine/text_render.hpp
             include/toymaker/engine/texture.hpp
             include/toymaker/engine/util.hpp

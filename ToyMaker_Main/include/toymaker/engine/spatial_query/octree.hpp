@@ -1,6 +1,6 @@
 /**
  * @ingroup ToyMakerSpatialQuerySystem
- * @file spatial_query_octree.hpp
+ * @file spatial_query/octree.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Data structures, functions, and methods relating to the hierarchical organization and representation of spatial data.
  * @version 0.3.2
@@ -16,9 +16,9 @@
 #include <algorithm>
 #include <cmath>
 
-#include "spatial_query_math.hpp"
-#include "spatial_query_basic_types.hpp"
-#include "core/ecs_world.hpp"
+#include "math.hpp"
+#include "basic_types.hpp"
+#include "../core/ecs_world.hpp"
 
 namespace ToyMaker {
     class Octree;

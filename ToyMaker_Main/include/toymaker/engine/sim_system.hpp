@@ -30,7 +30,7 @@
 #include "core/resource_database.hpp"
 #include "core/ecs_world.hpp"
 
-#include "spatial_query_system.hpp"
+#include "spatial_query/system.hpp"
 #include "registrator.hpp"
 #include "input_system/input_system.hpp"
 #include "scene_system.hpp"

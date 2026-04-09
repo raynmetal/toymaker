@@ -1,4 +1,4 @@
-#include "toymaker/engine/spatial_query_math.hpp"
+#include "toymaker/engine/spatial_query/math.hpp"
 #include "string_conversions.hpp"
 #include <doctest/doctest.h>
 #include <cmath>
@@ -297,6 +297,48 @@ TEST_CASE("Capsule-Sphere Overlap Detection") {
         CHECK(overlaps2);
     }
 }
+
+TEST_CASE("Sphere-Sphere Overlap Detection") {
+    // Start with two objects positioned right next to each other
+    ToyMaker::ObjectBounds sphereOne { ToyMaker::ObjectBounds::create(
+        ToyMaker::VolumeCapsule {
+            .mRadius { 2.5f }
+        },
+        glm::vec3 { -2.5f, 0.f, 0.f },
+        glm::vec3 { 0.f }
+    ) };
+    ToyMaker::ObjectBounds sphereTwo { ToyMaker::ObjectBounds::create(
+        ToyMaker::VolumeSphere {
+            .mRadius { 2.5f },
+        },
+        glm::vec3 { 2.51f, 0.f, 0.f },
+        glm::vec3 { 0.f }
+    ) };
+
+    SUBCASE("Overlap fails when objects only touch, but do not overlap") {
+        const bool overlaps {
+            ToyMaker::overlaps(sphereOne, sphereTwo)
+        };
+        CHECK(!overlaps);
+    }
+
+    SUBCASE("Overlap succeeds when objects actually do intersect") {
+        sphereTwo.mPositionOffset = glm::vec3 { 2.f, 0.f, 0.f };
+        const bool overlaps {
+            ToyMaker::overlaps(sphereOne, sphereTwo)
+        };
+        CHECK(overlaps);
+    }
+
+    SUBCASE("Either shape being degenerate causes overlap test to fail") {
+        sphereTwo.mPositionOffset = sphereOne.mPositionOffset;
+        sphereTwo.mTrueVolume.mSphere.mRadius = 0.f;
+        const bool overlaps { ToyMaker::overlaps(sphereOne, sphereTwo) };
+        CHECK(!overlaps);
+    }
+
+}
+
 }
 
 }
