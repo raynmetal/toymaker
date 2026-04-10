@@ -438,3 +438,152 @@ std::pair<float, float> axisProjectCapsule(const glm::vec3& axis, const ObjectBo
         maximum + capsule.mTrueVolume.mCapsule.mRadius
     };
 }
+
+std::pair<bool, glm::vec3> Simplex::evaluate() {
+    switch(mNPoints) {
+    case 2:
+        return { false, Simplex::doSimplex2() };
+    case 3:
+        return { false, Simplex::doSimplex3() };
+    case 4:
+        return Simplex::doSimplex4();
+    default:
+        assert(false && "There is no reason whatsoever that a 3D simplex should have more than 4 or less than 2 points");
+        return { false, glm::vec3{ std::numeric_limits<float>::infinity() } };
+    }
+}
+
+glm::vec3 Simplex::doSimplex2() {
+    assert(mNPoints == 2 && "This function should only be called when the simplex contains 2 points");
+
+    const glm::vec3 pointA { mPoints[1] };
+    const glm::vec3 pointB { mPoints[0] };
+
+    // This constant shows up multiple times
+    const glm::vec3 lineAB { pointB - pointA };
+
+    // Note: we already know that A is beyond origin relative to B, so we can jump
+    // straight to computing the perpendicular to AB
+
+    // If B from A is the same direction as origin from A, go along
+    // perpendicular to AB towards origin
+    return glm::cross(glm::cross(lineAB, -pointA), lineAB);
+}
+
+glm::vec3 Simplex::doSimplex3() {
+    assert(mNPoints == 3 && "This function should only be called when the simplex contains 3 points");
+
+    const glm::vec3 pointA { mPoints[2] };
+    const glm::vec3 pointB { mPoints[1] };
+    const glm::vec3 pointC { mPoints[0] };
+
+    // A few constants which show up on multiple conditions
+    const glm::vec3 lineAC { pointC - pointA };
+    const glm::vec3 lineAB { pointB - pointA };
+    const glm::vec3 crossABAC { glm::cross(lineAB, lineAC) };
+
+    // See if our origin is past the triangle beyond lineAC
+    if(glm::dot(glm::cross(crossABAC, lineAC), -pointA) > 0) {
+        if(glm::dot(lineAC, -pointA) > 0) {
+            replace({ pointC, pointA });
+            return glm::cross(glm::cross(lineAC, -pointA), lineAC);
+
+        // We now know we're closest to AB
+        } else {
+            replace({ pointB, pointA });
+            return glm::cross(glm::cross(lineAB, -pointA), lineAB);
+        }
+
+    // See if we're beyond the triangle beyond lineAB
+    } else if(glm::dot(glm::cross(lineAB, crossABAC), -pointA) > 0) {
+        // We now know we're closest to AB (and by the first if we've already ruled out AC)
+        replace({ pointB, pointA });
+        return glm::cross(glm::cross(lineAB, -pointA), lineAB);
+
+    // Test if origin is above the triangle
+    } else if(glm::dot(crossABAC, -pointA) > 0) {
+        return crossABAC;
+
+    // We now know our origin is *below* the triangle
+    } else {
+        replace({ pointB, pointC, pointA });
+        return -crossABAC;
+    }
+}
+
+std::pair<bool, glm::vec3> Simplex::doSimplex4() {
+    assert(mNPoints == 4 && "This function should only be called when the simplex contains 4 points");
+
+    const glm::vec3 pointA { mPoints[3] };
+    const glm::vec3 pointB { mPoints[2] };
+    const glm::vec3 pointC { mPoints[1] };
+    const glm::vec3 pointD { mPoints[0] };
+
+    // A few constants which show up on multiple conditions
+    const glm::vec3 lineAD { pointD - pointA };
+    const glm::vec3 lineAC { pointC - pointA };
+    const glm::vec3 lineAB { pointB - pointA };
+    // Each cross below is a normal pointing outward from the triangle that forms a
+    // face of the simplex tetrahedron
+    const glm::vec3 crossABAC { glm::cross(lineAB, lineAC) };
+    const glm::vec3 crossACAD { glm::cross(lineAC, lineAD) };
+    const glm::vec3 crossADAB { glm::cross(lineAD, lineAB) };
+    // note: we don't care about crossBCBD -- we already know we're above it
+
+    // see if we're beyond face ABC
+    if(glm::dot(crossABAC, -pointA) > 0) {
+        // Are we closest to the region near line AC
+        if(glm::dot(glm::cross(crossABAC, lineAC), -pointA) > 0) {
+            // continue the search near line AC
+            replace({ pointC, pointA });
+            return { false, glm::cross(glm::cross(lineAC, -pointA), lineAC) };
+
+        // Are we closest to the region near line AB?
+        } else if(glm::dot(glm::cross(lineAB, crossABAC), -pointA) > 0) {
+            replace({ pointB, pointA });
+            return { false, glm::cross(glm::cross(lineAB, -pointA), lineAB) };
+        }
+
+        // We are directly above the face ABC of the tetrahedron
+        replace({ pointC, pointB, pointA });
+        return { false, crossABAC };
+
+    // See if we're above the tetrahedron face ACD
+    } else if(glm::dot(crossACAD, -pointA) > 0) {
+        // Are we closest to line AD?
+        if(glm::dot(glm::cross(crossACAD, lineAD), -pointA) > 0) {
+            replace({ pointD, pointA });
+            return { false, glm::cross(glm::cross(lineAD, -pointA), lineAD) };
+
+        // Are we closest to line AC?
+        } else if(glm::dot(glm::cross(lineAC, crossACAD), -pointA) > 0) {
+            replace({ pointC, pointA });
+            return { false, glm::cross(glm::cross(lineAC, -pointA), lineAC) };
+        }
+
+        // We are directly above face ACD of the tetrahedron
+        replace({ pointD, pointC, pointA });
+        return { false, crossACAD };
+
+    // Finally check if we're above face ADB
+    } else if(glm::dot(crossADAB, -pointA) > 0) {
+        // Are we closest to line AB?
+        if(glm::dot(glm::cross(crossADAB, lineAB), -pointA) > 0) {
+            replace({ pointB, pointA });
+            return { false, glm::cross(glm::cross(lineAB, -pointA), lineAB) };
+
+        // ... or line AD?
+        } else if(glm::dot(glm::cross(lineAD, crossADAB), -pointA) > 0) {
+            replace({ pointD, pointA });
+            return { false, glm::cross(glm::cross(lineAD, -pointA), lineAD) };
+        }
+
+        // We are certainly directly above face ADB of the tetrahedron
+        replace({ pointB, pointD, pointA });
+        return { false, crossADAB };
+    }
+
+    // We've exhausted every other option, we now _know_
+    // that we're in the tetrahedron
+    return { true, glm::vec3 { 0.f } };
+}

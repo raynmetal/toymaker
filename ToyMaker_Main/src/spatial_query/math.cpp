@@ -3,7 +3,6 @@
 
 using namespace ToyMaker;
 
-constexpr uint8_t kMaxIterations { 64 };
 
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getBoxIntersections(const Ray& ray, const std::array<AreaTriangle, 12>& boxTriangles);
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCapsuleIntersections(const Ray& ray, const ObjectBounds& capsule);
@@ -22,22 +21,6 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getBoxIntersections(const Ra
     return getBoxIntersections(ray, bounds.getAxisAlignedBoxFaceTriangles());
 }
 
-template<typename T, typename U>
-inline glm::vec3 minkowskiDifference(const T& one, const U& two, const glm::vec3& along) {
-    const glm::vec3 supportOne { one.getSupportAlong(along) };
-    const glm::vec3 supportTwo { two.getSupportAlong(-along) };
-    return supportOne - supportTwo;
-}
-
-// Finds the next search direction for a simplex, mutating the simplex as it does so
-glm::vec3  doSimplex(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found);
-// Finds the next search direction for a simplex comprised of 2 points, mutating the simplex as it does so
-glm::vec3 doSimplex2(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints);
-// Finds the next search direction for a simplex comprised of 3 points, mutating the simplex as it does so
-glm::vec3 doSimplex3(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints);
-// Finds the next search direction for a simplex comprised of 4 points, mutating the simplex as it does so
-glm::vec3 doSimplex4(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found);
-
 // Gets the global orientation vectors of a box
 std::array<glm::vec3, 3> getBoxEdgeAxes(const ObjectBounds& box);
 
@@ -50,12 +33,7 @@ bool checkContainsPointBox(const glm::vec3& point, const ObjectBounds& box);
 bool checkContainsPointCapsule(const glm::vec3& point, const ObjectBounds& capsule);
 bool checkContainsPointSphere(const glm::vec3& point, const ObjectBounds& sphere);
 
-/** 
- * @brief GJK implementation based on Casey Muratori's YouTube video on the same, which
- * is available [here](https://www.youtube.com/watch?v=Qupqu1xe7Io)
- */
-template <typename T, typename U>
-bool gjkOverlaps(const T& one, const U& two);
+
 bool checkOverlaps1D(float shape1Min, float shape1Max, float shape2Min, float shape2Max);
 
 /** 
@@ -255,25 +233,11 @@ bool ToyMaker::overlaps(const AxisAlignedBounds& one, const AxisAlignedBounds& t
 }
 
 bool ToyMaker::overlaps(const ObjectBounds& one, const ObjectBounds& two) {
-    assert(one.isSensible() && two.isSensible() && "Invalid object bounds provided");
-
-    // Both need to be non-degenerate bounds to actually overlap
-    if(!one.isPositiveStrict() || !two.isPositiveStrict()) {
-        return false;
-    }
-
-    return gjkOverlaps(one, two);
+    return gjkOverlaps(one, two).first;
 }
 
 bool ToyMaker::overlaps(const AxisAlignedBounds& one, const ObjectBounds& two) {
-    assert(one.isSensible() && two.isSensible() && "Invalid object bounds provided");
-
-    // Both need to be non-degenerate bounds to actually overlap
-    if(!(one.isPositiveStrict() && two.isPositiveStrict())) {
-        return false;
-    }
-
-    return gjkOverlaps(one, two);
+    return gjkOverlaps(one, two).first;
 }
 
 bool ToyMaker::contains(const glm::vec3& point, const AxisAlignedBounds& bounds) {
@@ -753,81 +717,7 @@ bool checkContainsPointCapsule(const glm::vec3& point, const ObjectBounds& capsu
     );
 }
 
-template <typename T, typename U>
-inline bool gjkOverlaps(const T& one, const U& two) {
-    glm::vec3 searchDirection { two.getComputedWorldPosition() - one.getComputedWorldPosition() };
 
-    // Two non-degenerate objects share the same origin, obviously they overlap
-    if(squareDistance(searchDirection) == 0.f) {
-        return true;
-    }
-
-    std::array<glm::vec3, 4> simplex {};
-    simplex[0] = minkowskiDifference(one, two, searchDirection);
-    uint8_t nSimplexPoints { 1 };
-
-    // we go towards the origin from the first point we found
-    searchDirection = squareDistance(simplex[0]) ? -simplex[0]: glm::vec3 { 1.f, 0.f, 0.f };
-    bool found { false };
-    for(uint8_t iteration { 0 }; iteration < kMaxIterations; ++iteration) {
-
-        // hackery to ensure that 9 times out of ten we manage to generate a 3-simplex even
-        // when we've enclosed the origin with a simplex of lesser degree
-        if(!squareDistance(searchDirection)) {
-            const float signMult { (iteration & 1)? -1.f: 1.f };
-            // Pick a new search direction to expand 1-simplex (line) to 2-simplex (triangle)
-            if(nSimplexPoints == 2) {
-                const float signMult2 { (iteration & 2)? -1.f: 1.f };
-                const glm::vec3 dirAB { glm::normalize(simplex[1] - simplex[0]) };
-                assert(squareDistance(dirAB) > 0 && "A and B should never be the same point");
-
-                const glm::vec3 dirOffset { (dirAB.x != 0.f || dirAB.z != 0.f)? 
-                    glm::vec3{ 0.f, signMult * 1.f, 0.f }: glm::vec3{ signMult2 * 1.f, 0.f, signMult * 1.f }
-                };
-
-                searchDirection = -dirAB + dirOffset;
-    
-            // Pick a new search direction to expand 2-simplex (triangle) to 3-simplex (tetrahedron)
-            } else if(nSimplexPoints == 3) {
-                const glm::vec3 normABC { glm::normalize(glm::cross(simplex[1] - simplex[0], simplex[2] - simplex[0])) };
-                searchDirection = signMult * normABC;
-
-            } else {
-                assert(false && "A simplex with 4 points is not degenerate, and there's no solving necessary here");
-            }
-        }
-
-        const glm::vec3 candidatePoint { minkowskiDifference(one, two, searchDirection) };
-
-        // We couldn't find a point past the origin in this direction, so obviously there is no intersection
-        if(glm::dot(candidatePoint, searchDirection) <= 0) {
-            return false;
-        }
-
-        // Hackery to ensure that we don't add the same point twice (which is a possibility 
-        // since the hackery to force 3-simplex might cause us to look in the same direction
-        // twice)
-        bool foundDuplicate { false };
-        for(uint8_t index { 0 }; index < nSimplexPoints; ++index) {
-            if(simplex[index] == candidatePoint) {
-                foundDuplicate = true;
-            }
-        }
-        if(foundDuplicate) {
-            continue;
-        }
-
-        simplex[nSimplexPoints++] = candidatePoint;
-        assert(nSimplexPoints <= 4 && nSimplexPoints >= 2 && "Within the loop, we must always have between 2 and 4 points in the simplex");
-
-        searchDirection = doSimplex(simplex, nSimplexPoints, found);
-        if(found) {
-            return true;
-        }
-    }
-    assert(false && "We should not have exited the loop without finding a simplex");
-    return false;
-}
 
 std::array<glm::vec3, 3> getBoxEdgeAxes(const ObjectBounds& box) {
     const glm::vec3 localForward { 0.f, 0.f, -1.f };
@@ -877,184 +767,4 @@ glm::vec3 getClosestPointOnBox(const glm::vec3& point, const ObjectBounds& box) 
         + saturatedPoint.y * boxAxes[1]
         + saturatedPoint.z * boxAxes[2]
     );
-}
-
-glm::vec3 doSimplex(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found) {
-    assert(!found && "What are we doing if we found our enclosing simplex already?");
-    switch(nSimplexPoints) {
-    case 2:
-        return doSimplex2(simplex, nSimplexPoints);
-    case 3:
-        return doSimplex3(simplex, nSimplexPoints);
-    case 4:
-        return doSimplex4(simplex, nSimplexPoints, found);
-    default:
-        assert(false && "There is no reason whatsoever that a 3D simplex should have more than 4 or less than 2 points");
-        return glm::vec3{ std::numeric_limits<float>::infinity() };
-    }
-}
-
-glm::vec3 doSimplex2(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints) {
-    assert(nSimplexPoints == 2 && "This function should only be called when the simplex contains 2 points");
-
-    const glm::vec3 pointA { simplex[1] };
-    const glm::vec3 pointB { simplex[0] };
-
-    // This constant shows up multiple times
-    const glm::vec3 lineAB { pointB - pointA };
-
-    // Note: we already know that A is beyond origin relative to B, so we can jump
-    // straight to computing the perpendicular to AB
-
-    // If B from A is the same direction as origin from A, go along
-    // perpendicular to AB towards origin
-    return glm::cross(glm::cross(lineAB, -pointA), lineAB);
-}
-
-glm::vec3 doSimplex3(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints) {
-    assert(nSimplexPoints == 3 && "This function should only be called when the simplex contains 3 points");
-
-    const glm::vec3 pointA { simplex[2] };
-    const glm::vec3 pointB { simplex[1] };
-    const glm::vec3 pointC { simplex[0] };
-
-    // A few constants which show up on multiple conditions
-    const glm::vec3 lineAC { pointC - pointA };
-    const glm::vec3 lineAB { pointB - pointA };
-    const glm::vec3 crossABAC { glm::cross(lineAB, lineAC) };
-
-    // See if our origin is past the triangle beyond lineAC
-    if(glm::dot(glm::cross(crossABAC, lineAC), -pointA) > 0) {
-        if(glm::dot(lineAC, -pointA) > 0) {
-            nSimplexPoints = 2;
-            simplex[0] = pointC;
-            simplex[1] = pointA;
-            return glm::cross(glm::cross(lineAC, -pointA), lineAC);
-
-        // We now know we're closest to AB
-        } else {
-            nSimplexPoints = 2;
-            simplex[0] = pointB;
-            simplex[1] = pointA;
-            return glm::cross(glm::cross(lineAB, -pointA), lineAB);
-        }
-
-    // See if we're beyond the triangle beyond lineAB
-    } else if(glm::dot(glm::cross(lineAB, crossABAC), -pointA) > 0) {
-        // We now know we're closest to AB (and by the first if we've already ruled out AC)
-        nSimplexPoints = 2;
-        simplex[0] = pointB;
-        simplex[1] = pointA;
-        return glm::cross(glm::cross(lineAB, -pointA), lineAB);
-
-    // Test if origin is above the triangle
-    } else if(glm::dot(crossABAC, -pointA) > 0) {
-        return crossABAC;
-
-    // We now know our origin is *below* the triangle
-    } else {
-        simplex[0] = pointB;
-        simplex[1] = pointC;
-        return -crossABAC;
-    }
-}
-
-glm::vec3 doSimplex4(std::array<glm::vec3, 4>& simplex, uint8_t& nSimplexPoints, bool& found) {
-    assert(!found && "What are we even doing here if we've already found an enclosing simplex?");
-    assert(nSimplexPoints == 4 && "This function should only be called when the simplex contains 4 points");
-
-    const glm::vec3 pointA { simplex[3] };
-    const glm::vec3 pointB { simplex[2] };
-    const glm::vec3 pointC { simplex[1] };
-    const glm::vec3 pointD { simplex[0] };
-
-    // A few constants which show up on multiple conditions
-    const glm::vec3 lineAD { pointD - pointA };
-    const glm::vec3 lineAC { pointC - pointA };
-    const glm::vec3 lineAB { pointB - pointA };
-    // Each cross below is a normal pointing outward from the triangle that forms a
-    // face of the simplex tetrahedron
-    const glm::vec3 crossABAC { glm::cross(lineAB, lineAC) };
-    const glm::vec3 crossACAD { glm::cross(lineAC, lineAD) };
-    const glm::vec3 crossADAB { glm::cross(lineAD, lineAB) };
-    // note: we don't care about crossBCBD -- we already know we're above it
-
-    // see if we're beyond face ABC
-    if(glm::dot(crossABAC, -pointA) > 0) {
-        // Are we closest to the region near line AC
-        if(glm::dot(glm::cross(crossABAC, lineAC), -pointA) > 0) {
-            // continue the search near line AC
-            nSimplexPoints = 2;
-            simplex[0] = pointC;
-            simplex[1] = pointA;
-            return glm::cross(glm::cross(lineAC, -pointA), lineAC);
-
-        // Are we closest to the region near line AB?
-        } else if(glm::dot(glm::cross(lineAB, crossABAC), -pointA) > 0) {
-            nSimplexPoints = 2;
-            simplex[0] = pointB;
-            simplex[1] = pointA;
-            return glm::cross(glm::cross(lineAB, -pointA), lineAB);
-        }
-
-        // We are directly above the face ABC of the tetrahedron
-        nSimplexPoints = 3;
-        simplex[0] = pointC;
-        simplex[1] = pointB;
-        simplex[2] = pointA;
-        return crossABAC;
-
-    // See if we're above the tetrahedron face ACD
-    } else if(glm::dot(crossACAD, -pointA) > 0) {
-        // Are we closest to line AD?
-        if(glm::dot(glm::cross(crossACAD, lineAD), -pointA) > 0) {
-            nSimplexPoints = 2;
-            simplex[0] = pointD;
-            simplex[1] = pointA;
-            return glm::cross(glm::cross(lineAD, -pointA), lineAD);
-
-        // Are we closest to line AC?
-        } else if(glm::dot(glm::cross(lineAC, crossACAD), -pointA) > 0) {
-            nSimplexPoints = 2;
-            simplex[0] = pointC;
-            simplex[1] = pointA;
-            return glm::cross(glm::cross(lineAC, -pointA), lineAC);
-        }
-
-        // We are directly above face ACD of the tetrahedron
-        nSimplexPoints = 3;
-        simplex[0] = pointD;
-        simplex[1] = pointC;
-        simplex[2] = pointA;
-        return crossACAD;
-
-    // Finally check if we're above face ADB
-    } else if(glm::dot(crossADAB, -pointA) > 0) {
-        // Are we closest to line AB?
-        if(glm::dot(glm::cross(crossADAB, lineAB), -pointA) > 0) {
-            nSimplexPoints = 2;
-            simplex[0] = pointB;
-            simplex[1] = pointA;
-            return glm::cross(glm::cross(lineAB, -pointA), lineAB);
-
-        // ... or line AD?
-        } else if(glm::dot(glm::cross(lineAD, crossADAB), -pointA) > 0) {
-            nSimplexPoints = 2;
-            simplex[0] = pointD;
-            simplex[1] = pointA;
-            return glm::cross(glm::cross(lineAD, -pointA), lineAD);
-        }
-
-        // We are certainly directly above face ADB of the tetrahedron
-        nSimplexPoints = 3;
-        simplex[0] = pointB;
-        simplex[1] = pointD;
-        simplex[2] = pointA;
-        return crossADAB;
-    }
-
-    // We've exhausted every other option, we _know_ now
-    // that we're in the tetrahedron
-    found = true;
-    return glm::vec3 { 0.f };
 }

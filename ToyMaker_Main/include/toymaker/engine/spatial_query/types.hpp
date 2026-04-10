@@ -188,7 +188,6 @@ namespace ToyMaker {
         inline bool isSensible() const {
             return Volume<TDerived>::isSensible();
         }
-
         /**
          * @brief Returns whether or not the derived volume has strictly positive parameters.
          * 
@@ -601,58 +600,79 @@ namespace ToyMaker {
         }
     };
 
-    // /**
-    //  * @brief Primitive for GJK algorithm.
-    //  * 
-    //  * Stores up to 4 points which should enclose the origin in the
-    //  * Minkowski different of two shapes (if the shapes intersect).
-    //  * 
-    //  */
-    // struct Simplex {
-    //     /**
-    //      * @brief Points representing the simplex.
-    //      * 
-    //      */
-    //     std::array<glm::vec3, 4> mPoints;
+    /**
+     * @brief Primitive for GJK algorithm.
+     * 
+     * Stores up to 4 points which should enclose the origin in the
+     * Minkowski different of two shapes (if those shapes intersect).
+     * 
+     */
+    struct Simplex {
+        /**
+         * @brief Points representing the simplex.
+         * 
+         */
+        std::array<glm::vec3, 4> mPoints;
 
-    //     /**
-    //      * @brief The number of points in this simplex
-    //      * 
-    //      */
-    //     uint8_t mNPoints { 0 };
+        /**
+         * @brief The number of points in this simplex
+         * 
+         */
+        uint8_t mNPoints { 0 };
 
-    //     /**
-    //      * @brief Whether or not this simplex encloses (0.f, 0.f, 0.f)
-    //      * 
-    //      */
-    //     bool mFound { false };
+        /**
+         * @brief Adds a new point to the simplex
+         * 
+         * @retval false A duplicate was found, and this point could not be added
+         * @retval true Appended new point successfully
+         */
+        inline bool append(const glm::vec3& candidatePoint) {
+            assert(mNPoints < 4 && "We already have 4 (or more) points, there's no more needed");
 
-    //     /**
-    //      * @brief Adds a new point to the simplex
-    //      * 
-    //      * @retval false A duplicate was found, and this point could not be added
-    //      * @retval true Appended new point successfully
-    //      */
-    //     inline bool append(const glm::vec3& candidatePoint) {
-    //         assert(mNPoints < 4 && "We already have 4 (or more) points, there's no more needed");
+            // Hackery to ensure that we don't add the same point twice (which is a possibility 
+            // since the hackery to force 3-simplex might cause us to look in the same direction
+            // twice)
+            for(uint8_t index { 0 }; index < mNPoints; ++index) {
+                if(mPoints[index] == candidatePoint) {
+                    return false;
+                }
+            }
+            mPoints[mNPoints++] = candidatePoint;
 
-    //         // Hackery to ensure that we don't add the same point twice (which is a possibility 
-    //         // since the hackery to force 3-simplex might cause us to look in the same direction
-    //         // twice)
-    //         for(uint8_t index { 0 }; index < mNPoints; ++index) {
-    //             if(simplex[index] == candidatePoint) {
-    //                 return false;
-    //             }
-    //         }
-    //         mPoints[mNPoints++] = candidatePoint;
+            return true;
+        }
 
-    //         return true;
-    //     }
-    // private:
-    //     glm::vec3 doSimplex4();
-    //     glm::vec3 doSimplex3();
-    //     glm::vec3 doSimplex2();
-    // };
+        /**
+         * @brief Replaces the current simplex with points from a new list (which will usually have as many or fewer points)
+         * 
+         */
+        inline void replace(const std::vector<glm::vec3>& newPoints) {
+            assert(newPoints.size() <= 4 && "Invalid point list provided");
+            mNPoints = 0;
+            for(const auto& point: newPoints) {
+                const bool pointAddedSuccessfully{ append(point) };
+                assert(pointAddedSuccessfully && "Invalid point list provided");
+            }
+        }
+
+        /**
+         * @brief Tries to find a 3-simplex that encloses the origin
+         *
+         * Implementation of the simplex evaluation/simplification test in GJK, an algorithm
+         * for determining whether 2 convex shapes intersect.  When they do intersect, this
+         * simplex forms a tetrahedron containing point (0, 0, 0).
+         *
+         * @returns Whether this simplex forms a tetrahedron enclosing (0, 0, 0), and a search 
+         * direction to use in the next support function call
+         *
+         */
+        std::pair<bool, glm::vec3> evaluate();
+
+    private:
+        std::pair<bool, glm::vec3> doSimplex4();
+        glm::vec3 doSimplex3();
+        glm::vec3 doSimplex2();
+    };
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
@@ -843,6 +863,8 @@ namespace ToyMaker {
          * 
          * Strongly related to the Gilbert-Johnson-Keerthi (GJK) algorithm for detecting intersections
          * of convex shapes.
+         * 
+         * @see Simplex
          * 
          */
         glm::vec3 getSupportAlong(const glm::vec3& axis) const;
