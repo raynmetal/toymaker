@@ -39,6 +39,8 @@ TEST_CASE("Box-Box Overlap Detection") {
             ToyMaker::overlaps(boxOne, boxTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(boxOne, boxTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
     }
 
     SUBCASE("Either of the boxes being degenerate causes the overlap test to fail") {
@@ -79,6 +81,8 @@ TEST_CASE("Box-Sphere Overlap Detection") {
             ToyMaker::overlaps(box, sphere)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(box, sphere) };
+        CHECK(gjkResult.second.mNPoints == 4);
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
@@ -120,6 +124,8 @@ TEST_CASE("Box-Capsule Overlap Detection") {
             ToyMaker::overlaps(box, capsule)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(box, capsule) };
+        CHECK(gjkResult.second.mNPoints == 4);
     }
 
     SUBCASE("Minor rotation of box causes overlap to succeed") {
@@ -128,6 +134,8 @@ TEST_CASE("Box-Capsule Overlap Detection") {
             ToyMaker::overlaps(box, capsule)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(box, capsule) };
+        CHECK(gjkResult.second.mNPoints == 4);
     }
 
     SUBCASE("Minor rotation of capsule causes overlap to succeed") {
@@ -136,6 +144,9 @@ TEST_CASE("Box-Capsule Overlap Detection") {
             ToyMaker::overlaps(box, capsule)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(box, capsule) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
@@ -155,9 +166,16 @@ TEST_CASE("Box-Capsule Overlap Detection") {
 
         const bool overlaps1 { ToyMaker::overlaps(box, capsule) };
         CHECK(overlaps1);
+        auto gjkResult { ToyMaker::gjkOverlaps(box, capsule) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
         capsule.mOrientationOffset = glm::vec3 { 0.f, 0.f, glm::radians(-90.f) };
         const bool overlaps2 { ToyMaker::overlaps(box, capsule) };
         CHECK(overlaps2);
+        gjkResult = ToyMaker::gjkOverlaps(box, capsule);
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
     }
 }
 
@@ -193,6 +211,9 @@ TEST_CASE("Capsule-Capsule Overlap Detection") {
             ToyMaker::overlaps(capsuleOne, capsuleTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
     }
 
     SUBCASE("Minor rotation of capsule one causes overlap to succeed") {
@@ -201,6 +222,9 @@ TEST_CASE("Capsule-Capsule Overlap Detection") {
             ToyMaker::overlaps(capsuleOne, capsuleTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
     }
 
     SUBCASE("Minor rotation of capsule two causes overlap to succeed") {
@@ -209,6 +233,9 @@ TEST_CASE("Capsule-Capsule Overlap Detection") {
             ToyMaker::overlaps(capsuleOne, capsuleTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
@@ -228,9 +255,16 @@ TEST_CASE("Capsule-Capsule Overlap Detection") {
 
         const bool overlaps1 { ToyMaker::overlaps(capsuleOne, capsuleTwo) };
         CHECK(overlaps1);
+        const auto gjkResult1 { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult1.second.mNPoints == 4);
+        CHECK(gjkResult1.first == true);
+
         capsuleTwo.mOrientationOffset = glm::vec3 { 0.f, 0.f, glm::radians(-90.f) };
         const bool overlaps2 { ToyMaker::overlaps(capsuleOne, capsuleTwo) };
         CHECK(overlaps2);
+        const auto gjkResult2 { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult2.second.mNPoints == 4);
+        CHECK(gjkResult2.first == true);
     }
 }
 
@@ -265,6 +299,9 @@ TEST_CASE("Capsule-Sphere Overlap Detection") {
             ToyMaker::overlaps(capsule, sphere)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsule, sphere) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
     }
 
     SUBCASE("Minor rotation of capsule causes overlap to succeed") {
@@ -273,6 +310,9 @@ TEST_CASE("Capsule-Sphere Overlap Detection") {
             ToyMaker::overlaps(capsule, sphere)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsule, sphere) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
@@ -292,9 +332,16 @@ TEST_CASE("Capsule-Sphere Overlap Detection") {
 
         const bool overlaps1 { ToyMaker::overlaps(capsule, sphere) };
         CHECK(overlaps1);
+        const auto gjkResult1 { ToyMaker::gjkOverlaps(capsule, sphere) };
+        CHECK(gjkResult1.second.mNPoints == 4);
+        CHECK(gjkResult1.first == true);
+
         capsule.mOrientationOffset = glm::vec3 { 0.f, 0.f, glm::radians(-90.f) };
         const bool overlaps2 { ToyMaker::overlaps(capsule, sphere) };
         CHECK(overlaps2);
+        const auto gjkResult2 { ToyMaker::gjkOverlaps(capsule, sphere) };
+        CHECK(gjkResult2.second.mNPoints == 4);
+        CHECK(gjkResult2.first == true);
     }
 }
 
@@ -328,6 +375,9 @@ TEST_CASE("Sphere-Sphere Overlap Detection") {
             ToyMaker::overlaps(sphereOne, sphereTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(sphereOne, sphereTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
