@@ -336,7 +336,6 @@ TEST_CASE("Sphere-Sphere Overlap Detection") {
         const bool overlaps { ToyMaker::overlaps(sphereOne, sphereTwo) };
         CHECK(!overlaps);
     }
-
 }
 
 }

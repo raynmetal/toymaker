@@ -8,7 +8,7 @@
 #include "toymaker/engine/vertex.hpp"
 #include "toymaker/engine/model.hpp"
 #include "toymaker/engine/material.hpp"
-#include "toymaker/engine/spatial_query/basic_types.hpp"
+#include "toymaker/engine/spatial_query/types.hpp"
 #include "toymaker/engine/mesh.hpp"
 #include "toymaker/engine/shapegen.hpp"
 

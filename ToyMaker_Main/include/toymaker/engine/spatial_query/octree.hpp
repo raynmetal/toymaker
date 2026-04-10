@@ -17,7 +17,7 @@
 #include <cmath>
 
 #include "math.hpp"
-#include "basic_types.hpp"
+#include "types.hpp"
 #include "../core/ecs_world.hpp"
 
 namespace ToyMaker {

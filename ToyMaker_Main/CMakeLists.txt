@@ -30,6 +30,7 @@ target_sources(ToyMaker
         src/input_system/action_context.cpp
         src/input_system/input_manager.cpp
     # Spatial query sources
+        src/spatial_query/types.cpp
         src/spatial_query/math.cpp
         src/spatial_query/octree.cpp
         src/spatial_query/system.cpp
@@ -67,7 +68,7 @@ target_sources(ToyMaker
             include/toymaker/engine/input_system/input_data.hpp
             include/toymaker/engine/input_system/input_system.hpp
             # Spatial query sources
-            include/toymaker/engine/spatial_query/basic_types.hpp
+            include/toymaker/engine/spatial_query/types.hpp
             include/toymaker/engine/spatial_query/math.hpp
             include/toymaker/engine/spatial_query/octree.hpp
             include/toymaker/engine/spatial_query/system.hpp
