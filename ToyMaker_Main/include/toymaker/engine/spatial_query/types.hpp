@@ -14,12 +14,15 @@
 
 #include <cmath>
 #include <array>
+#include <queue>
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include "../core/ecs_world.hpp"
 
 namespace ToyMaker {
+    struct AreaTriangle;
+
     inline float squareDistance(const glm::vec3& vector) {
         return glm::dot(vector, vector);
     }
@@ -672,6 +675,91 @@ namespace ToyMaker {
         std::pair<bool, glm::vec3> doSimplex4();
         glm::vec3 doSimplex3();
         glm::vec3 doSimplex2();
+    };
+
+    /**
+     * @brief Primitive for EPA algorithm
+     * 
+     * Represents a polygonal shape contained within the Minkowski difference of
+     * two intersecting shapes.  Stores polytope faces in order of their proximity to 
+     * the origin.
+     * 
+     */
+    class Polytope {
+    private:
+        struct Face {
+            std::array<uint16_t, 3>  mIndices {};
+        };
+
+        /**
+         * Initializes an empty polytope
+         */
+        Polytope();
+
+
+        /**
+         * @brief The list of triangle faces representing this polytope
+         * 
+         */
+        std::priority_queue<Face, std::vector<Face>, std::function<bool(const Face&, const Face&)>> mFaces;
+
+        /**
+         * @brief List of points representing this polytope
+         */
+        std::vector<glm::vec3> mPoints {};
+
+        inline glm::vec3 getTriangleCross(const Face& face) const {
+            return glm::cross(
+                mPoints[face.mIndices[1]] - mPoints[face.mIndices[0]],
+                mPoints[face.mIndices[2]] - mPoints[face.mIndices[0]]
+            );
+        }
+
+        inline glm::vec3 getTriangleNorm(const Face& face) const {
+            return glm::normalize(getTriangleCross(face));
+        }
+
+    public:
+        /**
+         * @brief Creates a polytope object out of a simplex.
+         * 
+         * Simplex _must_ be a tetrahedron enclosing the origin -- creation will fail otherwise.
+         */
+        Polytope(const Simplex& simplex);
+
+        /**
+         * @brief Returns the next search direction for a point to add
+         * to the polytope
+         */
+        glm::vec3 getNextSearch() const;
+
+        /**
+         * Returns the number of faces that this polytope is comprised of
+         */
+        std::size_t getNumFaces() const {
+            return mFaces.size();
+        }
+
+        std::size_t getNumPoints() const {
+            return mPoints.size();
+        }
+
+        /**
+         * @brief Returns the closest point to the origin on the triangle face
+         * closest to the origin
+         * 
+         */
+        glm::vec3 getClosestPoint() const;
+
+        /**
+         * @brief Appends a new point, replacing the topmost triangle in the polygon
+         * with 3 more triangles including the new point
+         * 
+         * @retval false New point is not beyond current closest point in latest
+         * search direction.
+         * @retval true Successfully appended triangles including new point to the list.
+         */
+        bool append(const glm::vec3& newPoint);
     };
 
     /**

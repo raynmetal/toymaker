@@ -142,6 +142,15 @@ namespace ToyMaker {
     std::pair<bool, Simplex> gjkOverlaps(const T& one, const U& two);
 
     /**
+     * @brief EPA implementation, used to derive contact information for intersections
+     * between convex shapes
+     * 
+     */
+    template <typename T, typename U>
+    Polytope buildPolytope(const T& one, const U& two, const Simplex& gjkSimplex);
+
+
+    /**
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `point` is contained by `bounds`
      * 
@@ -270,6 +279,19 @@ namespace ToyMaker {
         }
         assert(false && "We should not have exited the loop without finding a simplex");
         return { false, simplex };
+    }
+
+    template <typename T, typename U>
+    inline Polytope buildPolytope(const T& one, const U& two, const Simplex& simplex) {
+        Polytope polytope { simplex };
+        glm::vec3 searchDirection { polytope.getNextSearch() };
+        assert(squareDistance(searchDirection) > 0 && "Search direction should always be non-zero");
+        assert(isFinite(searchDirection) && "Search direction should always be finite");
+        uint8_t iterationsLeft { kMaxIterations };
+        while(polytope.append(minkowskiDifference(one, two, searchDirection)) && iterationsLeft--) {
+            searchDirection = polytope.getNextSearch();
+        }
+        return polytope;
     }
 }
 

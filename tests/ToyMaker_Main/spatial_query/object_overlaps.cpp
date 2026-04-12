@@ -41,6 +41,9 @@ TEST_CASE("Box-Box Overlap Detection") {
         CHECK(overlaps);
         const auto gjkResult { ToyMaker::gjkOverlaps(boxOne, boxTwo) };
         CHECK(gjkResult.second.mNPoints == 4);
+
+        const ToyMaker::Polytope polytope { ToyMaker::buildPolytope(boxOne, boxTwo, gjkResult.second) };
+        CHECK(polytope.getNumFaces() >= 4);
     }
 
     SUBCASE("Either of the boxes being degenerate causes the overlap test to fail") {

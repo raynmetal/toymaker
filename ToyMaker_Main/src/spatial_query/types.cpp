@@ -60,6 +60,107 @@ ObjectBounds ObjectBounds::create(const VolumeCapsule& capsule, const glm::vec3&
     };
 }
 
+glm::vec3 Polytope::getNextSearch() const {
+    const Face& triangle { mFaces.top() };
+
+    const glm::vec3 crossTriangle { glm::cross(
+        mPoints[triangle.mIndices[1]] - mPoints[triangle.mIndices[0]],
+        mPoints[triangle.mIndices[2]] - mPoints[triangle.mIndices[0]]
+    ) };
+
+    return crossTriangle;
+}
+
+glm::vec3 Polytope::getClosestPoint() const {
+    const Face& triangle { mFaces.top() };
+
+    const glm::vec3 normTriangle { glm::normalize(glm::cross(
+        mPoints[triangle.mIndices[1]] - mPoints[triangle.mIndices[0]],
+        mPoints[triangle.mIndices[2]] - mPoints[triangle.mIndices[0]]
+    )) };
+
+    return glm::dot(normTriangle, mPoints[triangle.mIndices[0]]) * normTriangle;
+}
+
+Polytope::Polytope(): mFaces([this](const Face& one, const Face& two) -> bool {
+    const glm::vec3 normOne { glm::normalize(this->getTriangleCross(one)) };
+    const glm::vec3 normTwo { glm::normalize(this->getTriangleCross(two)) };
+    return glm::dot(normOne, mPoints[one.mIndices[0]]) > glm::dot(normTwo, mPoints[two.mIndices[0]]);
+}) {}
+
+Polytope::Polytope(const Simplex& simplex): Polytope{} {
+    assert(simplex.mNPoints == 4 && "Polytope must be formed from tetrahedral simplex");
+
+    for(const auto& point: simplex.mPoints) {
+        mPoints.push_back(point);
+    }
+    mFaces.push(Face { .mIndices { 3, 2, 1 } });
+    mFaces.push(Face { .mIndices { 3, 1, 0 } });
+    mFaces.push(Face { .mIndices { 3, 0, 2 } });
+    mFaces.push(Face { .mIndices { 1, 2, 0 } });
+}
+
+bool Polytope::append(const glm::vec3& newPoint) {
+    const glm::vec3 crossTriangle { getNextSearch() };
+    const Face& oldTriangle { mFaces.top() };
+    const float oldDistance { glm::dot(
+        crossTriangle, mPoints[oldTriangle.mIndices[0]]
+    ) };
+    const float newDistance { glm::dot(crossTriangle, newPoint) };
+    assert(oldDistance >= 0 && "Old distance should be greater than or equal to 0");
+
+    // Our new point is not further from the origin in this direction; there
+    // is nothing to be done
+    if(newDistance - oldDistance <= 0.001) {
+        return false;
+    }
+
+    // Add the new point to our list of points
+    const uint16_t indexNew { static_cast<uint16_t>(mPoints.size()) };
+    mPoints.push_back(newPoint);
+
+    // Copy over old faces into a container that's easier to iterate over
+    std::vector<Face> oldFaces {};
+    while(!mFaces.empty()) {
+        oldFaces.push_back(mFaces.top());
+        mFaces.pop();
+    }
+
+    // Simultaneously build our edge list and cull faces seen by the
+    // newly added point
+    std::set<std::pair<uint16_t, uint16_t>> edgeList {};
+    for(const Face& face: oldFaces) {
+        // Faces that aren't seen by the new point survive
+        if(glm::dot(getTriangleCross(face), newPoint - mPoints[face.mIndices[0]]) < 0) {
+            mFaces.push(face);
+            continue;
+        }
+
+        // Other faces have their edges added to the edge list
+        for(uint8_t i { 0 }; i < 3; ++i) {
+            const uint16_t one { face.mIndices[i] };
+            const uint16_t two { face.mIndices[(i + 1)%3] };
+
+            // This edge was already in the list (implying it's an 
+            // internal edge).  Remove it, and move on to the next
+            const auto found { edgeList.find(std::pair {two, one}) };
+            if(found != edgeList.end()) {
+                edgeList.erase(found);
+                continue;
+            }
+
+            edgeList.insert(std::pair { one, two });
+        }
+    }
+
+    // Construct triangles to add to the polytope based on the newly computed edge list
+    for(const auto& edge: edgeList) {
+        mFaces.push(Face { .mIndices { indexNew, edge.first, edge.second } });
+    }
+
+    return true;
+}
+
 void ObjectBounds::applyModelMatrix(const glm::mat4& modelMatrix) {
     mPosition = static_cast<glm::vec3>(modelMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f});
     mOrientation = glm::normalize(glm::quat_cast(glm::transpose(glm::inverse(modelMatrix))));
