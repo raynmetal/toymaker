@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_FRAMEBUFFER_H
-#define FOOLSENGINE_FRAMEBUFFER_H
+#ifndef TOYMAKERENGINE_FRAMEBUFFER_H
+#define TOYMAKERENGINE_FRAMEBUFFER_H
 
 #include <vector>
 #include <memory>

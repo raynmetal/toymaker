@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_MESH_H
-#define FOOLSENGINE_MESH_H
+#ifndef TOYMAKERENGINE_MESH_H
+#define TOYMAKERENGINE_MESH_H
 
 #include <vector>
 #include <map>

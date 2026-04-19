@@ -1,6 +1,6 @@
 #include <algorithm>
 
-#include "toymaker/engine/spatial_query_math.hpp"
+#include "toymaker/engine/spatial_query/math.hpp"
 
 #include "toymaker/builtins/query_click.hpp"
 #include "toymaker/builtins/interface_pointer_callback.hpp"

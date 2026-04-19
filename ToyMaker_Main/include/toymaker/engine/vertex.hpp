@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_VERTEX_H
-#define FOOLSENGINE_VERTEX_H
+#ifndef TOYMAKERENGINE_VERTEX_H
+#define TOYMAKERENGINE_VERTEX_H
 
 #include <string>
 #include <glm/glm.hpp>

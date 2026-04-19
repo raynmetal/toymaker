@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_LIGHT_H
-#define FOOLSENGINE_LIGHT_H
+#ifndef TOYMAKERENGINE_LIGHT_H
+#define TOYMAKERENGINE_LIGHT_H
 
 #include <utility>
 #include <queue>

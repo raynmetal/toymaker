@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_RENDERSTAGE_H
-#define FOOLSENGINE_RENDERSTAGE_H
+#ifndef TOYMAKERENGINE_RENDERSTAGE_H
+#define TOYMAKERENGINE_RENDERSTAGE_H
 
 #include <string>
 #include <map>

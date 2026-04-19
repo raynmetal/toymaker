@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_SHAPEGEN_H
-#define FOOLSENGINE_SHAPEGEN_H
+#ifndef TOYMAKERENGINE_SHAPEGEN_H
+#define TOYMAKERENGINE_SHAPEGEN_H
 
 #include <memory>
 #include <nlohmann/json.hpp>

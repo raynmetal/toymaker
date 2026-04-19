@@ -11,8 +11,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_MATERIAL_H
-#define FOOLSENGINE_MATERIAL_H
+#ifndef TOYMAKERENGINE_MATERIAL_H
+#define TOYMAKERENGINE_MATERIAL_H
 
 #include <vector>
 #include <string>

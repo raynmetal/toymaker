@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_SCENELOADING_H
-#define FOOLSENGINE_SCENELOADING_H
+#ifndef TOYMAKERENGINE_SCENELOADING_H
+#define TOYMAKERENGINE_SCENELOADING_H
 
 #include "core/resource_database.hpp"
 

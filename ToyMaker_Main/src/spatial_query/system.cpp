@@ -1,7 +1,7 @@
 #include <limits>
 #include <cmath>
 
-#include "toymaker/engine/spatial_query_system.hpp"
+#include "toymaker/engine/spatial_query/system.hpp"
 
 using namespace ToyMaker;
 

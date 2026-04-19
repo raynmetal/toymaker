@@ -14,8 +14,8 @@
  * 
  */
 
-#ifndef FOOLSENGINE_SCENESYSTEM_H
-#define FOOLSENGINE_SCENESYSTEM_H
+#ifndef TOYMAKERENGINE_SCENESYSTEM_H
+#define TOYMAKERENGINE_SCENESYSTEM_H
 
 #include <vector>
 #include <memory>
@@ -30,7 +30,7 @@
 #include "core/ecs_world.hpp"
 #include "core/resource_database.hpp"
 #include "scene_components.hpp"
-#include "spatial_query_math.hpp"
+#include "spatial_query/math.hpp"
 #include "render_system.hpp"
 #include "texture.hpp"
 #include "input_system/input_system.hpp"

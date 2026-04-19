@@ -1,4 +1,4 @@
-#include "toymaker/engine/spatial_query_math.hpp"
+#include "toymaker/engine/spatial_query/math.hpp"
 #include "string_conversions.hpp"
 #include <doctest/doctest.h>
 #include <cmath>

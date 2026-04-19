@@ -1,6 +1,7 @@
 # IDE Configs
 /.vscode
 *.code-workspace
+tags
 
 #Build files
 # /**/*.o

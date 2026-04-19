@@ -5,7 +5,7 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
-#include "toymaker/engine/spatial_query_octree.hpp"
+#include "toymaker/engine/spatial_query/octree.hpp"
 
 using namespace ToyMaker;
 

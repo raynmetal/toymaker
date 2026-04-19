@@ -1,4 +1,4 @@
-#include "toymaker/engine/spatial_query_math.hpp"
+#include "toymaker/engine/spatial_query/math.hpp"
 #include "string_conversions.hpp"
 #include <doctest/doctest.h>
 #include <cmath>
@@ -39,6 +39,23 @@ TEST_CASE("Box-Box Overlap Detection") {
             ToyMaker::overlaps(boxOne, boxTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(boxOne, boxTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+
+        const ToyMaker::Polytope polytope { ToyMaker::buildPolytope(boxOne, boxTwo, gjkResult.second) };
+        CHECK(polytope.getNumFaces() >= 4);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(boxOne, boxTwo) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(collision.mContactA.mPenetrationDepth <= .1f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mPoint.y > 0.f); // right object clockwise on +Z, tops should touch
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Either of the boxes being degenerate causes the overlap test to fail") {
@@ -79,6 +96,20 @@ TEST_CASE("Box-Sphere Overlap Detection") {
             ToyMaker::overlaps(box, sphere)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(box, sphere) };
+        CHECK(gjkResult.second.mNPoints == 4);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(box, sphere) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(collision.mContactA.mPenetrationDepth <= .2f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mPoint.y < 0.f); // left object clockwise on +Z, bottoms should touch
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
@@ -120,6 +151,19 @@ TEST_CASE("Box-Capsule Overlap Detection") {
             ToyMaker::overlaps(box, capsule)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(box, capsule) };
+        CHECK(gjkResult.second.mNPoints == 4);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(box, capsule) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(glm::abs(collision.mContactA.mPenetrationDepth - .5f) <= .1f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Minor rotation of box causes overlap to succeed") {
@@ -128,6 +172,20 @@ TEST_CASE("Box-Capsule Overlap Detection") {
             ToyMaker::overlaps(box, capsule)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(box, capsule) };
+        CHECK(gjkResult.second.mNPoints == 4);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(box, capsule) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(collision.mContactA.mPenetrationDepth <= .3f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mPoint.y < 0.f); // left object clockwise on +Z, bottoms should touch
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Minor rotation of capsule causes overlap to succeed") {
@@ -136,6 +194,21 @@ TEST_CASE("Box-Capsule Overlap Detection") {
             ToyMaker::overlaps(box, capsule)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(box, capsule) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(box, capsule) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(collision.mContactA.mPenetrationDepth <= .3f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mPoint.y > 0.f); // right object clockwise on +Z, tops should touch
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
@@ -155,9 +228,27 @@ TEST_CASE("Box-Capsule Overlap Detection") {
 
         const bool overlaps1 { ToyMaker::overlaps(box, capsule) };
         CHECK(overlaps1);
+        auto gjkResult { ToyMaker::gjkOverlaps(box, capsule) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
         capsule.mOrientationOffset = glm::vec3 { 0.f, 0.f, glm::radians(-90.f) };
         const bool overlaps2 { ToyMaker::overlaps(box, capsule) };
         CHECK(overlaps2);
+        gjkResult = ToyMaker::gjkOverlaps(box, capsule);
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(box, capsule) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(collision.mContactA.mPenetrationDepth <= .2f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 }
 
@@ -193,6 +284,19 @@ TEST_CASE("Capsule-Capsule Overlap Detection") {
             ToyMaker::overlaps(capsuleOne, capsuleTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(capsuleOne, capsuleTwo) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(glm::abs(collision.mContactA.mPenetrationDepth - .5f) <= .1f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
     }
 
     SUBCASE("Minor rotation of capsule one causes overlap to succeed") {
@@ -201,6 +305,21 @@ TEST_CASE("Capsule-Capsule Overlap Detection") {
             ToyMaker::overlaps(capsuleOne, capsuleTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(capsuleOne, capsuleTwo) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(collision.mContactA.mPenetrationDepth <= .4f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mPoint.y < 0.f); // left object clockwise on +Z, bottoms should touch
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Minor rotation of capsule two causes overlap to succeed") {
@@ -209,6 +328,21 @@ TEST_CASE("Capsule-Capsule Overlap Detection") {
             ToyMaker::overlaps(capsuleOne, capsuleTwo)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(capsuleOne, capsuleTwo) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(collision.mContactA.mPenetrationDepth <= .4f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mPoint.y > 0.f); // right object clockwise on +Z, tops should touch
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
@@ -228,9 +362,26 @@ TEST_CASE("Capsule-Capsule Overlap Detection") {
 
         const bool overlaps1 { ToyMaker::overlaps(capsuleOne, capsuleTwo) };
         CHECK(overlaps1);
+        const auto gjkResult1 { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult1.second.mNPoints == 4);
+        CHECK(gjkResult1.first == true);
+
         capsuleTwo.mOrientationOffset = glm::vec3 { 0.f, 0.f, glm::radians(-90.f) };
         const bool overlaps2 { ToyMaker::overlaps(capsuleOne, capsuleTwo) };
         CHECK(overlaps2);
+        const auto gjkResult2 { ToyMaker::gjkOverlaps(capsuleOne, capsuleTwo) };
+        CHECK(gjkResult2.second.mNPoints == 4);
+        CHECK(gjkResult2.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(capsuleOne, capsuleTwo) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(glm::abs(collision.mContactA.mPenetrationDepth - .2f) <= .1f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
     }
 }
 
@@ -265,6 +416,20 @@ TEST_CASE("Capsule-Sphere Overlap Detection") {
             ToyMaker::overlaps(capsule, sphere)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsule, sphere) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(capsule, sphere) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(glm::abs(collision.mContactA.mPenetrationDepth - .5f) <= .1f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Minor rotation of capsule causes overlap to succeed") {
@@ -273,6 +438,21 @@ TEST_CASE("Capsule-Sphere Overlap Detection") {
             ToyMaker::overlaps(capsule, sphere)
         };
         CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(capsule, sphere) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(capsule, sphere) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(collision.mContactA.mPenetrationDepth <= .4f);
+        CHECK(collision.mContactA.mPenetrationDepth > 0.f);
+        CHECK(collision.mContactA.mPoint.y < 0.f); // left object clockwise on +Z, bottoms should touch
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 
     SUBCASE("Either shape being degenerate causes overlap test to fail") {
@@ -292,11 +472,82 @@ TEST_CASE("Capsule-Sphere Overlap Detection") {
 
         const bool overlaps1 { ToyMaker::overlaps(capsule, sphere) };
         CHECK(overlaps1);
+        const auto gjkResult1 { ToyMaker::gjkOverlaps(capsule, sphere) };
+        CHECK(gjkResult1.second.mNPoints == 4);
+        CHECK(gjkResult1.first == true);
+
         capsule.mOrientationOffset = glm::vec3 { 0.f, 0.f, glm::radians(-90.f) };
         const bool overlaps2 { ToyMaker::overlaps(capsule, sphere) };
         CHECK(overlaps2);
+        const auto gjkResult2 { ToyMaker::gjkOverlaps(capsule, sphere) };
+        CHECK(gjkResult2.second.mNPoints == 4);
+        CHECK(gjkResult2.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(capsule, sphere) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(glm::abs(.2f - collision.mContactA.mPenetrationDepth) <= .07f);
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
     }
 }
+
+TEST_CASE("Sphere-Sphere Overlap Detection") {
+    // Start with two objects positioned right next to each other
+    ToyMaker::ObjectBounds sphereOne { ToyMaker::ObjectBounds::create(
+        ToyMaker::VolumeCapsule {
+            .mRadius { 2.5f }
+        },
+        glm::vec3 { -2.5f, 0.f, 0.f },
+        glm::vec3 { 0.f }
+    ) };
+    ToyMaker::ObjectBounds sphereTwo { ToyMaker::ObjectBounds::create(
+        ToyMaker::VolumeSphere {
+            .mRadius { 2.5f },
+        },
+        glm::vec3 { 2.51f, 0.f, 0.f },
+        glm::vec3 { 0.f }
+    ) };
+
+    SUBCASE("Overlap fails when objects only touch, but do not overlap") {
+        const bool overlaps {
+            ToyMaker::overlaps(sphereOne, sphereTwo)
+        };
+        CHECK(!overlaps);
+    }
+
+    SUBCASE("Overlap succeeds when objects actually do intersect") {
+        sphereTwo.mPositionOffset = glm::vec3 { 2.f, 0.f, 0.f };
+        const bool overlaps {
+            ToyMaker::overlaps(sphereOne, sphereTwo)
+        };
+        CHECK(overlaps);
+        const auto gjkResult { ToyMaker::gjkOverlaps(sphereOne, sphereTwo) };
+        CHECK(gjkResult.second.mNPoints == 4);
+        CHECK(gjkResult.first == true);
+
+        // Verify collision information
+        const ToyMaker::Collision collision { ToyMaker::checkCollision(sphereOne, sphereTwo) };
+        CHECK(collision.mCollided == true);
+        CHECK(collision.mContactA.mPenetrationDepth == collision.mContactB.mPenetrationDepth);
+        CHECK(glm::abs(collision.mContactA.mPenetrationDepth - .5f) <= 0.1f);
+        CHECK(collision.mContactA.mNormal == -collision.mContactB.mNormal);
+        CHECK(collision.mContactA.mTangent1 == -collision.mContactB.mTangent1);
+        CHECK(collision.mContactA.mTangent2 == -collision.mContactB.mTangent2);
+
+    }
+
+    SUBCASE("Either shape being degenerate causes overlap test to fail") {
+        sphereTwo.mPositionOffset = sphereOne.mPositionOffset;
+        sphereTwo.mTrueVolume.mSphere.mRadius = 0.f;
+        const bool overlaps { ToyMaker::overlaps(sphereOne, sphereTwo) };
+        CHECK(!overlaps);
+    }
+}
+
 }
 
 }
