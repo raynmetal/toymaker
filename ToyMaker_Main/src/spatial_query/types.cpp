@@ -73,13 +73,43 @@ glm::vec3 Polytope::getNextSearch() const {
 
 glm::vec3 Polytope::getClosestPoint() const {
     const Face& triangle { mFaces.top() };
+    const glm::vec3 normTriangle { getClosestTriangleNormal() };
+    return glm::dot(normTriangle, mPoints[triangle.mIndices[0]]) * normTriangle;
+}
 
-    const glm::vec3 normTriangle { glm::normalize(glm::cross(
+glm::vec3 Polytope::getClosestTriangleNormal() const {
+    const Face& triangle { mFaces.top() };
+    return { glm::normalize(glm::cross(
         mPoints[triangle.mIndices[1]] - mPoints[triangle.mIndices[0]],
         mPoints[triangle.mIndices[2]] - mPoints[triangle.mIndices[0]]
     )) };
+}
 
-    return glm::dot(normTriangle, mPoints[triangle.mIndices[0]]) * normTriangle;
+AreaTriangle Polytope::getClosestTriangle() const {
+    const Face& triangle { mFaces.top() };
+    return { .mPoints {
+        mPoints[triangle.mIndices[0]],
+        mPoints[triangle.mIndices[1]],
+        mPoints[triangle.mIndices[2]],
+    } };
+}
+
+AreaTriangle Polytope::getClosestTriangleSupportA() const {
+    const Face& triangle { mFaces.top() };
+    return { .mPoints {
+        mPointsSupportA[triangle.mIndices[0]],
+        mPointsSupportA[triangle.mIndices[1]],
+        mPointsSupportA[triangle.mIndices[2]],
+    } };
+}
+
+AreaTriangle Polytope::getClosestTriangleSupportB() const {
+    const Face& triangle { mFaces.top() };
+    return { .mPoints {
+        mPointsSupportB[triangle.mIndices[0]],
+        mPointsSupportB[triangle.mIndices[1]],
+        mPointsSupportB[triangle.mIndices[2]],
+    } };
 }
 
 Polytope::Polytope(): mFaces([this](const Face& one, const Face& two) -> bool {
@@ -91,16 +121,22 @@ Polytope::Polytope(): mFaces([this](const Face& one, const Face& two) -> bool {
 Polytope::Polytope(const Simplex& simplex): Polytope{} {
     assert(simplex.mNPoints == 4 && "Polytope must be formed from tetrahedral simplex");
 
-    for(const auto& point: simplex.mPoints) {
-        mPoints.push_back(point);
+    for(uint8_t i { 0 }; i < 4; ++i) {
+        mPoints.push_back(simplex.mPoints[i]);
+        mPointsSupportA.push_back(simplex.mPointsSupportA[i]);
+        mPointsSupportB.push_back(simplex.mPointsSupportB[i]);
     }
+
+    // Store indices in counterclockwise winding so that triangle norms
+    // point _away_ from origin
     mFaces.push(Face { .mIndices { 3, 2, 1 } });
     mFaces.push(Face { .mIndices { 3, 1, 0 } });
     mFaces.push(Face { .mIndices { 3, 0, 2 } });
     mFaces.push(Face { .mIndices { 1, 2, 0 } });
 }
 
-bool Polytope::append(const glm::vec3& newPoint) {
+bool Polytope::append(const glm::vec3& newPoint, const glm::vec3& supportA, const glm::vec3& supportB) {
+    assert(supportA - supportB == newPoint && "The difference of the supports should yield the new point");
     const glm::vec3 crossTriangle { getNextSearch() };
     const Face& oldTriangle { mFaces.top() };
     const float oldDistance { glm::dot(
@@ -118,6 +154,8 @@ bool Polytope::append(const glm::vec3& newPoint) {
     // Add the new point to our list of points
     const uint16_t indexNew { static_cast<uint16_t>(mPoints.size()) };
     mPoints.push_back(newPoint);
+    mPointsSupportA.push_back(supportA);
+    mPointsSupportB.push_back(supportB);
 
     // Copy over old faces into a container that's easier to iterate over
     std::vector<Face> oldFaces {};
@@ -574,9 +612,13 @@ glm::vec3 Simplex::doSimplex2() {
 glm::vec3 Simplex::doSimplex3() {
     assert(mNPoints == 3 && "This function should only be called when the simplex contains 3 points");
 
-    const glm::vec3 pointA { mPoints[2] };
-    const glm::vec3 pointB { mPoints[1] };
-    const glm::vec3 pointC { mPoints[0] };
+    const uint8_t indexA { 2 };
+    const uint8_t indexB { 1 };
+    const uint8_t indexC { 0 };
+
+    const glm::vec3 pointA { mPoints[indexA] };
+    const glm::vec3 pointB { mPoints[indexB] };
+    const glm::vec3 pointC { mPoints[indexC] };
 
     // A few constants which show up on multiple conditions
     const glm::vec3 lineAC { pointC - pointA };
@@ -586,19 +628,19 @@ glm::vec3 Simplex::doSimplex3() {
     // See if our origin is past the triangle beyond lineAC
     if(glm::dot(glm::cross(crossABAC, lineAC), -pointA) > 0) {
         if(glm::dot(lineAC, -pointA) > 0) {
-            replace({ pointC, pointA });
+            reorder({ indexC, indexA });
             return glm::cross(glm::cross(lineAC, -pointA), lineAC);
 
         // We now know we're closest to AB
         } else {
-            replace({ pointB, pointA });
+            reorder({ indexB, indexA });
             return glm::cross(glm::cross(lineAB, -pointA), lineAB);
         }
 
     // See if we're beyond the triangle beyond lineAB
     } else if(glm::dot(glm::cross(lineAB, crossABAC), -pointA) > 0) {
         // We now know we're closest to AB (and by the first if we've already ruled out AC)
-        replace({ pointB, pointA });
+        reorder({ indexB, indexA });
         return glm::cross(glm::cross(lineAB, -pointA), lineAB);
 
     // Test if origin is above the triangle
@@ -607,7 +649,7 @@ glm::vec3 Simplex::doSimplex3() {
 
     // We now know our origin is *below* the triangle
     } else {
-        replace({ pointB, pointC, pointA });
+        reorder({ indexB, indexC, indexA });
         return -crossABAC;
     }
 }
@@ -615,10 +657,15 @@ glm::vec3 Simplex::doSimplex3() {
 std::pair<bool, glm::vec3> Simplex::doSimplex4() {
     assert(mNPoints == 4 && "This function should only be called when the simplex contains 4 points");
 
-    const glm::vec3 pointA { mPoints[3] };
-    const glm::vec3 pointB { mPoints[2] };
-    const glm::vec3 pointC { mPoints[1] };
-    const glm::vec3 pointD { mPoints[0] };
+    const uint8_t indexA { 3 };
+    const uint8_t indexB { 2 };
+    const uint8_t indexC { 1 };
+    const uint8_t indexD { 0 };
+
+    const glm::vec3 pointA { mPoints[indexA] };
+    const glm::vec3 pointB { mPoints[indexB] };
+    const glm::vec3 pointC { mPoints[indexC] };
+    const glm::vec3 pointD { mPoints[indexD] };
 
     // A few constants which show up on multiple conditions
     const glm::vec3 lineAD { pointD - pointA };
@@ -636,51 +683,51 @@ std::pair<bool, glm::vec3> Simplex::doSimplex4() {
         // Are we closest to the region near line AC
         if(glm::dot(glm::cross(crossABAC, lineAC), -pointA) > 0) {
             // continue the search near line AC
-            replace({ pointC, pointA });
+            reorder({ indexC, indexA });
             return { false, glm::cross(glm::cross(lineAC, -pointA), lineAC) };
 
         // Are we closest to the region near line AB?
         } else if(glm::dot(glm::cross(lineAB, crossABAC), -pointA) > 0) {
-            replace({ pointB, pointA });
+            reorder({ indexB, indexA });
             return { false, glm::cross(glm::cross(lineAB, -pointA), lineAB) };
         }
 
         // We are directly above the face ABC of the tetrahedron
-        replace({ pointC, pointB, pointA });
+        reorder({ indexC, indexB, indexA });
         return { false, crossABAC };
 
     // See if we're above the tetrahedron face ACD
     } else if(glm::dot(crossACAD, -pointA) > 0) {
         // Are we closest to line AD?
         if(glm::dot(glm::cross(crossACAD, lineAD), -pointA) > 0) {
-            replace({ pointD, pointA });
+            reorder({ indexD, indexA });
             return { false, glm::cross(glm::cross(lineAD, -pointA), lineAD) };
 
         // Are we closest to line AC?
         } else if(glm::dot(glm::cross(lineAC, crossACAD), -pointA) > 0) {
-            replace({ pointC, pointA });
+            reorder({ indexC, indexA });
             return { false, glm::cross(glm::cross(lineAC, -pointA), lineAC) };
         }
 
         // We are directly above face ACD of the tetrahedron
-        replace({ pointD, pointC, pointA });
+        reorder({ indexD, indexC, indexA });
         return { false, crossACAD };
 
     // Finally check if we're above face ADB
     } else if(glm::dot(crossADAB, -pointA) > 0) {
         // Are we closest to line AB?
         if(glm::dot(glm::cross(crossADAB, lineAB), -pointA) > 0) {
-            replace({ pointB, pointA });
+            reorder({ indexB, indexA });
             return { false, glm::cross(glm::cross(lineAB, -pointA), lineAB) };
 
         // ... or line AD?
         } else if(glm::dot(glm::cross(lineAD, crossADAB), -pointA) > 0) {
-            replace({ pointD, pointA });
+            reorder({ indexD, indexA });
             return { false, glm::cross(glm::cross(lineAD, -pointA), lineAD) };
         }
 
         // We are certainly directly above face ADB of the tetrahedron
-        replace({ pointB, pointD, pointA });
+        reorder({ indexB, indexD, indexA });
         return { false, crossADAB };
     }
 

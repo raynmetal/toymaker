@@ -612,10 +612,23 @@ namespace ToyMaker {
      */
     struct Simplex {
         /**
-         * @brief Points representing the simplex.
+         * @brief Points representing the simplex, derived by finding the Minksowski difference of
+         * support points on two convex shapes.
          * 
          */
         std::array<glm::vec3, 4> mPoints;
+
+        /**
+         * @brief The point on the LHS of the Minkowski difference, where each index 
+         * corresponds to a point on `mPoints`
+         */
+        std::array<glm::vec3, 4> mPointsSupportA;
+
+        /**
+         * @brief The point on the RHS of the Minkowski difference, where each index 
+         * corresponds to a point on `mPoints`
+         */
+        std::array<glm::vec3, 4> mPointsSupportB;
 
         /**
          * @brief The number of points in this simplex
@@ -629,8 +642,9 @@ namespace ToyMaker {
          * @retval false A duplicate was found, and this point could not be added
          * @retval true Appended new point successfully
          */
-        inline bool append(const glm::vec3& candidatePoint) {
+        inline bool append(const glm::vec3& candidatePoint, const glm::vec3& supportA, const glm::vec3& supportB) {
             assert(mNPoints < 4 && "We already have 4 (or more) points, there's no more needed");
+            assert(supportA - supportB == candidatePoint && "The difference in supports should yield the candidate point");
 
             // Hackery to ensure that we don't add the same point twice (which is a possibility 
             // since the hackery to force 3-simplex might cause us to look in the same direction
@@ -640,7 +654,10 @@ namespace ToyMaker {
                     return false;
                 }
             }
-            mPoints[mNPoints++] = candidatePoint;
+            mPoints[mNPoints] = candidatePoint;
+            mPointsSupportA[mNPoints] = supportA;
+            mPointsSupportB[mNPoints] = supportB;
+            ++mNPoints;
 
             return true;
         }
@@ -649,11 +666,14 @@ namespace ToyMaker {
          * @brief Replaces the current simplex with points from a new list (which will usually have as many or fewer points)
          * 
          */
-        inline void replace(const std::vector<glm::vec3>& newPoints) {
-            assert(newPoints.size() <= 4 && "Invalid point list provided");
+        inline void reorder(const std::vector<uint8_t> reorderedIndices) {
+            assert(reorderedIndices.size() <= 4 && "Invalid point list provided");
+            const std::array<glm::vec3, 4> oldPoints { mPoints };
+            const std::array<glm::vec3, 4> oldPointsSupportA { mPointsSupportA };
+            const std::array<glm::vec3, 4> oldPointsSupportB { mPointsSupportB };
             mNPoints = 0;
-            for(const auto& point: newPoints) {
-                const bool pointAddedSuccessfully{ append(point) };
+            for(const auto& index: reorderedIndices) {
+                const bool pointAddedSuccessfully{ append(oldPoints[index], oldPointsSupportA[index], oldPointsSupportB[index]) };
                 assert(pointAddedSuccessfully && "Invalid point list provided");
             }
         }
@@ -687,6 +707,9 @@ namespace ToyMaker {
      */
     class Polytope {
     private:
+        /**
+         * @brief Stores the indices of a single face of _this_ polytope
+         */
         struct Face {
             std::array<uint16_t, 3>  mIndices {};
         };
@@ -707,6 +730,17 @@ namespace ToyMaker {
          * @brief List of points representing this polytope
          */
         std::vector<glm::vec3> mPoints {};
+        /**
+         * @brief List of points representing support point A, where each point corresponds
+         * to the polytope point it generated in `mPoints` at the same index
+         */
+        std::vector<glm::vec3> mPointsSupportA {};
+
+        /**
+         * @brief List of points representing support point B, where each point corresponds
+         * to the polytope point it generated in `mPoints` at the same index
+         */
+        std::vector<glm::vec3> mPointsSupportB {};
 
         inline glm::vec3 getTriangleCross(const Face& face) const {
             return glm::cross(
@@ -752,14 +786,123 @@ namespace ToyMaker {
         glm::vec3 getClosestPoint() const;
 
         /**
+         * @brief Returns the direction to the closest point on the polytope's surface from 
+         * the origin
+         * 
+         * Directly represents the contact normal between two objects.
+         * 
+         */
+        glm::vec3 getClosestTriangleNormal() const;
+
+        /**
+         * @brief Returns the closest polytope triangle.
+         * 
+         * This is useful when we want to find the barycentric coordinates of this triangle
+         * to derive contact points for a pair of intersecting shapes.
+         * 
+         */
+        AreaTriangle getClosestTriangle() const;
+
+        /**
+         * @brief Gets the points of shape A that were responsible for generating the closest triangle
+         * of the polytope.
+         * 
+         */
+        AreaTriangle getClosestTriangleSupportA() const;
+
+        /**
+         * @brief Gets the points of shape B that were responsible for generating the closest triangle
+         * of the polytope.
+         * 
+         */
+        AreaTriangle getClosestTriangleSupportB() const;
+
+        /**
          * @brief Appends a new point, replacing the topmost triangle in the polygon
          * with 3 more triangles including the new point
+         * 
+         * @param newPoint The new point to add to the polytope
+         * @param supportA The term on the LHS of the Minkowski difference that created `newPoint`
+         * @param supportB The term on the RHS of the Minkowski difference that created `newPoint`
          * 
          * @retval false New point is not beyond current closest point in latest
          * search direction.
          * @retval true Successfully appended triangles including new point to the list.
          */
-        bool append(const glm::vec3& newPoint);
+        bool append(const glm::vec3& newPoint, const glm::vec3& supportA, const glm::vec3& supportB);
+    };
+
+    /**
+     * @brief Object representing contact information between a pair of convex shapes from the
+     * perspective of _one_ of those shapes.
+     * 
+     * All 3D points and vectors are given relative to the world.  Additional processing of
+     * this data is necessary to convert them to local-space data.
+     * 
+     */
+    struct Contact {
+        /**
+         * @brief The worldspace point on the surface of this shape that made contact with the other shape
+         * 
+         */
+        glm::vec3 mPoint;
+
+        /**
+         * @brief Worldspace normal pointing inward from the surface of this
+         * shape such that moving in this direction by the penetration depth
+         * will remove the overlap.
+         */
+        glm::vec3 mNormal;
+
+        /**
+         * @brief Worldspace tangent orthogonal to the contact normal
+         * and the other contact tangent.
+         */
+        glm::vec3 mTangent1;
+
+        /**
+         * @brief Worldspace tangent orthogonal to the contact normal
+         * and the other contact tangent.
+         */
+        glm::vec3 mTangent2;
+
+        /**
+         * @brief The length by which to move this object in the direction of
+         * the contact normal to separate the colliding objects
+         * 
+         */
+        float mPenetrationDepth;
+    };
+
+    /**
+     * @brief Data representing everything about a collision.
+     * 
+     * This data includes:
+     * 
+     * - Whether a collision occurred
+     * 
+     * - Contact information relative to each object, referred to as A and
+     * B, depending on the order of parameters passed to the collision evaluator
+     * 
+     */
+    struct Collision {
+        /**
+         * @brief Whether a collision occurred
+         * 
+         */
+        bool mCollided;
+
+        /**
+         * @brief Contact information relative to the _first_ collision shape
+         * 
+         */
+        Contact mContactA;
+
+        /**
+         * @brief Contact information relative to the _second_ collision shape
+         * 
+         */
+        Contact mContactB;
     };
 
     /**

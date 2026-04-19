@@ -137,18 +137,53 @@ namespace ToyMaker {
      * @brief GJK implementation based on Casey Muratori's video lecture, which
      * is available [here](https://www.youtube.com/watch?v=Qupqu1xe7Io)
      * 
+     * Computes furthest point along a given direction in `one`, minus furthest point along 
+     * the opposite direction in shape 2.  Performing this in _all_ directions yields a surface
+     * which, if the two shapes overlap, contains origin (0, 0, 0)
+     * 
+     * GJK attempts to find a minimal tetrahedron whose points are points on the boundaries of the
+     * Minkowski difference shape which encloses (0, 0, 0)
+     * 
+     * @retval true If overlap is found, with Tetrahedron enclosing origin;
+     * @retval false If the shapes don't overlap;
+     * 
      */
     template <typename T, typename U>
     std::pair<bool, Simplex> gjkOverlaps(const T& one, const U& two);
 
     /**
      * @brief EPA implementation, used to derive contact information for intersections
-     * between convex shapes
+     * between convex shapes.
+     * 
+     * Given a valid GJK simplex enclosing origin, expands the polytope until it the closest
+     * Minksowski difference surface to the origin is found.
+     * 
+     * The distance between the origin and the closest difference surface gives us the "Minimum
+     * Translation Vector," which is the distance by which both shapes can be moved away from one
+     * another to remove their overlap.
      * 
      */
     template <typename T, typename U>
     Polytope buildPolytope(const T& one, const U& two, const Simplex& gjkSimplex);
 
+    /**
+     * @brief Checks whether a pair of convex 3D shapes are colliding, returning information about
+     * the collision if they are.
+     * 
+     * It does this by:
+     * 
+     * 1. Using GJK to determine whether an overlap exists, and to build a tetrahedron enclosing the
+     * origin of the Minkowski Difference of the two shapes.
+     * 
+     * 2. Using expanding polytope algorithm to find the minimum translation vector and direction
+     * between the shapes.
+     * 
+     * 3. Deriving penetration depth, normals, contacts, relative to each shape, based on the minimum
+     * translation vector returned in the previous step.
+     * 
+     */
+    template <typename T, typename U>
+    Collision checkCollision(const T& one, const U& two);
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
@@ -189,6 +224,29 @@ namespace ToyMaker {
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Returns a pair of tangents to an input vector.
+     * 
+     * See [Erin Catto's blog post](https://box2d.org/posts/2014/02/computing-a-basis/) for the method used here to 
+     * derive consistent tangents to a vector efficiently.
+     * 
+     */
+    inline std::pair<glm::vec3, glm::vec3> deriveTangents(const glm::vec3& vector) {
+        assert(isFinite(vector) && "Vector must be finite");
+        assert(squareDistance(vector) && "Zero vectors are invalid as basis for tangents");
+
+        const auto normalized { glm::normalize(vector) };
+        const glm::vec3 tangentPrelim { ((glm::abs(normalized.x) >= .57735f) ?
+            glm::vec3{ normalized.y, -normalized.x, 0.f } : glm::vec3{ 0.f, normalized.z, -normalized.y }
+        ) };
+        const glm::vec3 tangent2 {
+            glm::normalize(glm::cross(tangentPrelim, normalized))
+        };
+
+        return { glm::normalize(glm::cross(normalized, tangent2)), tangent2 };
+    }
+
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
      * 
      * @brief Closely associated with GJK; finds the Minkowski difference between two shapes
      * situated somewhere in the world.
@@ -201,6 +259,24 @@ namespace ToyMaker {
         const glm::vec3 supportOne { one.getSupportAlong(along) };
         const glm::vec3 supportTwo { two.getSupportAlong(-along) };
         return supportOne - supportTwo;
+    }
+
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * 
+     * @brief Closely associated with GJK; finds the Minkowski difference between two shapes
+     * situated somewhere in the world.
+     * 
+     * @see gjkOverlaps
+     * 
+     * @returns std::tuple<glm::vec3, glm::vec3, glm::vec3> 0. Minkowski difference;  1. SupportA;  2. SupportB
+     * 
+     */
+    template<typename T, typename U>
+    inline std::tuple<glm::vec3, glm::vec3, glm::vec3> minkowskiDifferenceFull(const T& one, const U& two, const glm::vec3& along) {
+        const glm::vec3 supportOne { one.getSupportAlong(along) };
+        const glm::vec3 supportTwo { two.getSupportAlong(-along) };
+        return { supportOne - supportTwo, supportOne, supportTwo };
     }
 
     template <typename T, typename U>
@@ -221,7 +297,11 @@ namespace ToyMaker {
         }
 
         Simplex simplex {};
-        simplex.append(minkowskiDifference(one, two, searchDirection));
+        auto fullDifference { minkowskiDifferenceFull(one, two, searchDirection) };
+        const auto& candidatePoint { std::get<0>(fullDifference) };
+        const auto& supportA { std::get<1>(fullDifference) };
+        const auto& supportB { std::get<2>(fullDifference) };
+        simplex.append(candidatePoint, supportA, supportB);
 
         // we go towards the origin from the first point we found
         searchDirection = squareDistance(simplex.mPoints[0]) ? -simplex.mPoints[0]: glm::vec3 { 1.f, 0.f, 0.f };
@@ -255,7 +335,7 @@ namespace ToyMaker {
                 }
             }
 
-            const glm::vec3 candidatePoint { minkowskiDifference(one, two, searchDirection) };
+            fullDifference = minkowskiDifferenceFull(one, two, searchDirection);
 
             // We couldn't find a point past the origin in this direction, so obviously there is no intersection
             if(glm::dot(candidatePoint, searchDirection) <= 0) {
@@ -263,9 +343,9 @@ namespace ToyMaker {
             }
 
             // This will return false generally when we're trying to fabricate
-            // a search direction, in which case we just fabricate another one at
+            // a search direction.  In that case we just fabricate another one at
             // the start of the loop.
-            if(!simplex.append(candidatePoint)) {
+            if(!simplex.append(candidatePoint, supportA, supportB)) {
                 searchDirection = glm::vec3 { 0.f, 0.f, 0.f };
                 continue;
             }
@@ -282,15 +362,90 @@ namespace ToyMaker {
     }
 
     template <typename T, typename U>
+    inline Collision checkCollision(const T& one, const U& two) {
+        // check via GJK whether there's any overlap at all
+        const std::pair<bool, Simplex> overlapResult { gjkOverlaps(one, two) };
+        if(!overlapResult.first) {
+            return {
+                .mCollided { false },
+            };
+        }
+
+        // allocate result storage
+        Collision collisionResult { Collision {
+            .mCollided { true },
+        } };
+
+        
+        // build a polytope containing the closest surface to the origin in 
+        // the Minkowski difference between the objects
+        const Polytope polytope { buildPolytope(one, two, overlapResult.second) };
+
+        // derive barycentric coordinates for the contact point relative to the 
+        // triangle in the difference shape it lies on
+        const glm::vec3 closestPoint { polytope.getClosestPoint() };
+        const AreaTriangle closestTriangle { polytope.getClosestTriangle() };
+        const glm::mat3 barycentricSolver { glm::inverse(glm::mat3 {
+            closestTriangle.mPoints[0], closestTriangle.mPoints[1], closestTriangle.mPoints[2]
+        }) };
+        const glm::vec3 barycentricCoordinates {
+            barycentricSolver * closestPoint
+        };
+
+        // Use the barycentric coordinates to derive contact point for both shapes
+        const AreaTriangle closestTriangleOne {
+            polytope.getClosestTriangleSupportA()
+        };
+        const AreaTriangle closestTriangleTwo {
+            polytope.getClosestTriangleSupportB()
+        };
+        const glm::mat3 barycentricOne {
+            closestTriangleOne.mPoints[0], closestTriangleOne.mPoints[1], closestTriangleOne.mPoints[2]
+        };
+        const glm::mat3 barycentricTwo {
+            closestTriangleTwo.mPoints[0], closestTriangleTwo.mPoints[1], closestTriangleTwo.mPoints[2]
+        };
+        collisionResult.mContactA.mPoint = barycentricOne * barycentricCoordinates;
+        collisionResult.mContactB.mPoint = barycentricTwo * barycentricCoordinates;
+
+        // build tangent vectors to the normal (used for friction calculations)
+        const auto tangentPair { deriveTangents(closestPoint) };
+        collisionResult.mContactB.mNormal = glm::normalize(closestPoint);
+        collisionResult.mContactB.mTangent1 = glm::normalize(tangentPair.first);
+        collisionResult.mContactB.mTangent2 = glm::normalize(tangentPair.second);
+        collisionResult.mContactA.mNormal = -collisionResult.mContactB.mNormal;
+        collisionResult.mContactA.mTangent1 = -collisionResult.mContactB.mTangent1;
+        collisionResult.mContactA.mTangent2 = -collisionResult.mContactB.mTangent2;
+
+        // set penetration depth value for both contacts
+        collisionResult.mContactA.mPenetrationDepth = collisionResult.mContactB.mPenetrationDepth = glm::length(closestPoint);
+
+        return collisionResult;
+    }
+
+    template <typename T, typename U>
     inline Polytope buildPolytope(const T& one, const U& two, const Simplex& simplex) {
         Polytope polytope { simplex };
         glm::vec3 searchDirection { polytope.getNextSearch() };
         assert(squareDistance(searchDirection) > 0 && "Search direction should always be non-zero");
         assert(isFinite(searchDirection) && "Search direction should always be finite");
+
+        // Compute first support point
+        std::tuple<glm::vec3, glm::vec3, glm::vec3> differenceFull { minkowskiDifferenceFull(one, two, searchDirection) };
+
+        // These reference types can be thought of as "views" into the 
+        // differenceFull struct
+        const glm::vec3& supportA { std::get<1>(differenceFull) };
+        const glm::vec3& supportB { std::get<2>(differenceFull) };
+        const glm::vec3& difference { std::get<0>(differenceFull) };
+
+        // Keep building out the expanding polytope until either the minimum translation vector is found or we run out of iterations
         uint8_t iterationsLeft { kMaxIterations };
-        while(polytope.append(minkowskiDifference(one, two, searchDirection)) && iterationsLeft--) {
+        while(polytope.append(difference, supportA, supportB) && iterationsLeft--) {
             searchDirection = polytope.getNextSearch();
+            differenceFull = minkowskiDifferenceFull(one, two, searchDirection);
         }
+
         return polytope;
     }
 }
