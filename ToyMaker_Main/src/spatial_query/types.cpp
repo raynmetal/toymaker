@@ -1,4 +1,5 @@
-#include <cmath>
+#include <set>
+
 #include "toymaker/engine/spatial_query/types.hpp"
 
 using namespace ToyMaker;
@@ -33,30 +34,36 @@ bool ToyMaker::ObjectBounds::isPositiveStrict() const {
     return isBoundsNonZero;
 }
 
-ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::quat& orientationOffset, InteractionLayerMask interactionLayers, InteractionLayerMask interactionMask) {
     return ObjectBounds {
         .mType { TrueVolumeType::BOX },
         .mTrueVolume { .mBox { box } },
         .mPositionOffset { positionOffset },
         .mOrientationOffset{ orientationOffset },
+        .mInteractionLayers { interactionLayers },
+        .mInteractionMask { interactionMask },
     };
 }
 
-ObjectBounds ObjectBounds::create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::quat& orientationOffset, InteractionLayerMask interactionLayers, InteractionLayerMask interactionMask) {
     return ObjectBounds {
         .mType { TrueVolumeType::SPHERE },
         .mTrueVolume { .mSphere { sphere } },
         .mPositionOffset { positionOffset },
         .mOrientationOffset { orientationOffset },
+        .mInteractionLayers { interactionLayers },
+        .mInteractionMask { interactionMask },
     };
 }
 
-ObjectBounds ObjectBounds::create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::quat& orientationOffset, InteractionLayerMask interactionLayers, InteractionLayerMask interactionMask) {
     return ObjectBounds {
         .mType { TrueVolumeType::CAPSULE },
         .mTrueVolume { .mCapsule { capsule } },
         .mPositionOffset { positionOffset },
         .mOrientationOffset { orientationOffset },
+        .mInteractionLayers { interactionLayers },
+        .mInteractionMask { interactionMask },
     };
 }
 
@@ -323,11 +330,13 @@ AxisAlignedBounds::AxisAlignedBounds(const ObjectBounds& objectBounds): AxisAlig
         { projectedOnX.second, projectedOnY.second, projectedOnZ.second },
         {  projectedOnX.first,  projectedOnY.first,  projectedOnZ.first },
     };
+    mInteractionLayers = objectBounds.mInteractionLayers;
     setByExtents(axisAlignedExtents);
 }
 
-AxisAlignedBounds::AxisAlignedBounds(const Extents& axisAlignedExtents): AxisAlignedBounds{} {
+AxisAlignedBounds::AxisAlignedBounds(const Extents& axisAlignedExtents, InteractionLayerMask interactionLayers): AxisAlignedBounds{} {
     setByExtents(axisAlignedExtents);
+    mInteractionLayers = interactionLayers;
 }
 
 std::array<glm::vec3, 8> AxisAlignedBounds::getAxisAlignedBoxCorners() const {
@@ -362,7 +371,7 @@ AxisAlignedBounds AxisAlignedBounds::operator+(const AxisAlignedBounds& other) c
         {glm::max(topCorner, otherTopCorner)}, {glm::min(bottomCorner, otherBottomCorner)} 
     };
 
-    return { extents };
+    return { extents, static_cast<InteractionLayerMask>(mInteractionLayers | other.mInteractionLayers) };
 }
 
 void AxisAlignedBounds::setByExtents(const Extents& axisAlignedExtents) {

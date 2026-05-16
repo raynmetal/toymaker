@@ -6,6 +6,7 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "toymaker/engine/spatial_query/octree.hpp"
+#include "toymaker/engine/spatial_query/math.hpp"
 
 using namespace ToyMaker;
 
@@ -46,6 +47,10 @@ std::shared_ptr<OctreeNode> OctreeNode::CreateRootNode(
         const float minDimensionClampValue { maxDimensionLength / Octree::kMaxDimensionRatio };
         boundRegion.setDimensions(glm::max(boundsDimensions, glm::vec3{minDimensionClampValue}));;
     }
+
+    // Clean interaction layers before creating node with an AABB
+    boundRegion.setInteractionLayers(0x0);
+
     return std::shared_ptr<OctreeNode>(new OctreeNode{kNoAddress, subdivisionThreshold, boundRegion, nullptr});
 }
 
@@ -126,6 +131,9 @@ OctreeNode::Address OctreeNode::insertEntity(EntityID entityID, const AxisAligne
     // the submitted entity can be contained within it
     assert(contains(entityWorldBounds, mWorldBounds) && "Invalid insertion into octree attempted");
 
+    // merge in new entity's interaction layer set
+    mWorldBounds = entityWorldBounds + mWorldBounds;
+
     // see if one of this node's existing children can accept the object
     std::shared_ptr<OctreeNode> smallestNodeContainingEntity {
         getSmallestNodeContaining(entityWorldBounds)
@@ -139,15 +147,18 @@ OctreeNode::Address OctreeNode::insertEntity(EntityID entityID, const AxisAligne
     // subdivision threshold would be/already has been exceeded, and maximum depth
     // hasn't yet been reached)
     if (
-        getDepth() < kMaxDepthInclusive 
+        getDepth() < kMaxDepthInclusive
         && mEntities.size() + 1 >= mSubdivisionThreshold
-        // account for floating point errors in oddly placed or extremely sized bounds
+        // check whether the creation of a smaller octant is even permitted per floating point
         && isPositiveStrict(.5f * mWorldBounds.getDimensions())
     ) {
         bool anyOctantsCreated { false };
         for(Octant octant {0x0}; octant < 0x8; ++octant) {
-            // see earlier loop
+            // we know no existing child can contain this entity
             if(mChildren[octant]) continue;
+
+            // child octant is this octant with upper or lower corner moved
+            // to this one's center
             AxisAlignedBounds::Extents newExtents { mWorldBounds.getAxisAlignedBoxExtents() };
             glm::vec3 center { mWorldBounds.getComputedWorldPosition() };
             octant&RIGHT? newExtents.second.x = center.x: newExtents.first.x = center.x;
@@ -156,10 +167,10 @@ OctreeNode::Address OctreeNode::insertEntity(EntityID entityID, const AxisAligne
             AxisAlignedBounds octantBounds { newExtents };
 
             // see if creating an octant will lower membership
-            bool shouldCreateOctant {
-                contains(entityWorldBounds, octantBounds)
-            };
-            if(!shouldCreateOctant) {
+            bool shouldCreateOctant { false };
+            if(contains(entityWorldBounds, octantBounds)) {
+                shouldCreateOctant = true;
+            } else {
                 for(const std::pair<const EntityID, AxisAlignedBounds>& objectBounds: mEntities) {
                     if(contains(objectBounds.second, octantBounds)) {
                         shouldCreateOctant = true;
@@ -170,7 +181,7 @@ OctreeNode::Address OctreeNode::insertEntity(EntityID entityID, const AxisAligne
             if(!shouldCreateOctant) continue;
 
             // There is at least one entity that may be moved into this octant, so create it
-            mChildren[octant] = std::shared_ptr<OctreeNode>(new OctreeNode{
+            mChildren[octant] = std::shared_ptr<OctreeNode>(new OctreeNode {
                 MakeAddress(octant, getAddress()),
                 mSubdivisionThreshold,
                 octantBounds,
@@ -192,10 +203,21 @@ OctreeNode::Address OctreeNode::insertEntity(EntityID entityID, const AxisAligne
         }
     }
 
-    // At this point, there's simply no getting around adding this entity 
+    // At this point, there's simply no getting around adding this entity
     // to our list of member objects, so just get it over with
     mEntities[entityID] = entityWorldBounds;
     return getAddress();
+}
+
+void OctreeNode::recomputeInteractionLayers() {
+    mWorldBounds.setInteractionLayers(0x0);
+    for(const auto& entity: mEntities) {
+        mWorldBounds.setInteractionLayers(mWorldBounds.getInteractionLayers() | entity.second.getInteractionLayers());
+    }
+    for(const auto& child: mChildren) {
+        if(!child) continue;
+        mWorldBounds.setInteractionLayers(mWorldBounds.getInteractionLayers() | child->getInteractionLayers());
+    }
 }
 
 std::shared_ptr<OctreeNode> OctreeNode::removeEntity(EntityID entityID, Address entityAddressHint) {
@@ -206,6 +228,7 @@ std::shared_ptr<OctreeNode> OctreeNode::removeEntity(EntityID entityID, Address 
         const Octant next { nextOctant(entityAddressHint) };
         assert(mChildren[next] && "The next octant specified in the address does not exist");
         mChildren[next] = mChildren[next]->removeEntity(entityID, entityAddressHint);
+        recomputeInteractionLayers();
         return shared_from_this();
     }
 
@@ -220,6 +243,7 @@ std::shared_ptr<OctreeNode> OctreeNode::removeEntity(EntityID entityID, Address 
             }
         }
 
+        recomputeInteractionLayers();
         return shared_from_this();
     }
 
@@ -233,6 +257,7 @@ std::shared_ptr<OctreeNode> OctreeNode::removeEntity(EntityID entityID, Address 
         return nullptr;
     }
 
+    recomputeInteractionLayers();
     return shared_from_this();
 }
 
@@ -305,15 +330,15 @@ OctreeNode::Octant OctreeNode::nextOctant(Address address) const {
     return GetOctantAt(address, 1 + getDepth());
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findAllMemberEntities() const {
+std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findAllMemberEntities(InteractionLayerMask interactionMask) const {
     // initialize vector with own immediate entities
     std::vector<std::pair<EntityID, AxisAlignedBounds>> memberEntities { mEntities.begin(), mEntities.end() };
 
     // collect entities present in children
     for(std::shared_ptr<OctreeNode> child: mChildren) {
-        if(!child) continue;
+        if(!child || (interactionMask & child->getInteractionLayers()) == 0) continue;
 
-        std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findAllMemberEntities() };
+        std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findAllMemberEntities(interactionMask) };
         memberEntities.insert(
             memberEntities.cend(),
             childEntities.begin(),
@@ -324,15 +349,18 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findAllMemberEnt
     return memberEntities;
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOverlapping(const AxisAlignedBounds& searchBounds) const {
+std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOverlapping(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) const {
     // If our bounds don't even overlap, return nothing
-    if(!overlaps(getWorldBounds(), searchBounds)){
+    if(
+        (getInteractionLayers() & interactionMask) == 0
+        || !overlaps(getWorldBounds(), searchBounds)
+    ) {
         return {};
     }
 
     // if the bounds being searched for encompass us, return all our members
     if(contains(getWorldBounds(), searchBounds)) {
-        findAllMemberEntities();
+        return findAllMemberEntities(interactionMask);
     }
 
     std::vector<std::pair<EntityID, AxisAlignedBounds>> resultEntities {};
@@ -340,7 +368,10 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOver
     // there's definitely some overlap, so test our entities against
     // the search region
     for(const auto& memberEntity: mEntities) {
-        if(overlaps(searchBounds, memberEntity.second)) {
+        if(
+            (memberEntity.second.getInteractionLayers() & interactionMask) != 0
+            && overlaps(searchBounds, memberEntity.second)
+        ) {
             resultEntities.push_back(memberEntity);
         }
     }
@@ -348,8 +379,12 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOver
     // let the children find their own member entities that intersect with the search
     // bounds
     for(std::shared_ptr<OctreeNode> child: mChildren) {
-        if(child && overlaps(searchBounds, child->getWorldBounds())) {
-            std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findEntitiesOverlapping(searchBounds) };
+        if(
+            child
+            && (child->getInteractionLayers() & interactionMask) != 0
+            && overlaps(searchBounds, child->getWorldBounds())
+        ) {
+            std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findEntitiesOverlapping(searchBounds, interactionMask) };
             resultEntities.insert(resultEntities.cend(), childEntities.begin(), childEntities.end());
         }
     }
@@ -357,15 +392,21 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOver
     return resultEntities;
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOverlapping(const Ray& searchRay) const {
-    if(!overlaps(searchRay, mWorldBounds)) return {};
+std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOverlapping(const Ray& searchRay, InteractionLayerMask interactionMask) const {
+    if(
+        (getInteractionLayers() & interactionMask) == 0
+        || !overlaps(searchRay, mWorldBounds)
+    ) return {};
 
     std::vector<std::pair<EntityID, AxisAlignedBounds>> resultEntities {};
 
     // there's definitely some overlap, so test our entities against
     // the search region
     for(const auto& memberEntity: mEntities) {
-        if(overlaps(searchRay, memberEntity.second)) {
+        if(
+            (memberEntity.second.getInteractionLayers() & interactionMask) != 0
+            && overlaps(searchRay, memberEntity.second)
+        ) {
             resultEntities.push_back(memberEntity);
         }
     }
@@ -373,8 +414,12 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOver
     // let the children find their own member entities that intersect with the search
     // bounds
     for(std::shared_ptr<OctreeNode> child: mChildren) {
-        if(child && overlaps(searchRay, child->getWorldBounds())) {
-            std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findEntitiesOverlapping(searchRay) };
+        if(
+            child
+            && (child->getInteractionLayers() & interactionMask) != 0
+            && overlaps(searchRay, child->getWorldBounds())
+        ) {
+            std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findEntitiesOverlapping(searchRay, interactionMask) };
             resultEntities.insert(resultEntities.cend(), childEntities.begin(), childEntities.end());
         }
     }
@@ -422,7 +467,7 @@ std::shared_ptr<OctreeNode> OctreeNode::GrowTreeAndCreateRoot (
 
         // Determine growth direction by seeing which dimensions is most in need of being
         // expanded towards.
-        const glm::vec3 diffPositive { 
+        const glm::vec3 diffPositive {
             glm::clamp(
                 regionToCover.getAxisAlignedBoxExtents().first - oldExtents.first,
                 glm::vec3{0.f},
@@ -440,14 +485,14 @@ std::shared_ptr<OctreeNode> OctreeNode::GrowTreeAndCreateRoot (
             (diffPositive.x >= diffNegative.x? OctantSpecifier::RIGHT: 0)
             | (diffPositive.y >= diffNegative.y? OctantSpecifier::TOP: 0)
             | (diffPositive.z >= diffNegative.z? OctantSpecifier::FRONT: 0)
-        )};
+        ) };
 
         // Compute and store the AABB associated with this growth
-        AxisAlignedBounds::Extents newExtents {newWorldBounds.getAxisAlignedBoxExtents()};
+        AxisAlignedBounds::Extents newExtents { newWorldBounds.getAxisAlignedBoxExtents() };
         growthDirection&OctantSpecifier::RIGHT? newExtents.first.x = oldExtents.second.x + 2.f * oldDimensions.x: newExtents.second.x = oldExtents.first.x - 2.f * oldDimensions.x;
         growthDirection&OctantSpecifier::TOP? newExtents.first.y = oldExtents.second.y + 2.f * oldDimensions.y: newExtents.second.y = oldExtents.first.y - 2.f * oldDimensions.y;
         growthDirection&OctantSpecifier::FRONT? newExtents.first.z = oldExtents.second.z + 2.f * oldDimensions.z: newExtents.second.z = oldExtents.first.z - 2.f * oldDimensions.z;
-        expandedWorldBounds.push_back(AxisAlignedBounds{ newExtents });
+        expandedWorldBounds.push_back(AxisAlignedBounds{ newExtents, newWorldBounds.getInteractionLayers() });
         growthSteps.push_back(growthDirection);
 
         // update new world bounds for the next iteration
@@ -455,12 +500,13 @@ std::shared_ptr<OctreeNode> OctreeNode::GrowTreeAndCreateRoot (
         assert(newWorldBounds.isSensible() && "Bounds expanded beyond maximum supported value for this type");
     }
 
-    assert(contains(regionToCover, newWorldBounds) && "Expansion step has failed, and the newly coputed node's world bounds does not contain all entities");
+    assert(contains(regionToCover, newWorldBounds) && "Expansion step has failed, and the newly computed node's world bounds does not contain all entities");
     const std::size_t depthAdded { expandedWorldBounds.size() };
     if(!depthAdded) return oldRoot;
 
-    // Create a new Octree root
+    // Create a new Octree root (through CreateRootNode for access to special address 0)
     std::shared_ptr<OctreeNode> newRootNode { CreateRootNode(oldRoot->mSubdivisionThreshold, expandedWorldBounds.back()) };
+    newRootNode->mWorldBounds.setInteractionLayers(expandedWorldBounds.back().getInteractionLayers()); // override root node default
     expandedWorldBounds.pop_back();
 
     // Add children to the octree until we reach the descendant with the same dimensions
@@ -470,7 +516,7 @@ std::shared_ptr<OctreeNode> OctreeNode::GrowTreeAndCreateRoot (
     while(currentDepth <= kMaxDepthInclusive && !expandedWorldBounds.empty()) {
         newWorldBounds = expandedWorldBounds.back();
         expandedWorldBounds.pop_back();
-        Octant currentOctant { ToOctant(growthSteps.back()) };
+        const Octant currentOctant { ToOctant(growthSteps.back()) };
         growthSteps.pop_back();
 
         parentNode->mChildren[currentOctant] = std::shared_ptr<OctreeNode>(new OctreeNode {
@@ -484,8 +530,8 @@ std::shared_ptr<OctreeNode> OctreeNode::GrowTreeAndCreateRoot (
         ++currentDepth;
     }
 
-    // edge case: maximum depth reached before integration of the old tree 
-    // became possible. Hand over all old octree's member entities to the leafmost 
+    // edge case: maximum depth reached before integration of the old tree
+    // became possible. Hand over all old octree's member entities to the leafmost
     // node of the new Octree
     if(currentDepth == kMaxDepthInclusive) {
         for(std::pair<EntityID, AxisAlignedBounds> memberEntity: oldRoot->findAllMemberEntities()) {
@@ -567,7 +613,6 @@ void Octree::insertEntity(EntityID entityID, const AxisAlignedBounds& entityWorl
         return;
     }
 
-
     // otherwise, our octree must grow
     std::shared_ptr<OctreeNode> newRootNode {
         OctreeNode::GrowTreeAndCreateRoot(mRootNode, entityWorldBounds + mRootNode->getWorldBounds())
@@ -620,7 +665,7 @@ void Octree::removeEntity(EntityID entityID) {
         mRootNode->findCandidateRoot()
     };
 
-    // Do nothing if no shrinkage is required
+    // do nothing if no shrinkage is required
     if(candidateRoot == mRootNode) return;
 
     // otherwise, apply shrinkage and make the candidate our new root
@@ -637,8 +682,8 @@ void Octree::removeEntity(EntityID entityID) {
     mRootNode = candidateRoot;
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> Octree::findEntitiesOverlapping(const Ray& searchRay) const {
-    std::vector<std::pair<EntityID, AxisAlignedBounds>> results{ mRootNode->findEntitiesOverlapping(searchRay) };
+std::vector<std::pair<EntityID, AxisAlignedBounds>> Octree::findEntitiesOverlapping(const Ray& searchRay, InteractionLayerMask layerMask) const {
+    std::vector<std::pair<EntityID, AxisAlignedBounds>> results{ mRootNode->findEntitiesOverlapping(searchRay, layerMask) };
     std::sort(results.begin(), results.end(), [&searchRay](std::pair<EntityID, AxisAlignedBounds>& volumeOne, std::pair<EntityID, AxisAlignedBounds>& volumeTwo) {
         // the first intersection point for both objects
         const glm::vec3 intersectionOne { computeIntersections(searchRay, volumeOne.second).second.first - searchRay.mStart };
@@ -646,15 +691,16 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> Octree::findEntitiesOverlapp
         const bool volumeOneContainsRayOrigin { contains(searchRay.mStart, volumeOne.second) };
 
         return (
-            // if the ray starts either inside of or outside of both volumes, then the first ray 
+            // if the ray starts either inside of or outside of both volumes, then the first ray
             // to intersect the volume comes first
             (
                 volumeOneContainsRayOrigin == contains(searchRay.mStart, volumeTwo.second)
                 && glm::dot(intersectionOne, intersectionOne) < glm::dot(intersectionTwo, intersectionTwo)
 
-            // otherwise, the volume containing the ray's origin takes priority 
+            // otherwise, the volume containing the ray's origin takes priority
             ) || volumeOneContainsRayOrigin
         );
     });
     return results;
 }
+

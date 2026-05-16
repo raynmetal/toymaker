@@ -3,11 +3,11 @@
  * @file spatial_query/math.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Geometrical, mathematical functions and related structs used to answer some simple questions about shapes situated somewhere in the world.
- * 
+ *
  * @version 0.3.2
  * @date 2025-09-08
- * 
- * 
+ *
+ *
  */
 
 #ifndef TOYMAKERENGINE_SPATIALQUERYMATH_H
@@ -376,7 +376,6 @@ namespace ToyMaker {
             .mCollided { true },
         } };
 
-        
         // build a polytope containing the closest surface to the origin in 
         // the Minkowski difference between the objects
         const Polytope polytope { buildPolytope(one, two, overlapResult.second) };

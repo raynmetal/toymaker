@@ -1,12 +1,11 @@
 #include <limits>
-#include <cmath>
 
 #include "toymaker/engine/spatial_query/system.hpp"
 
 using namespace ToyMaker;
 
-std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlapping(const Ray& searchRay) {
-    const std::vector<std::pair<EntityID, AxisAlignedBounds>> intersectingEntityIDs { findEntitiesOverlapping(searchRay) };
+std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlapping(const Ray& searchRay, InteractionLayerMask interactionMask) {
+    const std::vector<std::pair<EntityID, AxisAlignedBounds>> intersectingEntityIDs { findEntitiesOverlapping(searchRay, interactionMask) };
 
     const std::size_t resultListLength { intersectingEntityIDs.size() };
     std::vector<UniversalEntityID> resultNodeQuery { resultListLength };
@@ -18,8 +17,8 @@ std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlap
     return mWorld.lock()->getSystem<SceneSystem>()->getNodesByID(resultNodeQuery);
 }
 
-std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlapping(const AxisAlignedBounds& searchBounds) {
-    const std::vector<std::pair<EntityID, AxisAlignedBounds>> intersectingEntityIDs { findEntitiesOverlapping(searchBounds) };
+std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlapping(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) {
+    const std::vector<std::pair<EntityID, AxisAlignedBounds>> intersectingEntityIDs { findEntitiesOverlapping(searchBounds, interactionMask) };
 
     const std::size_t resultListLength { intersectingEntityIDs.size() };
     std::vector<UniversalEntityID> resultNodeQuery { resultListLength };
@@ -32,20 +31,20 @@ std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlap
 }
 
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlapping(const AxisAlignedBounds& searchBounds) const {
+std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlapping(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) const {
     if(mRequiresInitialization) {
         return std::vector<std::pair<EntityID, AxisAlignedBounds>>{};
     }
 
-    return mOctree->findEntitiesOverlapping(searchBounds);
+    return mOctree->findEntitiesOverlapping(searchBounds, interactionMask);
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlapping(const Ray& searchRay) const {
+std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlapping(const Ray& searchRay, InteractionLayerMask interactionMask) const {
     if(mRequiresInitialization) {
         return std::vector<std::pair<EntityID, AxisAlignedBounds>>{};
     }
 
-    return mOctree->findEntitiesOverlapping(searchRay);
+    return mOctree->findEntitiesOverlapping(searchRay, interactionMask);
 }
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityEnabled(EntityID entityID) {
@@ -211,3 +210,4 @@ void SpatialQuerySystem::onSimulationStep(uint32_t timestepMillis) {
 
     mComputeQueue.clear();
 }
+

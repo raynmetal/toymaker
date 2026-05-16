@@ -1,8 +1,9 @@
 #include <cmath>
+
+#include "toymaker/engine/util.hpp"
 #include "toymaker/engine/spatial_query/math.hpp"
 
 using namespace ToyMaker;
-
 
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getBoxIntersections(const Ray& ray, const std::array<AreaTriangle, 12>& boxTriangles);
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCapsuleIntersections(const Ray& ray, const ObjectBounds& capsule);
