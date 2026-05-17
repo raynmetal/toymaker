@@ -331,8 +331,16 @@ OctreeNode::Octant OctreeNode::nextOctant(Address address) const {
 }
 
 std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findAllMemberEntities(InteractionLayerMask interactionMask) const {
-    // initialize vector with own immediate entities
-    std::vector<std::pair<EntityID, AxisAlignedBounds>> memberEntities { mEntities.begin(), mEntities.end() };
+    // initialize vector with own matching entities
+    std::vector<std::pair<EntityID, AxisAlignedBounds>> memberEntities{};
+    std::copy_if(
+        mEntities.begin(),
+        mEntities.end(),
+        std::back_inserter(memberEntities),
+        [&](const auto& entity) {
+            return (entity.second.getInteractionLayers() & interactionMask) != 0;
+        }
+    );
 
     // collect entities present in children
     for(std::shared_ptr<OctreeNode> child: mChildren) {
