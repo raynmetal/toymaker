@@ -39,7 +39,6 @@ TEST_CASE("2 objects, one octree node") {
             .mDirection { 0.f, 0.f, -1.f },
             .mLength { 1e3 },
         },
-
         // only intersects sphere 1
         {
             .mStart { 5.f, 0.f, 10.f },
@@ -48,21 +47,20 @@ TEST_CASE("2 objects, one octree node") {
         },
     }};
 
-
     const ToyMaker::AxisAlignedBounds fullSearchRegion {
         ToyMaker::AxisAlignedBounds::Extents{ glm::vec3 { 5.f }, glm::vec3 { -5.f } }
     };
     const std::vector<ToyMaker::AxisAlignedBounds> searchRegions {{
         // only intersects sphere 0
-        ToyMaker::AxisAlignedBounds::Extents { 
+        ToyMaker::AxisAlignedBounds::Extents {
             glm::vec3 { -5.f, 5.f, 5.f },
             glm::vec3 { -6.f, -5.f, -5.f }
         },
         // only intersects sphere 1
-        ToyMaker::AxisAlignedBounds::Extents { 
+        ToyMaker::AxisAlignedBounds::Extents {
             glm::vec3 { 6.f, 5.f, 5.f },
             glm::vec3 { 5.f, -5.f, -5.f }
-        }
+        },
     }};
 
     const std::vector<ToyMaker::AxisAlignedBounds> irrelevantEntities {
@@ -145,58 +143,58 @@ TEST_CASE("2 objects, one octree node") {
         CHECK(octree.findAllMemberEntities(1<<1)[0].first == 1);
 
         // find all entities overlapping a ray
-        CHECK(octree.findEntitiesOverlapping(rightRay).size() == 2);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay).size() == 2);
         // ... belonging to layer 0,
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<0).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<0)[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<0)[0].first == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<0).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<0)[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<0)[0].first == 0);
         // ... belonging to layer 1
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<1).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<1)[0].second.getInteractionLayers() == (1<<1));
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<1)[0].first == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<1).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<1)[0].second.getInteractionLayers() == (1<<1));
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<1)[0].first == 1);
         // ... touching only object 0
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0]).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0]).size() == 1);
         //     ... searching in layer 0,
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0], 1<<0).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0], 1<<0)[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0], 1<<0)[0].first == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0], 1<<0).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0], 1<<0)[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0], 1<<0)[0].first == 0);
         //     ... searching in layer 1
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0], 1<<1).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0], 1<<1).size() == 0);
         // ... touching only object 1
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1]).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1]).size() == 1);
         //     ... searching in layer 0,
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1], 1<<0).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1], 1<<0).size() == 0);
         //     ... searching in layer 1
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1], 1<<1).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1], 1<<1)[0].second.getInteractionLayers() == (1<<1));
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1], 1<<1)[0].first == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1], 1<<1).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1], 1<<1)[0].second.getInteractionLayers() == (1<<1));
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1], 1<<1)[0].first == 1);
 
         // find all entities overlapping a region
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion).size() == 2);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion).size() == 2);
         // ... belonging to layer 0
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<0).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<0)[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<0)[0].first == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<0).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<0)[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<0)[0].first == 0);
         // ... belonging to layer 1
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<1).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<1)[0].second.getInteractionLayers() == (1<<1));
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<1)[0].first == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<1).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<1)[0].second.getInteractionLayers() == (1<<1));
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<1)[0].first == 1);
         // ... touching only object 0
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0]).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0]).size() == 1);
         //     ... searching in layer 0
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0], (1<<0)).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0], (1<<0))[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0], (1<<0))[0].first == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0], (1<<0)).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0], (1<<0))[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0], (1<<0))[0].first == 0);
         //     ... searching in layer 1
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0], (1<<1)).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0], (1<<1)).size() == 0);
         // ... touching only object 1
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1]).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1]).size() == 1);
         //     ... searching in layer 0
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1], (1<<0)).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1], (1<<0)).size() == 0);
         //     ... searching in layer 1
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1], (1<<1)).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1], (1<<1))[0].second.getInteractionLayers() == (1<<1));
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1], (1<<1))[0].first == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1], (1<<1)).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1], (1<<1))[0].second.getInteractionLayers() == (1<<1));
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1], (1<<1))[0].first == 1);
     }
 
 
@@ -214,58 +212,58 @@ TEST_CASE("2 objects, one octree node") {
         CHECK(octree.findAllMemberEntities(1<<1).size() == 0);
 
         // find all entities overlapping a ray
-        CHECK(octree.findEntitiesOverlapping(rightRay).size() == 2);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay).size() == 2);
         // ... belonging to layer 0,
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<0).size() == 2);
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<0)[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<0)[0].first == 0);
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<0)[1].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<0)[1].first == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<0).size() == 2);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<0)[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<0)[0].first == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<0)[1].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<0)[1].first == 1);
         // ... belonging to layer 1
-        CHECK(octree.findEntitiesOverlapping(rightRay, 1<<1).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(rightRay, 1<<1).size() == 0);
         // ... touching only object 0
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0]).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0]).size() == 1);
         //     ... searching in layer 0,
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0], 1<<0).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0], 1<<0)[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0], 1<<0)[0].first == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0], 1<<0).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0], 1<<0)[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0], 1<<0)[0].first == 0);
         //     ... searching in layer 1
-        CHECK(octree.findEntitiesOverlapping(forwardRays[0], 1<<1).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[0], 1<<1).size() == 0);
         // ... touching only object 1
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1]).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1]).size() == 1);
         //     ... searching in layer 0,
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1], 1<<0).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1], 1<<0)[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1], 1<<0)[0].first == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1], 1<<0).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1], 1<<0)[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1], 1<<0)[0].first == 1);
         //     ... searching in layer 1
-        CHECK(octree.findEntitiesOverlapping(forwardRays[1], 1<<1).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(forwardRays[1], 1<<1).size() == 0);
 
         // find all entities overlapping a region
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion).size() == 2);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion).size() == 2);
         // ... belonging to layer 0
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<0).size() == 2);
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<0)[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<0)[0].first == 0);
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<0)[1].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<0)[1].first == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<0).size() == 2);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<0)[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<0)[0].first == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<0)[1].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<0)[1].first == 1);
         // ... belonging to layer 1
-        CHECK(octree.findEntitiesOverlapping(fullSearchRegion, 1<<1).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(fullSearchRegion, 1<<1).size() == 0);
         // ... touching only object 0
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0]).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0]).size() == 1);
         //     ... searching in layer 0
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0], (1<<0)).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0], (1<<0))[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0], (1<<0))[0].first == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0], (1<<0)).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0], (1<<0))[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0], (1<<0))[0].first == 0);
         //     ... searching in layer 1
-        CHECK(octree.findEntitiesOverlapping(searchRegions[0], (1<<1)).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[0], (1<<1)).size() == 0);
         // ... touching only object 1
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1]).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1]).size() == 1);
         //     ... searching in layer 0
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1], (1<<0)).size() == 1);
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1], (1<<0))[0].second.getInteractionLayers() == (1<<0));
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1], (1<<0))[0].first == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1], (1<<0)).size() == 1);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1], (1<<0))[0].second.getInteractionLayers() == (1<<0));
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1], (1<<0))[0].first == 1);
         //     ... searching in layer 1
-        CHECK(octree.findEntitiesOverlapping(searchRegions[1], (1<<1)).size() == 0);
+        CHECK(octree.findEntitiesOverlappingCoarse(searchRegions[1], (1<<1)).size() == 0);
     }
 }
 

@@ -160,7 +160,7 @@ OctreeNode::Address OctreeNode::insertEntity(EntityID entityID, const AxisAligne
             // child octant is this octant with upper or lower corner moved
             // to this one's center
             AxisAlignedBounds::Extents newExtents { mWorldBounds.getAxisAlignedBoxExtents() };
-            glm::vec3 center { mWorldBounds.getComputedWorldPosition() };
+            glm::vec3 center { mWorldBounds.getPositionWorld() };
             octant&RIGHT? newExtents.second.x = center.x: newExtents.first.x = center.x;
             octant&TOP? newExtents.second.y = center.y: newExtents.first.y = center.y;
             octant&FRONT? newExtents.second.z = center.z: newExtents.first.z = center.z;
@@ -357,7 +357,7 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findAllMemberEnt
     return memberEntities;
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOverlapping(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) const {
+std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOverlappingCoarse(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) const {
     // If our bounds don't even overlap, return nothing
     if(
         (getInteractionLayers() & interactionMask) == 0
@@ -392,7 +392,7 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOver
             && (child->getInteractionLayers() & interactionMask) != 0
             && overlaps(searchBounds, child->getWorldBounds())
         ) {
-            std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findEntitiesOverlapping(searchBounds, interactionMask) };
+            std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findEntitiesOverlappingCoarse(searchBounds, interactionMask) };
             resultEntities.insert(resultEntities.cend(), childEntities.begin(), childEntities.end());
         }
     }
@@ -400,7 +400,7 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOver
     return resultEntities;
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOverlapping(const Ray& searchRay, InteractionLayerMask interactionMask) const {
+std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOverlappingCoarse(const Ray& searchRay, InteractionLayerMask interactionMask) const {
     if(
         (getInteractionLayers() & interactionMask) == 0
         || !overlaps(searchRay, mWorldBounds)
@@ -427,7 +427,7 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> OctreeNode::findEntitiesOver
             && (child->getInteractionLayers() & interactionMask) != 0
             && overlaps(searchRay, child->getWorldBounds())
         ) {
-            std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findEntitiesOverlapping(searchRay, interactionMask) };
+            std::vector<std::pair<EntityID, AxisAlignedBounds>> childEntities { child->findEntitiesOverlappingCoarse(searchRay, interactionMask) };
             resultEntities.insert(resultEntities.cend(), childEntities.begin(), childEntities.end());
         }
     }
@@ -690,8 +690,8 @@ void Octree::removeEntity(EntityID entityID) {
     mRootNode = candidateRoot;
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> Octree::findEntitiesOverlapping(const Ray& searchRay, InteractionLayerMask layerMask) const {
-    std::vector<std::pair<EntityID, AxisAlignedBounds>> results{ mRootNode->findEntitiesOverlapping(searchRay, layerMask) };
+std::vector<std::pair<EntityID, AxisAlignedBounds>> Octree::findEntitiesOverlappingCoarse(const Ray& searchRay, InteractionLayerMask layerMask) const {
+    std::vector<std::pair<EntityID, AxisAlignedBounds>> results{ mRootNode->findEntitiesOverlappingCoarse(searchRay, layerMask) };
     std::sort(results.begin(), results.end(), [&searchRay](std::pair<EntityID, AxisAlignedBounds>& volumeOne, std::pair<EntityID, AxisAlignedBounds>& volumeTwo) {
         // the first intersection point for both objects
         const glm::vec3 intersectionOne { computeIntersections(searchRay, volumeOne.second).second.first - searchRay.mStart };

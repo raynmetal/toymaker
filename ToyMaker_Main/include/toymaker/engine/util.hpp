@@ -27,6 +27,29 @@ namespace ToyMaker {
     glm::mat4 buildModelMatrix(glm::vec4 position, glm::quat orientation, glm::vec3 scale = glm::vec3{1.f, 1.f, 1.f}); 
 
     /**
+     * @ingroup ToyMakerCore ToyMakerSceneSystem
+     * @brief Given a transform, returns scale matrix that was used to compose the transform
+     *
+     * @warning This only works for transforms with positive scale values.
+     */
+    glm::mat4 getScaleMatrix(const glm::mat4& fromTransform);
+
+    /**
+     * @ingroup ToyMakerCore ToyMakerSceneSystem
+     * @brief Given a transform, returns rotation matrix that was used to compose the transform
+     *
+     * @warning This only works for scene objects with positive scale values.
+     */
+    glm::mat4 getRotationMatrix(const glm::mat4& fromTransform);
+
+    /**
+     * @ingroup ToyMakerCore ToyMakerSceneSystem
+     * @brief Given a transform, returns translation matrix that was used to compose the transform
+     *
+     */
+    glm::mat4 getTranslationMatrix(const glm::mat4& fromTransform);
+
+    /**
      * @ingroup ToyMakerCore
      * @brief A simple linear interpolation implementation between a fixed input and output range.
      * 

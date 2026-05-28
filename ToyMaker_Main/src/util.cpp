@@ -22,7 +22,7 @@ RangeMapperLinear::RangeMapperLinear(
 {
     assert(mOutputUpperBound > mOutputLowerBound && "The output upper bound must be greater than the lower bound");
     assert(mInputUpperBound > mInputLowerBound && "The input upper bound must be greater than the lower bound");
-    // TODO: assert that (input upperbound - input lowerbound) is 
+    // TODO: assert that (input upperbound - input lowerbound) is
     // within double's range
 }
 
@@ -39,3 +39,28 @@ double RangeMapperLinear::operator() (double value) const {
         + mOutputLowerBound
     );
 }
+
+glm::mat4 ToyMaker::getScaleMatrix(const glm::mat4& fromTransform) {
+    return {
+        glm::vec4 { glm::length(fromTransform[0]), 0.f, 0.f, 0.f },
+        glm::vec4 { 0.f, glm::length(fromTransform[1]), 0.f, 0.f },
+        glm::vec4 { 0.f, 0.f, glm::length(fromTransform[1]), 0.f },
+        glm::vec4 { 0.f, 0.f, 0.f,                           1.f }
+    };
+}
+
+glm::mat4 ToyMaker::getRotationMatrix(const glm::mat4& fromTransform) {
+    return glm::inverse(getTranslationMatrix(fromTransform))
+        * fromTransform
+        * glm::inverse(ToyMaker::getScaleMatrix(fromTransform));
+}
+
+glm::mat4 ToyMaker::getTranslationMatrix(const glm::mat4& fromTransform) {
+    return {
+        glm::vec4 { 1.f, 0.f, 0.f, 0.f },
+        glm::vec4 { 0.f, 1.f, 0.f, 0.f },
+        glm::vec4 { 0.f, 0.f, 1.f, 0.f },
+        fromTransform[3],
+    };
+}
+

@@ -10,8 +10,8 @@ using namespace ToyMaker;
 ToyMaker::Ray QueryClick::rayFromClickCoordinates(glm::vec2 clickCoordinates) {
     const ToyMaker::CameraProperties cameraProps { getComponent<ToyMaker::CameraProperties>() };
     const ToyMaker::ObjectBounds bounds { getComponent<ToyMaker::ObjectBounds>() };
-    const glm::vec3 cameraPosition { bounds.getComputedWorldPosition() };
-    const glm::quat cameraOrientation { bounds.getComputedWorldOrientation() };
+    const glm::vec3 cameraPosition { bounds.getPositionWorld() };
+    const glm::quat cameraOrientation { bounds.getOrientationWorld() };
 
     ToyMaker::Ray cameraRay { .mLength { cameraProps.mNearFarPlanes.y - cameraProps.mNearFarPlanes.x } };
     glm::vec3 relativeCameraPlaneIntersection;
@@ -78,7 +78,7 @@ bool QueryClick::onLeftClick(const ToyMaker::ActionData& actionData, const ToyMa
     bool entityFound { false };
     const ToyMaker::Ray cameraRay { rayFromClickCoordinates(clickCoordinates) };
     std::vector<std::shared_ptr<ToyMaker::SceneNodeCore>> currentQueryResults {
-        getWorld().lock()->getSystem<ToyMaker::SpatialQuerySystem>()->findNodesOverlapping(cameraRay)
+        getWorld().lock()->getSystem<ToyMaker::SpatialQuerySystem>()->findNodesOverlappingCoarse(cameraRay)
     };
     for(const auto& foundNode: currentQueryResults) {
         entityFound = true;
@@ -113,7 +113,7 @@ bool QueryClick::onLeftRelease(const ToyMaker::ActionData& actionData, const Toy
     bool entityFound { false };
     const ToyMaker::Ray cameraRay { rayFromClickCoordinates(clickCoordinates) };
     std::vector<std::shared_ptr<ToyMaker::SceneNodeCore>> currentQueryResults {
-        getWorld().lock()->getSystem<ToyMaker::SpatialQuerySystem>()->findNodesOverlapping(cameraRay)
+        getWorld().lock()->getSystem<ToyMaker::SpatialQuerySystem>()->findNodesOverlappingCoarse(cameraRay)
     };
     for(const auto& foundNode: currentQueryResults) {
         entityFound = true;
@@ -148,7 +148,7 @@ bool QueryClick::onPointerMove(const ToyMaker::ActionData& actionData, const Toy
     const ToyMaker::Ray cameraRay { rayFromClickCoordinates(clickCoordinates) };
 
     std::vector<std::shared_ptr<ToyMaker::SceneNodeCore>> currentQueryResults {
-        getWorld().lock()->getSystem<ToyMaker::SpatialQuerySystem>()->findNodesOverlapping(cameraRay)
+        getWorld().lock()->getSystem<ToyMaker::SpatialQuerySystem>()->findNodesOverlappingCoarse(cameraRay)
     };
     for(const auto& foundNode: currentQueryResults) {
         entityFound = true;

@@ -104,6 +104,24 @@ namespace ToyMaker {
          * @return std::string This object's component type string.
          */
         inline static std::string getComponentTypeName() { return "Transform"; }
+
+        /**
+         * @brief Isolates the world-relative translation matrix associated with this transform
+         *
+         */
+        glm::mat4 getMatrixTranslation() const;
+
+        /**
+         * @brief Isolates the world-relative rotation matrix associated with this transform
+         *
+         */
+        glm::mat4 getMatrixRotation() const;
+
+        /**
+         * @brief Isolates the world-relative scale matrix associated with this transform
+         *
+         */
+        glm::mat4 getScaleMatrix() const;
     };
 
     /**

@@ -36,10 +36,10 @@ namespace ToyMaker {
      * @todo SceneHierarchyData isn't required by this system, as far as I can tell.
      *
      */
-    class SpatialQuerySystem: public System<SpatialQuerySystem, std::tuple<Transform, ObjectBounds>, std::tuple<SceneHierarchyData, AxisAlignedBounds>> {
+    class SpatialQuerySystem: public System<SpatialQuerySystem, std::tuple<Transform, ObjectBounds>, std::tuple<AxisAlignedBounds>> {
     public:
         explicit SpatialQuerySystem(std::weak_ptr<ECSWorld> world):
-        System<SpatialQuerySystem, std::tuple<Transform, ObjectBounds>, std::tuple<SceneHierarchyData, AxisAlignedBounds>>{ world }
+        System<SpatialQuerySystem, std::tuple<Transform, ObjectBounds>, std::tuple<AxisAlignedBounds>>{ world }
         {}
 
         /**
@@ -67,6 +67,7 @@ namespace ToyMaker {
              */
             static std::string getSystemTypeName() { return "SpatialQuerySystem::StaticModelBoundsComputeSystem"; }
         private:
+
             /**
              * @brief Computes object bounds for an entity as soon as its enabled for this system.
              *
@@ -87,6 +88,7 @@ namespace ToyMaker {
              * @param entityID The entity whose object bounds are being recomputed.
              */
             void recomputeObjectBounds(EntityID entityID);
+
         };
 
         /**
@@ -138,55 +140,56 @@ namespace ToyMaker {
         };
 
         /**
-         * @brief Returns a list of entities (by their IDs) overlapping a search AABB.
+         * @brief Returns a list of entities (by their IDs) whose AABBs overlap a search AABB.
          *
          * @param searchBounds The AABB defining the search region.
          * @param interactionMask Interaction layers in which entities are being searched for
          *
          * @return std::vector<std::pair<EntityID, AxisAlignedBounds>> The list of entities overlapping with the search region.
          */
-        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlapping(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max()) const;
+        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlappingCoarse(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max()) const;
 
         /**
-         * @brief Returns a list of entities (by their IDs) intersecting a search ray.
+         * @brief Returns a list of entities (by their IDs) whose AABBs intersect a search ray.
          *
          * @param ray The ray intersecting which a list of entities should be found.
          * @param interactionMask Interaction layers in which entities are being searched for
          *
          * @return std::vector<std::pair<EntityID, AxisAlignedBounds>> A list of entities intersected by the query ray.
          */
-        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlapping(const Ray& ray, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max()) const;
+        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlappingCoarse(const Ray& ray, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max()) const;
 
         /**
-         * @brief Gets a list of nodes (by their base class pointers) intersecting a search ray.
+         * @brief Gets a list of nodes (by their base class pointers) whose AABBs intersect a search ray.
          *
          * @param searchRay The ray intersecting which a list of nodes should be found.
          * @param interactionMask A list of layers in which entities are being searched for
          *
          * @return std::vector<std::shared_ptr<SceneNodeCore>> A list of nodes intersecting the search ray.
          */
-        std::vector<std::shared_ptr<SceneNodeCore>> findNodesOverlapping(const Ray& searchRay, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max());
+        std::vector<std::shared_ptr<SceneNodeCore>> findNodesOverlappingCoarse(const Ray& searchRay, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max());
 
         /**
-         * @brief Gets a list of nodes which overlap some search region (in the form of an AABB).
+         * @brief Gets a list of nodes whose AABBs overlap some search region (in the form of an AABB).
          *
          * @param searchBounds The search region (as an AABB).
          * @param interactionMask A list of layers in which entities are being searched for
          *
          * @return std::vector<std::shared_ptr<SceneNodeCore>> The list of nodes contained by or overlapping the search region.
          */
-        std::vector<std::shared_ptr<SceneNodeCore>> findNodesOverlapping(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max());
+        std::vector<std::shared_ptr<SceneNodeCore>> findNodesOverlappingCoarse(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max());
 
     private:
         /**
-         * @brief Updates the axis aligned bounds of an entity, based on its ObjectBounds.
+         * @brief Updates the axis aligned bounds of an entity based on its ObjectBounds.
          *
          * @param entity The entity whose axis aligned bounds are being updated.
          */
         void updateBounds(EntityID entity);
 
         /**
-         * @brief Triggers the destruction of any presently existing octree and replaces it with a new one.
+         * @brief Triggers the destruction of any presently existing octree and replaces it
+         * with a new one.
          *
          */
         void rebuildOctree();
@@ -198,14 +201,17 @@ namespace ToyMaker {
         void onSimulationActivated() override;
 
         /**
-         * @brief Initializes the tree if necessary, and recomputes octree position for entities whose ObjectBounds were updated.
+         * @brief Initializes the tree if necessary, and recomputes octree position for entities
+         * whose ObjectBounds were updated.
          *
-         * @param timestepMillis The time by which the simulation will be advanced this simulation frame.
+         * @param timestepMillis The time by which the simulation will be advanced this
+         * simulation frame.
          */
         void onSimulationStep(uint32_t timestepMillis) override;
 
         /**
-         * @brief Marks this entity as requiring an octree update on the nearest simulation step.
+         * @brief Marks this entity as requiring an octree update on the nearest simulation
+         * step.
          *
          * @param entityID The entity in need of an update.
          */
@@ -219,30 +225,39 @@ namespace ToyMaker {
         void onEntityDisabled(EntityID entityID) override;
 
         /**
-         * @brief Marks this entity as requiring an octree update on the nearest simulation step.
+         * @brief Marks this entity as requiring an octree update on the nearest simulation
+         * step.
          *
          * @param entityID The entity in need of an AABB update.
          */
         void onEntityUpdated(EntityID entityID) override;
 
         /**
-         * @brief Pointer to the octree, the data structure responsible for spatially indexing scene objects.
+         * @brief Pointer to the octree, the data structure responsible for spatially
+         * indexing scene objects.
          *
          */
         std::unique_ptr<Octree> mOctree { nullptr };
 
         /**
-         * @brief A list of entities whose AABBs should be recomputed at the next simulation step.
+         * @brief A list of entities whose AABBs should be recomputed at the next simulation
+         * step.
          *
          */
-        std::set<EntityID> mComputeQueue {};
+        std::set<EntityID> mUpdateQueueAABB {};
+
+        /**
+         * @brief A list of entities whose transforms should be recomputed at the next
+         * simulation step.
+         *
+         */
+        std::set<EntityID> mUpdateQueueTransform {};
 
         /**
          * @brief Whether a fresh Octree should be built for this system as soon as possible.
          *
          */
         bool mRequiresInitialization { true };
-
     };
 
     // Prevent enabling and disabling of spatial query related systems, leave their management entirely to

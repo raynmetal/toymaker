@@ -289,7 +289,7 @@ namespace ToyMaker {
         }
 
 
-        glm::vec3 searchDirection { two.getComputedWorldPosition() - one.getComputedWorldPosition() };
+        glm::vec3 searchDirection { two.getPositionWorld() - one.getPositionWorld() };
 
         // Two non-degenerate objects share the same origin, obviously they overlap
         if(squareDistance(searchDirection) == 0.f) {

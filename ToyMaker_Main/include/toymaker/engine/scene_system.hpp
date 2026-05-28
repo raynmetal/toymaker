@@ -20,17 +20,15 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include <algorithm>
-#include <cctype>
 #include <type_traits>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include "spatial_query/types.hpp"
 #include "core/ecs_world.hpp"
 #include "core/resource_database.hpp"
 #include "scene_components.hpp"
-#include "spatial_query/math.hpp"
 #include "render_system.hpp"
 #include "texture.hpp"
 #include "input_system/input_system.hpp"
@@ -1433,7 +1431,7 @@ namespace ToyMaker {
          * 
          * @retval true The SceneSystem is a singleton System;
          * 
-         * @todo This is obviously stupid and I should do something about it.
+         * @TODO: This is obviously stupid and I should do something about it.
          * 
          */
         bool isSingleton() const override { return true; }
@@ -1569,12 +1567,12 @@ namespace ToyMaker {
          * This sub-system only listens for updates on an entity's Placement component, as seen in its base class.
          * 
          */
-        class SceneSubworld: public System<SceneSubworld, std::tuple<Placement>, std::tuple<Transform, SceneHierarchyData>> {
+        class PlacementUpdateReporter: public System<PlacementUpdateReporter, std::tuple<Placement>, std::tuple<Transform, SceneHierarchyData>> {
         public:
-            explicit SceneSubworld(std::weak_ptr<ECSWorld> world):
-            System<SceneSubworld, std::tuple<Placement>, std::tuple<Transform, SceneHierarchyData>> { world }
+            explicit PlacementUpdateReporter(std::weak_ptr<ECSWorld> world):
+            System<PlacementUpdateReporter, std::tuple<Placement>, std::tuple<Transform, SceneHierarchyData>> { world }
             {}
-            static std::string getSystemTypeName() { return "SceneSubworld"; }
+            static std::string getSystemTypeName() { return "SceneSystem::PlacementUpdateReporter"; }
         private:
             void onEntityUpdated(EntityID entityID) override;
         };
@@ -1590,6 +1588,25 @@ namespace ToyMaker {
         template <typename TSceneNode, typename Enable=void>
         struct getNodeByID_Helper {
             static std::shared_ptr<TSceneNode> get(const UniversalEntityID& universalEntityID, SceneSystem& sceneSystem);
+        };
+
+        /**
+         * @ingroup ToyMakerECSSystem ToyMakerSceneSystem
+         * @brief A subsystem of the SceneSystem which tracks, per world, which objects have had their Placement components updated.
+         * 
+         * These objects then have their UniversalEntityIDs sent to the SceneSystem, which schedules an update to their transforms as soon as possible.
+         * 
+         * This sub-system only listens for updates on an entity's Placement component, as seen in its base class.
+         * 
+         */
+        class TransformUpdateReporter: public System<TransformUpdateReporter, std::tuple<Transform>, std::tuple<Placement, SceneHierarchyData>> {
+        public:
+            explicit TransformUpdateReporter(std::weak_ptr<ECSWorld> world):
+            System<TransformUpdateReporter, std::tuple<Transform>, std::tuple<Placement, SceneHierarchyData>> { world }
+            {}
+            static std::string getSystemTypeName() { return "SceneSystem::TransformUpdateReporter"; }
+        private:
+            // void onEntityUpdated(EntityID entityID) override;
         };
 
         /**
@@ -1753,6 +1770,14 @@ namespace ToyMaker {
          * 
          */
         std::set<UniversalEntityID, std::less<UniversalEntityID>> mComputeTransformQueue {};
+
+        /**
+         * 
+         * @brief Nodes whose transforms were updated this variable or simulation
+         * step should have their placements recomputed.
+         *
+         */
+        std::set<UniversalEntityID, std::less<UniversalEntityID>> mComputePlacementQueue {};
 
     friend class SceneNodeCore;
     };

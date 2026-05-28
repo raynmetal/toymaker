@@ -1393,7 +1393,7 @@ void SceneSystem::onApplicationStart() {
     updateTransforms();
 }
 
-void SceneSystem::SceneSubworld::onEntityUpdated(EntityID entityID) {
+void SceneSystem::PlacementUpdateReporter::onEntityUpdated(EntityID entityID) {
     mWorld.lock()->getSystem<SceneSystem>()->onWorldEntityUpdate({mWorld.lock()->getID(), entityID});
 }
 

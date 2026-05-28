@@ -207,8 +207,8 @@ bool Polytope::append(const glm::vec3& newPoint, const glm::vec3& supportA, cons
 }
 
 void ObjectBounds::applyModelMatrix(const glm::mat4& modelMatrix) {
-    mPosition = static_cast<glm::vec3>(modelMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f});
-    mOrientation = glm::normalize(glm::quat_cast(glm::transpose(glm::inverse(modelMatrix))));
+    mPositionOrigin = static_cast<glm::vec3>(modelMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f});
+    mOrientationOrigin = glm::normalize(glm::quat_cast(glm::transpose(glm::inverse(modelMatrix))));
 }
 
 std::array<glm::vec3, 8> ObjectBounds::getVolumeRelativeBoxCorners() const {
@@ -225,17 +225,35 @@ std::array<glm::vec3, 8> ObjectBounds::getVolumeRelativeBoxCorners() const {
     }
 }
 
-glm::vec3 ObjectBounds::getComputedWorldPosition() const {
-    return mPosition + getWorldRotationTransform() * mPositionOffset;
+glm::vec3 ObjectBounds::getPositionWorld() const {
+    return mPositionOrigin + getRotationTransformOrigin() * mPositionOffset;
 }
-glm::quat ObjectBounds::getComputedWorldOrientation() const {
-    return glm::normalize(glm::quat_cast(getWorldRotationTransform() * getLocalRotationTransform()));
+
+void ObjectBounds::setPositionWorld(const glm::vec3& newPosition) {
+    mPositionOrigin = newPosition - (
+        glm::transpose(getRotationTransformOrigin()) * mPositionOffset
+    );
+}
+
+glm::quat ObjectBounds::getOrientationWorld() const {
+    return glm::normalize(glm::quat_cast(getRotationTransformOrigin() * getRotationTransformLocal()));
+}
+
+void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
+    // object origin position depends on origin orientation
+    const glm::vec3 worldPositionPrevious { getPositionWorld() };
+    mOrientationOrigin = glm::normalize(glm::quat_cast(
+        glm::mat3_cast(newOrientation) * glm::transpose(getRotationTransformLocal())
+    ));
+    // update world position such that it stays in-place by
+    // updating the origin's position instead
+    setPositionWorld(worldPositionPrevious);
 }
 
 std::array<glm::vec3, 8> ObjectBounds::getLocalOrientedBoxCorners() const {
     std::array<glm::vec3, 8> orientedCorners { getVolumeRelativeBoxCorners() };
     for(glm::vec3& localCorner: orientedCorners) {
-        localCorner = mPositionOffset + getLocalRotationTransform() * localCorner;
+        localCorner = mPositionOffset + getRotationTransformLocal() * localCorner;
     }
     return orientedCorners;
 }
@@ -243,7 +261,7 @@ std::array<glm::vec3, 8> ObjectBounds::getLocalOrientedBoxCorners() const {
 std::array<glm::vec3, 8> ObjectBounds::getWorldOrientedBoxCorners() const {
     std::array<glm::vec3, 8> worldCorners { getLocalOrientedBoxCorners() };
     for(glm::vec3& orientedCorner: worldCorners) {
-        orientedCorner = mPosition + getWorldRotationTransform() * orientedCorner;
+        orientedCorner = mPositionOrigin + getRotationTransformOrigin() * orientedCorner;
     }
     return worldCorners;
 }
@@ -269,7 +287,7 @@ glm::vec3 AxisAlignedBounds::getSupportAlong(const glm::vec3& axis) const {
 
     // Degenerate shapes yield origin
     if(!isPositiveStrict()) {
-        return getComputedWorldPosition();
+        return getPositionWorld();
     }
 
     return getSupportBox(axis, *this);
@@ -301,7 +319,7 @@ glm::vec3 ObjectBounds::getSupportAlong(const glm::vec3& axis) const {
 
     // Degenerate shapes yield origin
     if(!isPositiveStrict()) {
-        return getComputedWorldPosition();
+        return getPositionWorld();
     }
 
     switch(mType) {
@@ -385,7 +403,7 @@ void AxisAlignedBounds::setByExtents(const Extents& axisAlignedExtents) {
 }
 
 glm::vec3 getSupportBox(const glm::vec3& axis, const AxisAlignedBounds& box) {
-    const glm::vec3 origin { box.getComputedWorldPosition() };
+    const glm::vec3 origin { box.getPositionWorld() };
     const std::array<glm::vec3, 8> corners { box.getAxisAlignedBoxCorners() };
 
     // the point we're looking for _must_ be one of the corners of the box
@@ -403,7 +421,7 @@ glm::vec3 getSupportBox(const glm::vec3& axis, const AxisAlignedBounds& box) {
 }
 
 glm::vec3 getSupportBox(const glm::vec3& axis, const ObjectBounds& box) {
-    const glm::vec3 origin { box.getComputedWorldPosition() };
+    const glm::vec3 origin { box.getPositionWorld() };
     const std::array<glm::vec3, 8> corners { box.getWorldOrientedBoxCorners() };
 
     // the point we're looking for _must_ be one of the corners of the box
@@ -421,16 +439,16 @@ glm::vec3 getSupportBox(const glm::vec3& axis, const ObjectBounds& box) {
 }
 
 glm::vec3 getSupportSphere(const glm::vec3& axis, const ObjectBounds& sphere) {
-    const glm::vec3 origin { sphere.getComputedWorldPosition() };
+    const glm::vec3 origin { sphere.getPositionWorld() };
     const float radius { sphere.mTrueVolume.mSphere.mRadius };
 
     return origin + radius * glm::normalize(axis);
 }
 
 glm::vec3 getSupportCapsule(const glm::vec3& vector, const ObjectBounds& capsule) {
-    const glm::vec3 origin { capsule.getComputedWorldPosition() };
+    const glm::vec3 origin { capsule.getPositionWorld() };
     const glm::vec3 capsuleAxis { glm::normalize(
-        capsule.getComputedWorldOrientation() * glm::vec3 { 0.f, 1.f, 0.f }
+        capsule.getOrientationWorld() * glm::vec3 { 0.f, 1.f, 0.f }
     ) };
     const float radius { capsule.mTrueVolume.mCapsule.mRadius };
     const float height { capsule.mTrueVolume.mCapsule.mHeight };
@@ -545,11 +563,11 @@ std::pair<float, float> axisProjectSphere(const glm::vec3& axis, const ObjectBou
     const glm::vec3 axisNormalized { glm::normalize(axis) };
 
     const float pointOne { 
-        glm::dot(axisNormalized, sphere.getComputedWorldPosition())
+        glm::dot(axisNormalized, sphere.getPositionWorld())
         + sphere.mTrueVolume.mSphere.mRadius
     };
     const float pointTwo {
-        glm::dot(axisNormalized, sphere.getComputedWorldPosition())
+        glm::dot(axisNormalized, sphere.getPositionWorld())
         - sphere.mTrueVolume.mSphere.mRadius
     };
 
@@ -560,8 +578,8 @@ std::pair<float, float> axisProjectSphere(const glm::vec3& axis, const ObjectBou
 }
 
 std::pair<float, float> axisProjectCapsule(const glm::vec3& axis, const ObjectBounds& capsule) {
-    const glm::vec3 capsulePosition { capsule.getComputedWorldPosition() };
-    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getComputedWorldOrientation()) };
+    const glm::vec3 capsulePosition { capsule.getPositionWorld() };
+    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getOrientationWorld()) };
     const glm::vec3 capsuleAxis { capsuleRotation * glm::vec3 { 0.f, 1.f, 0.f } };
     const std::array<glm::vec3, 2> capsuleEnds {
         capsulePosition - capsule.mTrueVolume.mCapsule.mHeight * .5f * capsuleAxis,

@@ -263,7 +263,7 @@ namespace ToyMaker {
          *
          * @return std::vector<std::pair<EntityID, AxisAlignedBounds>> The entities overlapping the search region.
          */
-        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlapping(
+        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlappingCoarse(
             const AxisAlignedBounds& searchBounds,
             InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max()
         ) const;
@@ -275,7 +275,7 @@ namespace ToyMaker {
          *
          * @return std::vector<std::pair<EntityID, AxisAlignedBounds>> The entities intersecting with the search ray.
          */
-        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlapping(
+        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlappingCoarse(
             const Ray& searchRay,
             InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max()
         ) const;
@@ -539,11 +539,11 @@ namespace ToyMaker {
          *
          * @return std::vector<std::pair<EntityID, AxisAlignedBounds>> The entities found to match the query.
          */
-        inline std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlapping(
+        inline std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlappingCoarse(
             const AxisAlignedBounds& searchBounds,
             InteractionLayerMask layerMask=std::numeric_limits<InteractionLayerMask>::max()
         ) const {
-            return mRootNode->findEntitiesOverlapping(searchBounds, layerMask);
+            return mRootNode->findEntitiesOverlappingCoarse(searchBounds, layerMask);
         }
 
         /**
@@ -552,7 +552,7 @@ namespace ToyMaker {
          * @param searchRay The ray intersecting which entities need to be retrieved.
          * @return std::vector<std::pair<EntityID, AxisAlignedBounds>> The entities found to match the query.
          */
-        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlapping(
+        std::vector<std::pair<EntityID, AxisAlignedBounds>> findEntitiesOverlappingCoarse(
             const Ray& searchRay,
             InteractionLayerMask layerMask=std::numeric_limits<InteractionLayerMask>::max()
         ) const;

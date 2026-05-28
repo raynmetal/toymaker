@@ -1027,10 +1027,10 @@ namespace ToyMaker {
         TrueVolume mTrueVolume {};
 
         /**
-         * @brief The position, in the real world, of the scene node this data is attached to.
+         * @brief The position, in the real world, of origin of the scene node this data is attached to.
          *
          */
-        glm::vec3 mPosition { 0.f };
+        glm::vec3 mPositionOrigin { 0.f };
 
         /**
          * @brief The position of the origin of the spatial query volume relative to the origin of the node it is attached to.
@@ -1039,10 +1039,10 @@ namespace ToyMaker {
         glm::vec3 mPositionOffset { 0.f };
 
         /**
-         * @brief The orientation in the real world of the scene node this bounds component is attached to.
+         * @brief The orientation in the real world of the origin of the scene node this bounds component is attached to.
          *
          */
-        glm::quat mOrientation { glm::vec3{ 0.f } };
+        glm::quat mOrientationOrigin { glm::vec3{ 0.f } };
 
         /**
          * @brief The transformation mapping forward as known by the underlying scene node, to forward as known by the spatial query volume.
@@ -1075,7 +1075,7 @@ namespace ToyMaker {
          *
          * @return glm::mat3 This object's orientation offset's rotation matrix representation.
          */
-        inline glm::mat3 getLocalRotationTransform() const {
+        inline glm::mat3 getRotationTransformLocal() const {
             return glm::mat3_cast(glm::normalize(mOrientationOffset));
         }
 
@@ -1084,8 +1084,8 @@ namespace ToyMaker {
          *
          * @return glm::mat3 The orientation of the underlying scene object.
          */
-        inline glm::mat3 getWorldRotationTransform() const {
-            return glm::mat3_cast(glm::normalize(mOrientation));
+        inline glm::mat3 getRotationTransformOrigin() const {
+            return glm::mat3_cast(glm::normalize(mOrientationOrigin));
         }
 
         /**
@@ -1093,14 +1093,35 @@ namespace ToyMaker {
          *
          * @return glm::vec3 The origin of this node's object bounds.
          */
-        glm::vec3 getComputedWorldPosition() const;
+        glm::vec3 getPositionWorld() const;
+
+        /**
+         * @brief Sets the new world position for the object while keeping its offset relative
+         * to its entity fixed.
+         *
+         * @param newPosition The new position this object should appear in
+         */
+        void setPositionWorld(const glm::vec3& newPosition);
 
         /**
          * @brief The final orientation of the object bounds in the world.
          *
+         * Orientation here refers to global orientation, where w=1,xyz=0 corresponds to the object facing
+         * down the -Z axis
+         *
          * @return glm::quat The orientation of this node's object bounds.
          */
-        glm::quat getComputedWorldOrientation() const;
+        glm::quat getOrientationWorld() const;
+
+        /**
+         * @brief Sets the new world orientation for the object while keeping its offset relative to
+         * its entity fixed.
+         *
+         * Orientation here refers to global orientation, where w=1,xyz=0 corresponds to the object facing
+         * down the -Z axis
+         *
+         */
+        void setOrientationWorld(const glm::quat& newOrientation);
 
         /**
          * @brief Gets the corners of the box just encapsulating this object's true volume, relative to the origin of the spatial query volume alone.
@@ -1296,7 +1317,7 @@ namespace ToyMaker {
          *
          * @return glm::vec3 The coordinates of the center of this box
          */
-        inline glm::vec3 getComputedWorldPosition() const { return mExtents.second + .5f * getDimensions(); }
+        inline glm::vec3 getPositionWorld() const { return mExtents.second + .5f * getDimensions(); }
 
         /**
          * @brief Tests whether this box is sensible (it has a finite position, and finite non-negative dimensions).
@@ -1354,7 +1375,7 @@ namespace ToyMaker {
          */
         inline void setPosition(const glm::vec3& position) {
             assert(isFinite(position) && "Invalid position specified. Position must be finite");
-            const glm::vec3 deltaPosition { position - getComputedWorldPosition() };
+            const glm::vec3 deltaPosition { position - getPositionWorld() };
             mExtents.first += deltaPosition;
             mExtents.second += deltaPosition;
         }
@@ -1366,7 +1387,7 @@ namespace ToyMaker {
          */
         inline void setDimensions(const glm::vec3& dimensions) {
             assert(isNonNegative(dimensions) && isFinite(dimensions) && "Invalid dimensions provided.  Dimensions must be non negative and finite");
-            const glm::vec3 position { getComputedWorldPosition() };
+            const glm::vec3 position { getPositionWorld() };
             const glm::vec3 deltaDimensions { dimensions - getDimensions() };
             mExtents.first += .5f * deltaDimensions;
             mExtents.second -= .5f * deltaDimensions;

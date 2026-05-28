@@ -4,8 +4,8 @@
 
 using namespace ToyMaker;
 
-std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlapping(const Ray& searchRay, InteractionLayerMask interactionMask) {
-    const std::vector<std::pair<EntityID, AxisAlignedBounds>> intersectingEntityIDs { findEntitiesOverlapping(searchRay, interactionMask) };
+std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlappingCoarse(const Ray& searchRay, InteractionLayerMask interactionMask) {
+    const std::vector<std::pair<EntityID, AxisAlignedBounds>> intersectingEntityIDs { findEntitiesOverlappingCoarse(searchRay, interactionMask) };
 
     const std::size_t resultListLength { intersectingEntityIDs.size() };
     std::vector<UniversalEntityID> resultNodeQuery { resultListLength };
@@ -17,8 +17,8 @@ std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlap
     return mWorld.lock()->getSystem<SceneSystem>()->getNodesByID(resultNodeQuery);
 }
 
-std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlapping(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) {
-    const std::vector<std::pair<EntityID, AxisAlignedBounds>> intersectingEntityIDs { findEntitiesOverlapping(searchBounds, interactionMask) };
+std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlappingCoarse(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) {
+    const std::vector<std::pair<EntityID, AxisAlignedBounds>> intersectingEntityIDs { findEntitiesOverlappingCoarse(searchBounds, interactionMask) };
 
     const std::size_t resultListLength { intersectingEntityIDs.size() };
     std::vector<UniversalEntityID> resultNodeQuery { resultListLength };
@@ -31,20 +31,20 @@ std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlap
 }
 
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlapping(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) const {
+std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlappingCoarse(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) const {
     if(mRequiresInitialization) {
         return std::vector<std::pair<EntityID, AxisAlignedBounds>>{};
     }
 
-    return mOctree->findEntitiesOverlapping(searchBounds, interactionMask);
+    return mOctree->findEntitiesOverlappingCoarse(searchBounds, interactionMask);
 }
 
-std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlapping(const Ray& searchRay, InteractionLayerMask interactionMask) const {
+std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlappingCoarse(const Ray& searchRay, InteractionLayerMask interactionMask) const {
     if(mRequiresInitialization) {
         return std::vector<std::pair<EntityID, AxisAlignedBounds>>{};
     }
 
-    return mOctree->findEntitiesOverlapping(searchRay, interactionMask);
+    return mOctree->findEntitiesOverlappingCoarse(searchRay, interactionMask);
 }
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityEnabled(EntityID entityID) {
@@ -158,12 +158,12 @@ void SpatialQuerySystem::rebuildOctree() {
     for(EntityID entity: getEnabledEntities()) {
         updateBounds(entity);
         if(firstObject) {
-            regionToEncompass.setPosition(getComponent<ObjectBounds>(entity).getComputedWorldPosition());
+            regionToEncompass.setPosition(getComponent<ObjectBounds>(entity).getPositionWorld());
             firstObject = false;
         }
         regionToEncompass = regionToEncompass + getComponent<AxisAlignedBounds>(entity);
     }
-    assert(isFinite(regionToEncompass.getComputedWorldPosition()) && "Start position must be finite");
+    assert(isFinite(regionToEncompass.getPositionWorld()) && "Start position must be finite");
     assert(isFinite(regionToEncompass.getDimensions()) && "Region to encompass is too large to be bound in an octree");
     if(!regionToEncompass.isPositiveStrict()) {
         regionToEncompass.setDimensions(glm::vec3{1.f});
@@ -177,16 +177,16 @@ void SpatialQuerySystem::rebuildOctree() {
 }
 
 void SpatialQuerySystem::onEntityEnabled(EntityID entityID) {
-    mComputeQueue.insert(entityID);
+    mUpdateQueueAABB.insert(entityID);
 }
 
 void SpatialQuerySystem::onEntityDisabled(EntityID entityID) {
-    mComputeQueue.erase(entityID);
+    mUpdateQueueAABB.erase(entityID);
     if(!mRequiresInitialization) { mOctree->removeEntity(entityID); }
 }
 
 void SpatialQuerySystem::onEntityUpdated(EntityID entityID) {
-    mComputeQueue.insert(entityID);
+    mUpdateQueueAABB.insert(entityID);
 }
 
 void SpatialQuerySystem::onSimulationActivated() {
@@ -196,18 +196,18 @@ void SpatialQuerySystem::onSimulationActivated() {
 void SpatialQuerySystem::onSimulationStep(uint32_t timestepMillis) {
     (void)timestepMillis; // prevent unused parameter warning
     if(mRequiresInitialization)  {
-        mComputeQueue.clear();
+        mUpdateQueueAABB.clear();
         rebuildOctree();
         mRequiresInitialization = false;
         return;
     }
 
-    for(EntityID entity: mComputeQueue) {
+    for(EntityID entity: mUpdateQueueAABB) {
         mOctree->removeEntity(entity);
         updateBounds(entity);
         mOctree->insertEntity(entity, getComponent<AxisAlignedBounds>(entity));
     }
 
-    mComputeQueue.clear();
+    mUpdateQueueAABB.clear();
 }
 

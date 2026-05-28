@@ -397,7 +397,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getSphereIntersections(const
     std::array<glm::vec3, 2> intersectionPoints { glm::vec3{std::numeric_limits<float>::infinity()}, glm::vec3{std::numeric_limits<float>::infinity()} };
 
     // Solve ray-sphere intersection
-    const glm::vec3 originDifference { ray.mStart - sphere.getComputedWorldPosition() };
+    const glm::vec3 originDifference { ray.mStart - sphere.getPositionWorld() };
     const float qdrtcA { 1.f };
     const float qdrtcB { 2.f * glm::dot(originDifference, rayDirection) };
     const float qdrtcC { glm::dot(originDifference, originDifference) - sphere.mTrueVolume.mSphere.mRadius * sphere.mTrueVolume.mSphere.mRadius };
@@ -441,8 +441,8 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCapsuleIntersections(cons
     std::vector<glm::vec3> consideredIntersections {};
 
     // Cache some specifics about our capsule
-    const glm::vec3 capsulePosition { capsule.getComputedWorldPosition() };
-    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getComputedWorldOrientation()) };
+    const glm::vec3 capsulePosition { capsule.getPositionWorld() };
+    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getOrientationWorld()) };
     const glm::vec3 capsuleAxis { capsuleRotation * glm::vec3 { 0.f, 1.f, 0.f } };
     const std::array<glm::vec3, 2> capsuleEnds {
         capsulePosition - capsule.mTrueVolume.mCapsule.mHeight * .5f * capsuleAxis,
@@ -652,8 +652,8 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCylinderIntersections(
 }
 
 bool checkContainsPointBox(const glm::vec3& point, const ObjectBounds& box) {
-    const glm::quat boxOrientation { box.getComputedWorldOrientation() };
-    const glm::vec3 boxPosition { box.getComputedWorldPosition() };
+    const glm::quat boxOrientation { box.getOrientationWorld() };
+    const glm::vec3 boxPosition { box.getPositionWorld() };
     const glm::mat4 boxTransformInverse {
         glm::inverse(buildModelMatrix(glm::vec4{boxPosition, 1.f}, boxOrientation))
     };
@@ -669,7 +669,7 @@ bool checkContainsPointBox(const glm::vec3& point, const ObjectBounds& box) {
 
 bool checkContainsPointSphere(const glm::vec3& point, const ObjectBounds& sphere) {
     const glm::vec3 sphereCenterToPoint {
-        point - sphere.getComputedWorldPosition()
+        point - sphere.getPositionWorld()
     };
     const float sphereRadius { sphere.mTrueVolume.mSphere.mRadius };
     return (
@@ -680,8 +680,8 @@ bool checkContainsPointSphere(const glm::vec3& point, const ObjectBounds& sphere
 
 bool checkContainsPointCapsule(const glm::vec3& point, const ObjectBounds& capsule) {
     // Cache some specifics about our capsule
-    const glm::vec3 capsulePosition { capsule.getComputedWorldPosition() };
-    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getComputedWorldOrientation()) };
+    const glm::vec3 capsulePosition { capsule.getPositionWorld() };
+    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getOrientationWorld()) };
     const glm::vec3 capsuleAxis { capsuleRotation * glm::vec3 { 0.f, 1.f, 0.f } };
     const float capsuleRadius { capsule.mTrueVolume.mCapsule.mRadius };
     const float capsuleHeight { capsule.mTrueVolume.mCapsule.mHeight };
@@ -725,7 +725,7 @@ std::array<glm::vec3, 3> getBoxEdgeAxes(const ObjectBounds& box) {
     const glm::vec3 localRight { 1.f, 0.f, 0.f };
     const glm::vec3 localUp { 0.f, 1.f, 0.f };
 
-    const glm::mat3 boxOrientation { box.getComputedWorldOrientation() };
+    const glm::mat3 boxOrientation { box.getOrientationWorld() };
     std::array<glm::vec3, 3> boxAxes {{
         { boxOrientation * localForward },
         { boxOrientation * localRight },

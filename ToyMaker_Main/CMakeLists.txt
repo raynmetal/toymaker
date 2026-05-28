@@ -34,6 +34,8 @@ target_sources(ToyMaker
         src/spatial_query/math.cpp
         src/spatial_query/octree.cpp
         src/spatial_query/system.cpp
+    # Physics sources
+        src/physics/system.cpp
     # Everything else
         src/application.cpp
         src/camera_system.cpp
@@ -72,6 +74,9 @@ target_sources(ToyMaker
             include/toymaker/engine/spatial_query/math.hpp
             include/toymaker/engine/spatial_query/octree.hpp
             include/toymaker/engine/spatial_query/system.hpp
+            # Physics sources
+            include/toymaker/engine/physics/types.hpp
+            include/toymaker/engine/physics/system.hpp
             # Misc. internals 
             include/toymaker/engine/camera_system.hpp
             include/toymaker/engine/framebuffer.hpp
