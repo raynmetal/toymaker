@@ -24,7 +24,7 @@ namespace ToyMaker {
      * @param scale The factor along each direction by which to scale a mesh.
      * @return glm::mat4 The matrix representation of the argument values.
      */
-    glm::mat4 buildModelMatrix(glm::vec4 position, glm::quat orientation, glm::vec3 scale = glm::vec3{1.f, 1.f, 1.f}); 
+    glm::mat4 buildModelMatrix(glm::vec4 position, glm::quat orientation, glm::vec3 scale = glm::vec3{1.f, 1.f, 1.f});
 
     /**
      * @ingroup ToyMakerCore ToyMakerSceneSystem
