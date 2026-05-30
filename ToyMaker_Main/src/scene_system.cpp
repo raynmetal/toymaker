@@ -1342,7 +1342,8 @@ void SceneSystem::updateTransformsPlacements() {
     for(std::pair<WorldID, EntityID> entityWorldPair: mComputeTransformQueue) {
         if(mEntityToNode.at(entityWorldPair).lock() == mRootNode) continue;
 
-        // Prioritise user-generated placement updates over physics transform updates
+        // Prioritise user-generated placement updates over physics transform
+        // updates (regardless of any resulting bugs)
         mComputePlacementQueue.erase(entityWorldPair);
 
         // Find an ancestor in need of an update, if any
@@ -1374,7 +1375,10 @@ void SceneSystem::updateTransformsPlacements() {
         newPlacement.mInheritMode = localTransform.mInheritMode;
         newPlacement.mInheritedComponents = localTransform.mInheritedComponents;
         newPlacement.mPosition = glm::vec4 { glm::vec3 { localTransform.mModelMatrix[3] - parentTransform.mModelMatrix[3] }, 1.f };
-        newPlacement.mOrientation = glm::quat_cast(localTransform.getMatrixRotation()) * glm::inverse(glm::quat_cast(parentTransform.getMatrixRotation()));
+        newPlacement.mOrientation = ( // `new_rotation - old_rotation`, basically
+                glm::quat_cast(localTransform.getMatrixRotation())
+                * glm::inverse(glm::quat_cast(parentTransform.getMatrixRotation()))
+        );
         newPlacement.mScale = {
             localScale[0][0]/parentScale[0][0],
             localScale[1][1]/parentScale[1][1],

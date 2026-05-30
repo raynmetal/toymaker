@@ -57,8 +57,16 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityUpdated(EntityI
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(EntityID entityID) {
     ObjectBounds objectBounds { getComponent<ObjectBounds>(entityID) };
+    const glm::mat3 objectScale { getComponent<Transform>(entityID).getMatrixScale() };
 
     const std::shared_ptr<StaticModel> model { getComponent<std::shared_ptr<StaticModel>>(entityID) };
+
+    // Only the transform has been updated -- simply resize OOBB accordingly
+    if(!model->boundsNeedRecompute()) {
+        objectBounds.mTrueVolume.mBox.mDimensions = objectScale * model->getBounds().mTrueVolume.mBox.mDimensions;
+        updateComponent<ObjectBounds>(entityID, objectBounds);
+    }
+
     glm::vec3 minCorner {std::numeric_limits<float>::infinity()};
     glm::vec3 maxCorner {-std::numeric_limits<float>::infinity()};
     std::vector<std::shared_ptr<StaticMesh>> meshHandles { model->getMeshHandles() };
@@ -104,12 +112,16 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
         box.mDimensions = maxCorner - minCorner;
     }
 
+    // cache untransformed bounds in the static model itself, for later use
     objectBounds = ObjectBounds::create(
         box,
         minCorner + .5f * box.mDimensions,
         glm::vec3{0.f, 0.f, 0.f}
     );
+    model->setBounds(objectBounds);
 
+    // apply the object's current scale to the model before setting the bounds on the entity
+    objectBounds.mTrueVolume.mBox.mDimensions = objectScale * model->getBounds().mTrueVolume.mBox.mDimensions;
     updateComponent<ObjectBounds>(entityID, objectBounds);
 }
 

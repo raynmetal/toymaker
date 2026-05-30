@@ -54,10 +54,11 @@ namespace ToyMaker {
          * @brief A subsystem of the SpatialQuery system which tracks StaticModel objects in the scene and updates the position and shapes of their associated object bounds accordingly.
          *
          */
-        class StaticModelBoundsComputeSystem: public System<StaticModelBoundsComputeSystem, std::tuple<std::shared_ptr<StaticModel>>, std::tuple<ObjectBounds>> {
+        class StaticModelBoundsComputeSystem: public System<StaticModelBoundsComputeSystem, std::tuple<std::shared_ptr<StaticModel>, Transform>, std::tuple<ObjectBounds>> {
         public:
+
             explicit StaticModelBoundsComputeSystem(std::weak_ptr<ECSWorld> world):
-            System<SpatialQuerySystem::StaticModelBoundsComputeSystem, std::tuple<std::shared_ptr<StaticModel>>, std::tuple<ObjectBounds>> { world }
+            System<SpatialQuerySystem::StaticModelBoundsComputeSystem, std::tuple<std::shared_ptr<StaticModel>, Transform>, std::tuple<ObjectBounds>> { world }
             {}
 
             /**
@@ -66,6 +67,7 @@ namespace ToyMaker {
              * @return std::string This class' system type string.
              */
             static std::string getSystemTypeName() { return "SpatialQuerySystem::StaticModelBoundsComputeSystem"; }
+
         private:
 
             /**
@@ -88,7 +90,6 @@ namespace ToyMaker {
              * @param entityID The entity whose object bounds are being recomputed.
              */
             void recomputeObjectBounds(EntityID entityID);
-
         };
 
         /**
