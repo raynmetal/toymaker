@@ -137,7 +137,6 @@ namespace ToyMaker {
              * @param entityID The entity ID of the object.
              */
             void recomputeObjectBounds(EntityID entityID);
-
         };
 
         /**

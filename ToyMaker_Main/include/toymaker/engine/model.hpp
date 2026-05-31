@@ -21,6 +21,7 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/material.h>
+#include <nlohmann/json.hpp>
 
 #include "core/ecs_world_resource_ext.hpp" // this instead of the regular ECS and resource includes
 #include "spatial_query/types.hpp"

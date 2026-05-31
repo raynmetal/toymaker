@@ -48,7 +48,6 @@ std::shared_ptr<SceneNodeCore> SceneNodeCore::clone() const {
 
 SceneNodeCore::SceneNodeCore(const nlohmann::json& sceneNodeDescription) {
     validateName(sceneNodeDescription.at("name").get<std::string>());
-    assert(hasComponent<Placement>() && "scene nodes must define a placement component");
     mName = sceneNodeDescription.at("name").get<std::string>();
     mEntity = std::make_shared<Entity>(
         ECSWorld::createEntityPrototype()
@@ -62,6 +61,7 @@ SceneNodeCore::SceneNodeCore(const nlohmann::json& sceneNodeDescription) {
     for(const nlohmann::json& componentDescription: sceneNodeDescription.at("components")) {
         addComponent(componentDescription, true);
     }
+    assert(hasComponent<Placement>() && "scene nodes must define a placement component");
     const Placement placement { getComponent<Placement>() };
     Transform transform { getComponent<Transform>() };
     transform.mInheritMode = placement.mInheritMode;
@@ -323,6 +323,8 @@ std::shared_ptr<SceneNodeCore> SceneNodeCore::getParentNode() {
 }
 
 std::shared_ptr<const SceneNodeCore> SceneNodeCore::getParentNode() const {
+    if(mParent.expired()) return nullptr;
+
     std::shared_ptr<SceneNodeCore> parent { mParent };
     return parent;
 }
@@ -1439,15 +1441,23 @@ Transform SceneSystem::getInheritedTransform(std::shared_ptr<const SceneNodeCore
     const auto localTransform { sceneNode->getComponent<Transform>() };
     Transform parentTransform {};
 
-    // Find which s
+    // Find matrix according to transform inheritance mode
     switch(localTransform.mInheritMode) {
         case TransformInheritMode::GLOBAL:
             return identityTransform;
+            break;
         case TransformInheritMode::CAMERA:
             {
+                // TODO: Involve camera projection in this calculation to ensure that object scales
+                // are specified relative to screen dimensions (as opposed to world dimensions, which
+                // is nonsensical here)
                 const std::shared_ptr<const SceneNodeCore> activeCamera { sceneNode->getLocalViewport()->getActiveCamera() };
-                const CameraProperties cameraProperties { activeCamera->getComponent<CameraProperties>() };
-                parentTransform.mModelMatrix = cameraProperties.mViewMatrix;
+                if(!activeCamera) {
+                    parentTransform.mModelMatrix = identityTransform.mModelMatrix;
+                    break;
+                }
+                const Transform cameraTransform { activeCamera->getComponent<Transform>() };
+                parentTransform.mModelMatrix = cameraTransform.mModelMatrix;
             }
             break;
         case TransformInheritMode::PARENT:
@@ -1465,9 +1475,9 @@ Transform SceneSystem::getInheritedTransform(std::shared_ptr<const SceneNodeCore
         return parentTransform;
     }
     parentTransform.mModelMatrix = {
-        ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_TRANSLATION)? parentTransform.getMatrixTranslation() : identityTransform.mModelMatrix)
-        * ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_ROTATION)? parentTransform.getMatrixRotation() : identityTransform.mModelMatrix)
-        * ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_SCALE)? parentTransform.getMatrixScale() : identityTransform.mModelMatrix)
+        ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_TRANSLATION) ? parentTransform.getMatrixTranslation() : identityTransform.mModelMatrix)
+        * ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_ROTATION) ? parentTransform.getMatrixRotation() : identityTransform.mModelMatrix)
+        * ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_SCALE) ? parentTransform.getMatrixScale() : identityTransform.mModelMatrix)
     };
     return parentTransform;
 }

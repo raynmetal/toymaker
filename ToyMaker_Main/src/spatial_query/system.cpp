@@ -63,8 +63,11 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
 
     // Only the transform has been updated -- simply resize OOBB accordingly
     if(!model->boundsNeedRecompute()) {
-        objectBounds.mTrueVolume.mBox.mDimensions = objectScale * model->getBounds().mTrueVolume.mBox.mDimensions;
+        const ObjectBounds modelBounds { model->getBounds() };
+        objectBounds.mTrueVolume.mBox.mDimensions = objectScale * modelBounds.mTrueVolume.mBox.mDimensions;
+        objectBounds.mPositionOffset = objectScale * modelBounds.mPositionOffset;
         updateComponent<ObjectBounds>(entityID, objectBounds);
+        return;
     }
 
     glm::vec3 minCorner {std::numeric_limits<float>::infinity()};
@@ -121,7 +124,8 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
     model->setBounds(objectBounds);
 
     // apply the object's current scale to the model before setting the bounds on the entity
-    objectBounds.mTrueVolume.mBox.mDimensions = objectScale * model->getBounds().mTrueVolume.mBox.mDimensions;
+    objectBounds.mTrueVolume.mBox.mDimensions = objectScale * objectBounds.mTrueVolume.mBox.mDimensions;
+    objectBounds.mPositionOffset = objectScale * objectBounds.mPositionOffset;
     updateComponent<ObjectBounds>(entityID, objectBounds);
 }
 
