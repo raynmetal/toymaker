@@ -115,7 +115,7 @@ namespace ToyMaker{
         virtual std::shared_ptr<BaseSystem> instantiate(std::weak_ptr<ECSWorld> world) override;
 
     private:
-        
+
         /**
          * @brief Registers a new aspect (a derived class of SimObjectAspect) as an aspect known by the SimSystem.
          * 

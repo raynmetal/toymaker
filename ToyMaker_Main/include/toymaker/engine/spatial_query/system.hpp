@@ -82,7 +82,7 @@ namespace ToyMaker {
              *
              * @param entityID The entity whose object bounds should be recomputed.
              */
-            void onEntityUpdated(EntityID entityID) override;
+            void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
 
             /**
              * @brief The method responsible for actually recomputing an entity's object bounds.
@@ -129,7 +129,7 @@ namespace ToyMaker {
              *
              * @param entityID The light entity being updated.
              */
-            void onEntityUpdated(EntityID entityID) override;
+            void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
 
             /**
              * @brief The method responsible for actually recomputing the light entity's object bounds.
@@ -230,7 +230,7 @@ namespace ToyMaker {
          *
          * @param entityID The entity in need of an AABB update.
          */
-        void onEntityUpdated(EntityID entityID) override;
+        void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
 
         /**
          * @brief Pointer to the octree, the data structure responsible for spatially

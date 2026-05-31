@@ -306,7 +306,7 @@ void SystemManager::handleEntityUpdated(EntityID entityID, Signature signature, 
         if(system.isSingleton() || !system.isEnabled(entityID)) continue;
 
         // apply update
-        system.onEntityUpdated(entityID);
+        system.onEntityUpdated(entityID, updatedComponent);
     }
 }
 

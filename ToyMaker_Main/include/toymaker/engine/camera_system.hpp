@@ -175,7 +175,7 @@ namespace ToyMaker {
          * 
          * @param entityID The entity that was updated
          */
-        void onEntityUpdated(EntityID entityID) override;
+        void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
 
         /**
          * @brief Initializes the CameraSystem, querying and adding all eligible entities to update queues.

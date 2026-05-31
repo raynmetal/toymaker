@@ -1514,7 +1514,8 @@ void SceneSystem::onApplicationStart() {
     updateTransformsPlacements();
 }
 
-void SceneSystem::PlacementUpdateReporter::onEntityUpdated(EntityID entityID) {
+void SceneSystem::PlacementUpdateReporter::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
+    (void) updatedComponent; // avoid unused parameter warnings
     // skip already reported entities
     if(mReportedEntities.find(entityID) != mReportedEntities.cend()) {
         return;
@@ -1523,7 +1524,8 @@ void SceneSystem::PlacementUpdateReporter::onEntityUpdated(EntityID entityID) {
     mWorld.lock()->getSystem<SceneSystem>()->onWorldPlacementUpdate({mWorld.lock()->getID(), entityID});
 }
 
-void SceneSystem::TransformUpdateReporter::onEntityUpdated(EntityID entityID) {
+void SceneSystem::TransformUpdateReporter::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
+    (void) updatedComponent; // avoid unused parameter warnings
     // skip already reported entities
     if(mReportedEntities.find(entityID) != mReportedEntities.cend()) {
         return;

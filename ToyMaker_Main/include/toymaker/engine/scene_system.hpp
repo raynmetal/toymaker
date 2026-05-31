@@ -5,13 +5,13 @@
  * @brief System classes relating to the SceneSystem, which in some ways lies at the heart of the engine.
  * @version 0.3.2
  * @date 2025-09-05
- * 
+ *
  */
 
 /**
  * @defgroup ToyMakerSceneSystem Scene System
  * @ingroup ToyMakerEngine
- * 
+ *
  */
 
 #ifndef TOYMAKERENGINE_SCENESYSTEM_H
@@ -1593,7 +1593,7 @@ namespace ToyMaker {
              * @brief Notifies scene system that a placement component in its world has been updated.
              *
              */
-            void onEntityUpdated(EntityID entityID) override;
+            void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
 
             /**
              * @brief Called at the end of the transform update to clear report list in preparation for the next
@@ -1633,7 +1633,7 @@ namespace ToyMaker {
              * @brief Notifies the scene system that an entity in its world has had its transform updated.
              *
              */
-            void onEntityUpdated(EntityID entityID) override;
+            void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
 
             /**
              * @brief Called at the end of the placement update to clear report list in preparation for the next

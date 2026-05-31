@@ -51,7 +51,8 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityEnabled(EntityI
     recomputeObjectBounds(entityID);
 }
 
-void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityUpdated(EntityID entityID) {
+void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
+    (void) updatedComponent; // prevent unused parameter warning
     recomputeObjectBounds(entityID);
 }
 
@@ -133,14 +134,15 @@ void SpatialQuerySystem::LightBoundsComputeSystem::onEntityEnabled(EntityID enti
     recomputeObjectBounds(entityID);
 }
 
-void SpatialQuerySystem::LightBoundsComputeSystem::onEntityUpdated(EntityID entityID) {
+void SpatialQuerySystem::LightBoundsComputeSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
+    (void) updatedComponent; // prevent unused parameter warning
     recomputeObjectBounds(entityID);
 }
 
 void SpatialQuerySystem::LightBoundsComputeSystem::recomputeObjectBounds(EntityID entityID) {
-    ObjectBounds objectBounds { getComponent<ObjectBounds>(entityID) };
+    auto objectBounds { getComponent<ObjectBounds>(entityID) };
 
-    LightEmissionData lightEmissionData { getComponent<LightEmissionData>(entityID) };
+    auto lightEmissionData { getComponent<LightEmissionData>(entityID) };
     objectBounds.mTrueVolume.mSphere.mRadius = lightEmissionData.mType == LightEmissionData::LightType::directional?
         0.f:
         lightEmissionData.mRadius;
@@ -148,7 +150,7 @@ void SpatialQuerySystem::LightBoundsComputeSystem::recomputeObjectBounds(EntityI
     objectBounds.mOrientationOffset = glm::vec3{0.f};
     objectBounds.mPositionOffset = glm::vec3{0.f};
 
-    updateComponent<ObjectBounds>(entityID, objectBounds);
+    updateComponent(entityID, objectBounds);
 }
 
 
@@ -163,7 +165,7 @@ void SpatialQuerySystem::updateBounds(EntityID entity) {
 
     // Apply updates
     updateComponent<ObjectBounds>(entity, objectBounds);
-    updateComponent<AxisAlignedBounds>(entity, axisAlignedBounds);   
+    updateComponent<AxisAlignedBounds>(entity, axisAlignedBounds);
 }
 
 void SpatialQuerySystem::rebuildOctree() {
@@ -201,7 +203,8 @@ void SpatialQuerySystem::onEntityDisabled(EntityID entityID) {
     if(!mRequiresInitialization) { mOctree->removeEntity(entityID); }
 }
 
-void SpatialQuerySystem::onEntityUpdated(EntityID entityID) {
+void SpatialQuerySystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
+    (void) updatedComponent; // avoid unused parameter warning
     mUpdateQueueAABB.insert(entityID);
 }
 

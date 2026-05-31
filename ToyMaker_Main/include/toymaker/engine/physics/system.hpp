@@ -21,7 +21,6 @@
 #include <nlohmann/json.hpp>
 
 #include "../core/ecs_world.hpp"
-#include "../scene_components.hpp"
 
 #include "../spatial_query/types.hpp"
 #include "types.hpp"
