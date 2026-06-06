@@ -1,5 +1,6 @@
 #include <set>
 
+#include "toymaker/engine/util.hpp"
 #include "toymaker/engine/spatial_query/types.hpp"
 
 using namespace ToyMaker;
@@ -202,13 +203,12 @@ bool Polytope::append(const glm::vec3& newPoint, const glm::vec3& supportA, cons
     for(const auto& edge: edgeList) {
         mFaces.push(Face { .mIndices { indexNew, edge.first, edge.second } });
     }
-
     return true;
 }
 
 void ObjectBounds::applyModelMatrix(const glm::mat4& modelMatrix) {
     mPositionOrigin = static_cast<glm::vec3>(modelMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f});
-    mOrientationOrigin = glm::normalize(glm::quat_cast(glm::transpose(glm::inverse(modelMatrix))));
+    mOrientationOrigin = glm::normalize(glm::quat_cast(getRotationMatrix(modelMatrix)));
 }
 
 std::array<glm::vec3, 8> ObjectBounds::getVolumeRelativeBoxCorners() const {
@@ -226,24 +226,26 @@ std::array<glm::vec3, 8> ObjectBounds::getVolumeRelativeBoxCorners() const {
 }
 
 glm::vec3 ObjectBounds::getPositionWorld() const {
-    return mPositionOrigin + getRotationTransformOrigin() * mPositionOffset;
+    return mPositionOrigin + glm::mat3 { getRotationTransformOrigin() } * mPositionOffset;
 }
 
 void ObjectBounds::setPositionWorld(const glm::vec3& newPosition) {
     mPositionOrigin = newPosition - (
-        glm::transpose(getRotationTransformOrigin()) * mPositionOffset
+        glm::transpose(glm::mat3 { getRotationTransformOrigin() }) * mPositionOffset
     );
 }
 
 glm::quat ObjectBounds::getOrientationWorld() const {
-    return glm::normalize(glm::quat_cast(getRotationTransformOrigin() * getRotationTransformLocal()));
+    return glm::normalize(glm::quat_cast(glm::mat3{ getRotationTransformOrigin() } * getRotationTransformLocal()));
 }
 
 void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
+    const glm::quat orientationNormalized { glm::normalize(newOrientation) };
+
     // object origin position depends on origin orientation
     const glm::vec3 worldPositionPrevious { getPositionWorld() };
     mOrientationOrigin = glm::normalize(glm::quat_cast(
-        glm::mat3_cast(newOrientation) * glm::transpose(getRotationTransformLocal())
+        glm::mat3_cast(orientationNormalized) * glm::transpose(getRotationTransformLocal())
     ));
     // update world position such that it stays in-place by
     // updating the origin's position instead
@@ -261,7 +263,7 @@ std::array<glm::vec3, 8> ObjectBounds::getLocalOrientedBoxCorners() const {
 std::array<glm::vec3, 8> ObjectBounds::getWorldOrientedBoxCorners() const {
     std::array<glm::vec3, 8> worldCorners { getLocalOrientedBoxCorners() };
     for(glm::vec3& orientedCorner: worldCorners) {
-        orientedCorner = mPositionOrigin + getRotationTransformOrigin() * orientedCorner;
+        orientedCorner = mPositionOrigin + glm::mat3 { getRotationTransformOrigin() } * orientedCorner;
     }
     return worldCorners;
 }

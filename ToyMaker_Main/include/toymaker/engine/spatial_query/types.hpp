@@ -1047,7 +1047,6 @@ namespace ToyMaker {
         /**
          * @brief The transformation mapping forward as known by the underlying scene node, to forward as known by the spatial query volume.
          *
-         *
          */
         glm::quat mOrientationOffset { glm::vec3{ 0.f } };
 
@@ -1080,12 +1079,26 @@ namespace ToyMaker {
         }
 
         /**
-         * @brief Gets the rotation matrix associated with the underlying scene object's orientation, derived from its cached transform.
+         * @brief Gets the rotation matrix associated with the underlying scene object's orientation
          *
-         * @return glm::mat3 The orientation of the underlying scene object.
+         * @return glm::mat3 The orientation of the underlying scene object's origin.
          */
-        inline glm::mat3 getRotationTransformOrigin() const {
-            return glm::mat3_cast(glm::normalize(mOrientationOrigin));
+        inline glm::mat4 getRotationTransformOrigin() const {
+            return glm::mat4_cast(glm::normalize(mOrientationOrigin));
+        }
+
+        /**
+         * @brief Gets the translation matrix associated with the underlying scene object's translation
+         *
+         * @return glm::mat4 The translation matrix of the underlying scene object's origin
+         */
+        inline glm::mat4 getTranslationTransformOrigin() const {
+            return glm::mat4 {
+                {   1.f, 0.f, 0.f, 0.f },
+                {   0.f, 1.f, 0.f, 0.f },
+                {   0.f, 0.f, 1.f, 0.f },
+                { mPositionOrigin, 1.f },
+            };
         }
 
         /**

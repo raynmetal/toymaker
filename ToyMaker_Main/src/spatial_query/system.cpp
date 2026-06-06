@@ -35,7 +35,6 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEnti
     if(mRequiresInitialization) {
         return std::vector<std::pair<EntityID, AxisAlignedBounds>>{};
     }
-
     return mOctree->findEntitiesOverlappingCoarse(searchBounds, interactionMask);
 }
 
@@ -43,7 +42,6 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEnti
     if(mRequiresInitialization) {
         return std::vector<std::pair<EntityID, AxisAlignedBounds>>{};
     }
-
     return mOctree->findEntitiesOverlappingCoarse(searchRay, interactionMask);
 }
 
@@ -141,7 +139,6 @@ void SpatialQuerySystem::LightBoundsComputeSystem::onEntityUpdated(EntityID enti
 
 void SpatialQuerySystem::LightBoundsComputeSystem::recomputeObjectBounds(EntityID entityID) {
     auto objectBounds { getComponent<ObjectBounds>(entityID) };
-
     auto lightEmissionData { getComponent<LightEmissionData>(entityID) };
     objectBounds.mTrueVolume.mSphere.mRadius = lightEmissionData.mType == LightEmissionData::LightType::directional?
         0.f:
@@ -149,7 +146,6 @@ void SpatialQuerySystem::LightBoundsComputeSystem::recomputeObjectBounds(EntityI
     objectBounds.mType = ObjectBounds::TrueVolumeType::SPHERE;
     objectBounds.mOrientationOffset = glm::vec3{0.f};
     objectBounds.mPositionOffset = glm::vec3{0.f};
-
     updateComponent(entityID, objectBounds);
 }
 
@@ -166,6 +162,16 @@ void SpatialQuerySystem::updateBounds(EntityID entity) {
     // Apply updates
     updateComponent<ObjectBounds>(entity, objectBounds);
     updateComponent<AxisAlignedBounds>(entity, axisAlignedBounds);
+}
+
+void SpatialQuerySystem::updateTransform(EntityID entity) {
+    const ObjectBounds updatedBounds { getComponent<ObjectBounds>(entity) };
+    Transform newTransform { getComponent<Transform>(entity) };
+    // entities whose transforms are set by their object bounds should
+    // only have their translation and rotation inherited
+    newTransform.mInheritedComponents = (TRANSFORMCOMPONENT_TRANSLATION | TRANSFORMCOMPONENT_ROTATION);
+    newTransform.mModelMatrix = updatedBounds.getTranslationTransformOrigin() * updatedBounds.getRotationTransformOrigin();
+    updateComponent(entity, newTransform);
 }
 
 void SpatialQuerySystem::rebuildOctree() {
@@ -204,8 +210,10 @@ void SpatialQuerySystem::onEntityDisabled(EntityID entityID) {
 }
 
 void SpatialQuerySystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
-    (void) updatedComponent; // avoid unused parameter warning
     mUpdateQueueAABB.insert(entityID);
+    if(updatedComponent == mWorld.lock()->getComponentType<ObjectBounds>()) {
+        mUpdateQueueTransform.insert(entityID);
+    }
 }
 
 void SpatialQuerySystem::onSimulationActivated() {
@@ -220,6 +228,11 @@ void SpatialQuerySystem::onSimulationStep(uint32_t timestepMillis) {
         mRequiresInitialization = false;
         return;
     }
+
+    for(EntityID entity: mUpdateQueueTransform) {
+        updateTransform(entity);
+    }
+    mUpdateQueueTransform.clear();
 
     for(EntityID entity: mUpdateQueueAABB) {
         mOctree->removeEntity(entity);

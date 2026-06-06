@@ -188,6 +188,18 @@ namespace ToyMaker {
         void updateBounds(EntityID entity);
 
         /**
+         * @brief Updates the world transform of an entity based on its objects bounds.
+         *
+         * @param entity The entity whose transform must be updated.
+         *
+         * @warning This works assuming that the entity has had its position updated via
+         * its ObjectBounds component.  The only system (for now) which will perform such
+         * an update is the physics system.
+         *
+         */
+        void updateTransform(EntityID entity);
+
+        /**
          * @brief Triggers the destruction of any presently existing octree and replaces it
          * with a new one.
          *
