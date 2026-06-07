@@ -22,6 +22,7 @@
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 
+#include "../spatial_query/types.hpp"
 #include "../core/ecs_world.hpp"
 
 namespace ToyMaker {
@@ -34,14 +35,14 @@ namespace ToyMaker {
      *
      * All forces are expressed relative to the frame of the body.
      */
-    struct PhysicsProperties {
+    struct PhysicsState {
 
         /**
          * @brief Fetches the component type string associated with this class.
          *
          * @return std::string The component type string of this class
          */
-        inline static std::string getComponentTypeName() { return "PhysicsProperties"; }
+        inline static std::string getComponentTypeName() { return "PhysicsState"; }
 
         /**
          * @brief The sum of all the forces acting on this object's center of mass,
@@ -92,27 +93,79 @@ namespace ToyMaker {
          *
          */
         float mMass { 1.f };
+
+        /**
+         * @brief Applies a force `force` at position `atPosition`, updating the torque
+         * and central force of an object whose state is represented by `physics`.
+         *
+         * @warning All forces applied to an object are cleared once per simulation frame.
+         *
+         * @param force The amount of force being applied to an object
+         * @param atPosition The world position at which the force is applied
+         * @param bounds The bounds of the object to which the force is applied, used
+         * to find local frame force and position equivalents
+         */
+        void applyForceGlobal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds);
+
+        /**
+         * @brief Applies a force `force` at position `atPosition`, updating the torque
+         * and central force of an object whose state is represented by `physics`.
+         *
+         * @warning All forces applied to an object are cleared once per simulation frame.
+         *
+         * @param force The amount of force being applied to an object
+         * @param atPosition The object-local position at which the force is applied
+         */
+        void applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition);
     };
 
     inline void from_json(
         const nlohmann::json& json,
-        PhysicsProperties& physics
+        PhysicsState& physics
     ) {
-        assert(json.at("type") == PhysicsProperties::getComponentTypeName() && "Incorrect type property for an physics property component");
+        assert(json.at("type") == PhysicsState::getComponentTypeName() && "Incorrect type property for an physics property component");
         const float mass { json.at("mass") };
         physics = { .mMass { mass } };
+
+        if(json.find("velocity") != json.end()) {
+            physics.mVelocity = glm::vec3 {
+                json.at("velocity")[0],
+                json.at("velocity")[1],
+                json.at("velocity")[2],
+            };
+        }
+        if(json.find("angular_velocity") != json.end()) {
+            physics.mAngularVelocity = glm::vec3 {
+                json.at("angular_velocity")[0],
+                json.at("angular_velocity")[1],
+                json.at("angular_velocity")[2],
+            };
+        }
+        if(json.find("force") != json.end()) {
+            physics.mForce = glm::vec3 {
+                json.at("force")[0],
+                json.at("force")[1],
+                json.at("force")[2],
+            };
+        }
+        if(json.find("torque") != json.end()) {
+            physics.mForce = glm::vec3 {
+                json.at("torque")[0],
+                json.at("torque")[1],
+                json.at("torque")[2],
+            };
+        }
     }
 
     inline void to_json(
         nlohmann::json& json,
-        const PhysicsProperties& physics
+        const PhysicsState& physics
     ) {
         json = {
-            { "type", PhysicsProperties::getComponentTypeName() },
+            { "type", PhysicsState::getComponentTypeName() },
             { "mass", physics.mMass },
         };
     }
-
 }
 
 #endif

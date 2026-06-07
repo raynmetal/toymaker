@@ -1370,7 +1370,7 @@ void SceneSystem::updateTransformsPlacements() {
     for(std::pair<WorldID, EntityID> entityWorldPair: mComputePlacementQueue) {
         std::shared_ptr<SceneNodeCore> currentNode { mEntityToNode.at(entityWorldPair).lock() };
         const Transform parentTransform{ getInheritedTransform(currentNode) };
-        const Transform localTransform { getLocalTransform(currentNode) };
+        const Transform localTransform { currentNode->getComponent<Transform>() };
         const glm::mat3 parentScale { parentTransform.getMatrixScale() };
         const glm::mat3 localScale { localTransform.getMatrixScale() };
         Placement newPlacement { currentNode->getComponent<Placement>() };

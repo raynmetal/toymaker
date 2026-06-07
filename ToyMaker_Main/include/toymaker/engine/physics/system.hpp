@@ -41,11 +41,11 @@ namespace ToyMaker {
      * @see ToyMakerSpatialQuerySystem
      *
      */
-    class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsProperties, ObjectBounds>, std::tuple<>> {
+    class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>> {
 
     public:
         explicit PhysicsSystem(std::weak_ptr<ECSWorld> world):
-        System<PhysicsSystem, std::tuple<PhysicsProperties, ObjectBounds>, std::tuple<>>{ world }
+        System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>>{ world }
         {}
 
         /**
@@ -55,6 +55,25 @@ namespace ToyMaker {
          *
          */
         inline static std::string getSystemTypeName() { return "PhysicsSystem"; }
+
+        /**
+         * @brief Sets the number of substeps used for physics integration using XPBD.
+         *
+         * See [Detailed Rigid Body Simulation with Extended Position Based Dynamics - Matthias
+         * Muller et al](https://matthias-research.github.io/pages/publications/PBDBodies.pdf)
+         */
+        inline void setSubsteps(uint8_t newSubsteps) {
+            assert(newSubsteps > 0 && "Substeps must be 1 or greater");
+            mSubsteps = newSubsteps;
+        }
+
+        /**
+         * @brief Gets the number of substeps used in the physics solver's XPBD implementation
+         *
+         */
+        inline uint8_t getSubsteps() const {
+            return mSubsteps;
+        }
 
     private:
 
@@ -100,6 +119,7 @@ namespace ToyMaker {
          */
         void onEntityDisabled(EntityID entityID) override;
 
+
         /**
          * @brief Whether physics properties for all eligible entities should be recomputed
          *
@@ -112,6 +132,17 @@ namespace ToyMaker {
          *
          */
         std::set<EntityID> mEntitiesUninitialized {};
+
+        /**
+         * @brief The number of substeps used in the physics system's XPBD implementation.
+         *
+         * @see getSubsteps
+         * @see setSubsteps
+         *
+         * See [Detailed Rigid Body Simulation with Extended Position Based Dynamics - Matthias
+         * Muller et al](https://matthias-research.github.io/pages/publications/PBDBodies.pdf)
+         */
+        uint8_t mSubsteps { 8 };
     };
 }
 

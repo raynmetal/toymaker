@@ -36,6 +36,7 @@ target_sources(ToyMaker
         src/spatial_query/system.cpp
     # Physics sources
         src/physics/system.cpp
+        src/physics/types.cpp
     # Everything else
         src/application.cpp
         src/camera_system.cpp
