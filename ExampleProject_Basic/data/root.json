@@ -91,7 +91,7 @@
                 {
                     "type": "PhysicsState",
                     "mass": 1.0,
-                    "angular_velocity": [ 0.0, 0.02, 0.0 ]
+                    "angular_velocity": [ 0.0, 1.2, 0.0 ]
                 }
             ],
             "aspects": [

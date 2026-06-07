@@ -106,9 +106,6 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
             // push updates to component table
             updateComponent(entity, physics);
             updateComponent(entity, bounds);
-            std::cout << "old orientation: " << glm::to_string(physicsState.mOrientation)
-                << "; new orientation: " << glm::to_string(bounds.getOrientationWorld())
-                << "\n";
         }
 
         // TODO: Implement contraint solvers
