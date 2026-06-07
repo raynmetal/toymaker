@@ -175,7 +175,7 @@ void SpatialQuerySystem::updateTransform(EntityID entity) {
 }
 
 void SpatialQuerySystem::rebuildOctree() {
-    // one pass to transform all object positions and orientations, and simultaneously compute 
+    // one pass to transform all object positions and orientations, and simultaneously compute
     // axis aligned bounding boxes
     AxisAlignedBounds regionToEncompass {glm::vec3{0.f}, glm::vec3{0.f}};
     bool firstObject { true };
@@ -211,8 +211,14 @@ void SpatialQuerySystem::onEntityDisabled(EntityID entityID) {
 
 void SpatialQuerySystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
     mUpdateQueueAABB.insert(entityID);
+
     if(updatedComponent == mWorld.lock()->getComponentType<ObjectBounds>()) {
         mUpdateQueueTransform.insert(entityID);
+
+    // Prioritize transform updates (coming from user and scene system) over bounds
+    // updates (likely coming from physics system)
+    } else if(updatedComponent == mWorld.lock()->getComponentType<Transform>()) {
+        mUpdateQueueTransform.erase(entityID);
     }
 }
 
