@@ -9,7 +9,6 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "TOYMAKER_BUILD_EXAMPLE_BASIC": "OFF",
                 "TOYMAKER_USE_INSTALLED": "OFF"
             }
         },
@@ -21,31 +20,31 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "TOYMAKER_BUILD_EXAMPLE_BASIC": "OFF",
                 "TOYMAKER_USE_INSTALLED": "OFF"
             }
         },
         {
-            "name": "ExampleBasicFromBuild",
-            "displayName": "Build Example Basic (Debug) from ToyMaker source",
-            "description": "Build ExampleProjectBasic with debug flags enabled from engine and project sources.",
+            "name": "FullBuild_Example_CenterText",
+            "displayName": "Build CenterText example (Debug) from ToyMaker source",
+            "description": "Build CenterText example with debug flags enabled from engine and project sources.  Demonstrates toymaker's text rendering feature.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "TOYMAKER_BUILD_EXAMPLE_BASIC": "ON",
+                "TOYMAKER_BUILD_EXAMPLE_CENTERTEXT": "ON",
                 "TOYMAKER_USE_INSTALLED": "OFF"
             }
         },
+
         {
-            "name": "ExampleBasicFromLocalInstall",
-            "displayName": "Build Example Basic (Debug) from ToyMaker installation",
-            "description": "Build ExampleProjectBasic with debug flags enabled from engine installation and project sources.",
+            "name": "AppBuild_Example_CenterText",
+            "displayName": "Build CenterText example (Debug) from local ToyMaker installation",
+            "description": "Build CenterText example with debug flags enabled from engine installation and project sources.  Demonstrates toymaker's text rendering feature.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "TOYMAKER_BUILD_EXAMPLE_BASIC": "ON",
+                "TOYMAKER_BUILD_EXAMPLE_CENTERTEXT": "ON",
                 "TOYMAKER_USE_INSTALLED": "ON"
             }
         }

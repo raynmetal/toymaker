@@ -1,0 +1,1195 @@
+{
+    "action_contexts": [
+        "Camera",
+        "Graphics",
+        "UI",
+        "General"
+    ],
+    "actions": [
+        {
+            "attributes": {
+                "has_button_value": false,
+                "has_change_value": true,
+                "has_negative": false,
+                "has_state_value": false,
+                "n_axes": 2,
+                "state_is_location": false
+            },
+            "context": "Camera",
+            "name": "Rotate",
+            "value_type": "change"
+        },
+        {
+            "attributes": {
+                "has_button_value": false,
+                "has_change_value": false,
+                "has_negative": true,
+                "has_state_value": true,
+                "n_axes": 2,
+                "state_is_location": false
+            },
+            "context": "Camera",
+            "name": "Move",
+            "value_type": "state"
+        },
+        {
+            "attributes": {
+                "has_button_value": true,
+                "has_change_value": false,
+                "has_negative": false,
+                "has_state_value": false,
+                "n_axes": 0,
+                "state_is_location": false
+            },
+            "context": "Camera",
+            "name": "ToggleControl",
+            "value_type": "state"
+        },
+        {
+            "attributes": {
+                "has_button_value": false,
+                "has_change_value": true,
+                "has_negative": false,
+                "has_state_value": false,
+                "n_axes": 1,
+                "state_is_location": false
+            },
+            "context": "Camera",
+            "name": "UpdateFOV",
+            "value_type": "change"
+        },
+        {
+            "attributes": {
+                "has_button_value": false,
+                "has_change_value": true,
+                "has_negative": false,
+                "has_state_value": false,
+                "n_axes": 1,
+                "state_is_location": false
+            },
+            "context": "Graphics",
+            "name": "UpdateGamma",
+            "value_type": "change"
+        },
+        {
+            "attributes": {
+                "has_button_value": false,
+                "has_change_value": true,
+                "has_negative": false,
+                "has_state_value": false,
+                "n_axes": 1,
+                "state_is_location": false
+            },
+            "context": "Graphics",
+            "name": "UpdateExposure",
+            "value_type": "change"
+        },
+        {
+            "attributes": {
+                "has_button_value": true,
+                "has_change_value": false,
+                "has_negative": false,
+                "has_state_value": false,
+                "n_axes": 0,
+                "state_is_location": false
+            },
+            "context": "Graphics",
+            "name": "RenderNextTexture",
+            "value_type": "change"
+        },
+        {
+            "attributes": {
+                "has_button_value": true,
+                "has_change_value": false,
+                "has_negative": false,
+                "has_state_value": true,
+                "n_axes": 2,
+                "state_is_location": true
+            },
+            "context": "UI",
+            "name": "Tap",
+            "value_type": "state"
+        },
+        {
+            "attributes": {
+                "has_button_value": true,
+                "has_change_value": false,
+                "has_negative": false,
+                "has_state_value": true,
+                "n_axes": 2,
+                "state_is_location": true
+            },
+            "context": "UI",
+            "name": "Untap",
+            "value_type": "state"
+        },
+        {
+            "attributes": {
+                "has_button_value": false,
+                "has_change_value": false,
+                "has_negative": false,
+                "has_state_value": true,
+                "n_axes": 2,
+                "state_is_location": true
+            },
+            "context": "UI",
+            "name": "PointerMove",
+            "value_type": "state"
+        },
+        {
+            "attributes": {
+                "has_button_value": true,
+                "has_change_value": false,
+                "has_negative": false,
+                "has_state_value": false,
+                "n_axes": 0,
+                "state_is_location": false
+            },
+            "context": "General",
+            "name": "Cancel",
+            "value_type": "state"
+        }
+    ],
+    "input_binds": [
+        {
+            "action": "Rotate",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "+dx",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "point",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-change"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "Rotate",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "-dx",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "point",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-change"
+            },
+            "target_axis": "-x"
+        },
+        {
+            "action": "Rotate",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "+dy",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "point",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-change"
+            },
+            "target_axis": "+y"
+        },
+        {
+            "action": "Rotate",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "-dy",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "point",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-change"
+            },
+            "target_axis": "-y"
+        },
+        {
+            "action": "ToggleControl",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 49,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "simple"
+        },
+        {
+            "action": "Move",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 100,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "Move",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 100,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-release"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "Move",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 97,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "-x"
+        },
+        {
+            "action": "Move",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 97,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-release"
+            },
+            "target_axis": "-x"
+        },
+        {
+            "action": "Move",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 119,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "+y"
+        },
+        {
+            "action": "Move",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 119,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-release"
+            },
+            "target_axis": "+y"
+        },
+        {
+            "action": "Move",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 115,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "-y"
+        },
+        {
+            "action": "Move",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 115,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-release"
+            },
+            "target_axis": "-y"
+        },
+        {
+            "action": "UpdateFOV",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 44,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "UpdateFOV",
+            "context": "Camera",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 46,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "-x"
+        },
+        {
+            "action": "UpdateGamma",
+            "context": "Graphics",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 107,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "UpdateGamma",
+            "context": "Graphics",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 106,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "-x"
+        },
+        {
+            "action": "UpdateExposure",
+            "context": "Graphics",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 105,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "UpdateExposure",
+            "context": "Graphics",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 117,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "-x"
+        },
+        {
+            "action": "RenderNextTexture",
+            "context": "Graphics",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 9,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "simple"
+        },
+
+        {
+            "action": "Tap",
+            "context": "UI",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "+x",
+                    "input_source": {
+                        "control": 1,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-button-press"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "Tap",
+            "context": "UI",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "+y",
+                    "input_source": {
+                        "control": 1,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-button-press"
+            },
+            "target_axis": "+y"
+        },
+
+        {
+            "action": "Untap",
+            "context": "UI",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "+x",
+                    "input_source": {
+                        "control": 1,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-button-release"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "Untap",
+            "context": "UI",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "+y",
+                    "input_source": {
+                        "control": 1,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-button-release"
+            },
+            "target_axis": "+y"
+        },
+
+        {
+            "action": "PointerMove",
+            "context": "UI",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "+x",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "point",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-change"
+            },
+            "target_axis": "+x"
+        },
+        {
+            "action": "PointerMove",
+            "context": "UI",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "+y",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "point",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-change"
+            },
+            "target_axis": "+y"
+        },
+
+        {
+            "action": "Cancel",
+            "context": "General",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 3,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "mouse"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "simple"
+        },
+        {
+            "action": "Cancel",
+            "context": "General",
+            "input_combo": {
+                "deadzone": 0.0,
+                "main_control": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 27,
+                        "control_type": "button",
+                        "device": 0,
+                        "device_type": "keyboard"
+                    }
+                },
+                "modifier_1": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "modifier_2": {
+                    "filter": "simple",
+                    "input_source": {
+                        "control": 0,
+                        "control_type": "na",
+                        "device": 0,
+                        "device_type": "na"
+                    }
+                },
+                "threshold": 0.5,
+                "trigger": "on-press"
+            },
+            "target_axis": "simple"
+        }
+    ]
+}
