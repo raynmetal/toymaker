@@ -12,7 +12,11 @@ add_executable(Example_CenterText)
 
 target_sources(Example_CenterText
     PRIVATE
-        empty.cpp
+        spin_on_click.cpp
+    PRIVATE
+    FILE_SET HEADERS
+    FILES
+        spin_on_click.hpp
 )
 
 toymaker_configure_executable(Example_CenterText)

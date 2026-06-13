@@ -91,7 +91,7 @@
                 {
                     "type": "PhysicsState",
                     "mass": 1.0,
-                    "angular_velocity": [ 0.0, 1.2, 0.0 ]
+                    "angular_velocity": [ 0.0, 0.0, 0.0 ]
                 }
             ],
             "aspects": [
@@ -102,7 +102,8 @@
                     "scale": 1.0,
                     "anchor": [0.5, 0.0],
                     "color": [255, 255, 255, 255]
-                }
+                },
+                { "type": "SpinOnClick" }
             ]
         }
     ],

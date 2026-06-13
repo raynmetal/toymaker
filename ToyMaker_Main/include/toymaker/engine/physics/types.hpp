@@ -23,7 +23,6 @@
 #include <nlohmann/json.hpp>
 
 #include "../spatial_query/types.hpp"
-#include "../core/ecs_world.hpp"
 
 namespace ToyMaker {
 
