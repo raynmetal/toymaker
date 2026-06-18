@@ -41,11 +41,11 @@ namespace ToyMaker {
      * @see ToyMakerSpatialQuerySystem
      *
      */
-    class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>> {
+    class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsLocal, ObjectBounds>, std::tuple<>> {
 
     public:
         explicit PhysicsSystem(std::weak_ptr<ECSWorld> world):
-        System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>>{ world }
+        System<PhysicsSystem, std::tuple<PhysicsLocal, ObjectBounds>, std::tuple<>>{ world }
         {}
 
         /**

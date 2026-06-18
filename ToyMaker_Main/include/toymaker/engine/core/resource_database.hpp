@@ -391,19 +391,19 @@ namespace ToyMaker {
 
         /**
          * @brief A helper function that actually performs the task of registering this class with the ResourceDatabase.
-         * 
+         *
          * This registration occurs during the static initialization phase of the program.
-         * 
+         *
          */
         static void registerSelf();
 
         /**
          * @brief A static variable to this classes Registrator.
-         * 
+         *
          * The registrator ensures that registerSelf() is called during the program's static initialization.
-         * 
+         *
          * @see Registrator<T>
-         * 
+         *
          */
         inline static Registrator<Resource<TDerived>>& s_registrator { Registrator<Resource<TDerived>>::getRegistrator() };
 

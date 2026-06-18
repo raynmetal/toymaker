@@ -53,7 +53,7 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
             }
 
             // snapshot current object state
-            PhysicsState physics { getComponent<PhysicsState>(entity) };
+            PhysicsLocal physics { getComponent<PhysicsLocal>(entity) };
             ObjectBounds bounds { getComponent<ObjectBounds>(entity) };
             const PhysicsStatePartial physicsState {
                 .mVelocity { physics.mVelocity },
@@ -120,7 +120,7 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
 
             // retrieve current and previous states
             const PhysicsStatePartial previousState { previousStates.at(entity) };
-            auto physicsProps { getComponent<PhysicsState>(entity) };
+            auto physicsProps { getComponent<PhysicsLocal>(entity) };
             const auto bounds { getComponent<ObjectBounds>(entity) };
             const auto orientationInverse { glm::inverse(bounds.getOrientationWorld()) };
             // update linear terms
@@ -148,7 +148,7 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
 
     // clear forces (which are expected to be applied per frame)
     for(const auto entity: getEnabledEntities()) {
-        auto physicsState { getComponent<PhysicsState>(entity) };
+        auto physicsState { getComponent<PhysicsLocal>(entity) };
         physicsState.mForce = glm::vec3 { 0.f };
         physicsState.mTorque = glm::vec3 { 0.f };
         updateComponent(entity, physicsState);
@@ -168,7 +168,7 @@ void PhysicsSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComp
 }
 
 void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
-    auto physicsProps { getComponent<PhysicsState>(entityID) };
+    auto physicsProps { getComponent<PhysicsLocal>(entityID) };
     assert((
         isPositiveStrict(physicsProps.mMass)
     ) && "Entity must have non-zero positive mass");

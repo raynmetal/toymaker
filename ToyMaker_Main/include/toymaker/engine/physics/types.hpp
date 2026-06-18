@@ -34,7 +34,7 @@ namespace ToyMaker {
      *
      * All forces are expressed relative to the frame of the body.
      */
-    struct PhysicsState {
+    struct PhysicsLocal {
 
         /**
          * @brief Fetches the component type string associated with this class.
@@ -118,11 +118,206 @@ namespace ToyMaker {
         void applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition);
     };
 
+    /**
+     * @ingroup ToyMakerPhysics
+     * @brief Base class for constraints
+     *
+     * Ensures that each constraint provides a method for preprocessing constraint data,
+     * and one for applying the constraint.
+     *
+     * Also contains a table of entities that are participating in the constraint.
+     */
+    class BaseConstraint {
+    private:
+
+        /**
+         * @brief Value greater than equal to zero, inverse of the physical stiffness
+         * of this constraint.
+         *
+         * Part of extended position based dynamics implementation.
+         *
+         * A compliance of 0 implies infinite stiffness.
+         *
+         */
+        float mCompliance { 0.f };
+
+        /**
+         *
+         * @brief The Lagrange multiplier, computed every substep since the start of the
+         * physics simulation till the current time.
+         *
+         * Allows position and orientation corrections applied by this constraint to be
+         * independent of the length of substep.
+         *
+         */
+        float mLagrangeMultiplier { 0.f };
+
+    protected:
+
+        /**
+         * @brief Adds a delta to the lagrange value based on some parameters.
+         *
+         */
+        void applyLagrangeDelta(float delta);
+
+        /**
+         * @brief Gets the current Lagrange value for this constraint
+         *
+         */
+        float getLagrange() const;
+
+        /**
+         * @brief Initializes this constraint.
+         */
+        BaseConstraint(float compliance) {
+            setCompliance(compliance);
+        }
+
+    public:
+        using ParticipantID = std::size_t;
+
+        /**
+         * @brief Gets the current compliance value for this constraint
+         *
+         */
+        float getCompliance() const;
+
+        /**
+         * @brief Applies constraint to current set of bounds and physics states.
+         *
+         * Will update values stored in ObjectBounds and PhysicsLocal to maintain the
+         * constraint and update its own compliance parameters
+         *
+         */
+        virtual void applyConstraint(
+            std::unordered_map<ParticipantID, std::pair<ObjectBounds&, PhysicsLocal&>>& states,
+            float substepSeconds
+        ) = 0;
+
+        /**
+         * @brief Sets the compliance value for this constraint
+         *
+         */
+        void setCompliance(float newCompliance);
+
+        /**
+         * @brief Sets the Lagrange multiplier to zero
+         *
+         */
+        inline void resetLagrange() { mLagrangeMultiplier = 0; }
+
+        virtual ~BaseConstraint() {};
+    };
+
+    /**
+     * @brief Subclass implementation for any constraint which takes data of type TParameter
+     *
+     * @tparam TParameter A parameter specific to this constraint.
+     *
+     */
+    template <typename TParameter>
+    class Constraint: public BaseConstraint {
+
+    private:
+        /**
+         * @brief A set of parameters associated with each entity
+         *
+         * These parameters store values that augment the values known by the engine -- i.e.,
+         * physics state and object bounds -- but are specific to the constraint itself
+         */
+        std::unordered_map<ParticipantID, TParameter> mParameters {};
+
+    protected:
+        Constraint(float compliance): BaseConstraint { compliance } {}
+
+        /**
+         * @brief Returns all parameters known to this constraint.
+         *
+         */
+        const std::unordered_map<ParticipantID, TParameter>& getParameters() const;
+
+    public:
+
+        /**
+         * @brief Adds a parameter for this constraint.
+         *
+         */
+        void setParameter(ParticipantID participant, const TParameter& parameter);
+
+        inline TParameter getParameter(ParticipantID participant) const {
+            return mParameters.at(participant);
+        }
+
+        /**
+         * @brief Removes a parameter stored at a particular index for this constraint
+         *
+         */
+        void removeParameter(ParticipantID participant);
+    };
+
+    struct CollisionConstraintData {
+        Contact mContact;
+        float mInverseMass;
+        glm::mat3 mRotationalInertia;
+    };
+
+    /**
+     * @brief Constraint requiring exactly two parameters representing colliding rigid
+     * bodies.
+     *
+     * Repositions objects such that they no longer intersect along the axis of collision.
+     *
+     */
+    class CollisionConstraint: protected Constraint<CollisionConstraintData> {
+    private:
+        /**
+         * @brief Whether or not two objects are currently intersecting (and therefore whether
+         * they should be separated)
+         *
+         */
+        bool mCollided { false };
+
+
+    public:
+        /**
+         * @brief Initializes constraint with collision data from two potentially intersecting objects
+         *
+         */
+        CollisionConstraint(
+            const Collision& collision,
+            const PhysicsLocal& physicsA,
+            const ObjectBounds& boundsA,
+            const PhysicsLocal& objectB,
+            const ObjectBounds& boundsB
+        );
+
+        /**
+         * @brief Updates collision data to value to be used for current substep
+         *
+         */
+        void updateCollisionData(
+            const Collision& collision,
+            const PhysicsLocal& physicsA,
+            const ObjectBounds& boundsA,
+            const PhysicsLocal& physicsB,
+            const ObjectBounds& boundsB
+        );
+
+        /**
+         * @brief Separates intersecting/colliding objects.
+         *
+         */
+        void applyConstraint(
+            std::unordered_map<ParticipantID, std::pair<ObjectBounds&, PhysicsLocal&>>& states,
+            float substepSeconds
+        ) override;
+    };
+
     inline void from_json(
         const nlohmann::json& json,
-        PhysicsState& physics
+        PhysicsLocal& physics
     ) {
-        assert(json.at("type") == PhysicsState::getComponentTypeName() && "Incorrect type property for an physics property component");
+        assert(json.at("type") == PhysicsLocal::getComponentTypeName() && "Incorrect type property for an physics property component");
         const float mass { json.at("mass") };
         physics = { .mMass { mass } };
 
@@ -158,12 +353,27 @@ namespace ToyMaker {
 
     inline void to_json(
         nlohmann::json& json,
-        const PhysicsState& physics
+        const PhysicsLocal& physics
     ) {
         json = {
-            { "type", PhysicsState::getComponentTypeName() },
+            { "type", PhysicsLocal::getComponentTypeName() },
             { "mass", physics.mMass },
         };
+    }
+
+    template<typename TParameter>
+    void Constraint<TParameter>::setParameter(BaseConstraint::ParticipantID participant, const TParameter& parameter) {
+        mParameters[participant] = parameter;
+    }
+
+    template<typename TParameter>
+    void Constraint<TParameter>::removeParameter(BaseConstraint::ParticipantID participant) {
+        mParameters.erase(participant);
+    }
+
+    template <typename TParameter>
+    const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& Constraint<TParameter>::getParameters() const {
+        return mParameters;
     }
 }
 

@@ -16,9 +16,11 @@ bool SpinOnClick::onPointerLeftClick(glm::vec4 clickLocation) {
 
     // keep only the rotational component
     currentState.mForce = glm::vec3 { 0.f };
+
     // ... around the y axis
     currentState.mTorque.x = 0.f;
     currentState.mTorque.z = 0.f;
+
     updateComponent(currentState);
     return true;
 }

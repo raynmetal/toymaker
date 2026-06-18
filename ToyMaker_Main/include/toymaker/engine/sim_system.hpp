@@ -5,14 +5,14 @@
  * @brief Classes and structs relating to the SimSystem, the system responsible for providing some level of general scriptability to scene nodes from a game developer's point-of-view.
  * @version 0.3.2
  * @date 2025-09-07
- * 
- * 
+ *
+ *
  */
 
 /**
  * @defgroup ToyMakerSimSystem User Object-Oriented Logic
  * @ingroup ToyMakerEngine ToyMakerSceneSystem
- * 
+ *
  */
 
 #ifndef TOYMAKERENGINE_SIMSYSTEM_H
