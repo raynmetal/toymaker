@@ -117,7 +117,7 @@ void CollisionConstraint::updateCollisionData(
 }
 
 void CollisionConstraint::applyConstraint(
-    const std::unordered_map<ParticipantID, std::pair<std::reference_wrapper<ObjectBounds>, std::reference_wrapper<PhysicsLocal>>>& states,
+    const ParticipantTable& states,
     float substepSeconds
 ) {
     // guard: no collision, so nothing to do

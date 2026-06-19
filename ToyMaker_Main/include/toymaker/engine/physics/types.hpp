@@ -175,6 +175,13 @@ namespace ToyMaker {
 
     public:
         using ParticipantID = std::size_t;
+        using ParticipantTable = std::unordered_map<
+            ParticipantID,
+            std::pair<
+                std::reference_wrapper<ObjectBounds>,
+                std::reference_wrapper<PhysicsLocal>
+            >
+        >;
 
         /**
          * @brief Gets the current compliance value for this constraint
@@ -190,7 +197,7 @@ namespace ToyMaker {
          *
          */
         virtual void applyConstraint(
-            const std::unordered_map<ParticipantID, std::pair<std::reference_wrapper<ObjectBounds>, std::reference_wrapper<PhysicsLocal>>>& states,
+            const ParticipantTable& states,
             float substepSeconds
         ) = 0;
 
@@ -315,7 +322,7 @@ namespace ToyMaker {
          *
          */
         void applyConstraint(
-            const std::unordered_map<ParticipantID, std::pair<std::reference_wrapper<ObjectBounds>, std::reference_wrapper<PhysicsLocal>>>& states,
+            const ParticipantTable& states,
             float substepSeconds
         ) override;
     };

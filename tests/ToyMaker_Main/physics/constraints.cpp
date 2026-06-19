@@ -32,13 +32,7 @@ TEST_CASE("Head-On") {
     };
     ToyMaker::PhysicsLocal physics2 { physics1 };
 
-    const std::unordered_map<
-        ToyMaker::BaseConstraint::ParticipantID,
-        std::pair<
-            std::reference_wrapper<ToyMaker::ObjectBounds>,
-            std::reference_wrapper<ToyMaker::PhysicsLocal>
-        >
-    > constraintTable {
+    const ToyMaker::BaseConstraint::ParticipantTable participantTable {
         { 0, { object1, physics1 } },
         { 1, { object2, physics2 } },
     };
@@ -55,7 +49,7 @@ TEST_CASE("Head-On") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(constraintTable, 0.0001);
+        collisionConstraint.applyConstraint(participantTable, 0.0001);
 
         CHECK(glm::abs(object1.getPositionWorld().x - (-5.f)) <= .001f);
         CHECK(glm::abs(object2.getPositionWorld().x - 5.f) <= .001f);
@@ -74,7 +68,7 @@ TEST_CASE("Head-On") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(constraintTable, 0.0001);
+        collisionConstraint.applyConstraint(participantTable, 0.0001);
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
         const auto collisionAfter { ToyMaker::checkCollision(object1, object2) };
@@ -96,7 +90,7 @@ TEST_CASE("Head-On") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(constraintTable, 0.0001);
+        collisionConstraint.applyConstraint(participantTable, 0.0001);
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
         const auto collisionAfter { ToyMaker::checkCollision(object1, object2) };
@@ -131,13 +125,7 @@ TEST_CASE("Offset") {
     };
     ToyMaker::PhysicsLocal physics2 { physics1 };
 
-    const std::unordered_map<
-        ToyMaker::BaseConstraint::ParticipantID,
-        std::pair<
-            std::reference_wrapper<ToyMaker::ObjectBounds>,
-            std::reference_wrapper<ToyMaker::PhysicsLocal>
-        >
-    > constraintTable {
+    const ToyMaker::BaseConstraint::ParticipantTable participantTable {
         { 0, { object1, physics1 } },
         { 1, { object2, physics2 } },
     };
