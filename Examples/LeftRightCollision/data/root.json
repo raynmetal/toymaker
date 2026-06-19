@@ -1,0 +1,140 @@
+{
+    "resources": [
+        {
+            "method": "sphereLatLong",
+            "name": "SphereLeftModel",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": []
+            }
+        },
+
+        {
+            "method": "sphereLatLong",
+            "name": "SphereRightModel",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.05, 0.05, 0.05, 1.0]
+                    }
+                ]
+            }
+        }
+    ],
+
+    "nodes": [
+        {
+            "name": "root",
+            "aspects": [],
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ],
+            "parent": "",
+            "type": "SimObject"
+        },
+
+        {
+            "name": "light",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "orientation": [ 0.707, -0.408, -0.408, -0.408 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                },
+                {
+                    "ambient": [ 0.1, 0.2, 0.4 ],
+                    "diffuse": [ 10.0, 7.7, 3.3 ],
+                    "specular": [ 1.0, 1.0, 1.0 ],
+                    "lightType": "directional",
+                    "type": "LightEmissionData"
+                }
+            ]
+        },
+
+        {
+            "name": "camera",
+            "aspects":[{"type": "QueryClick" }, {"type": "RenderDebugViewer"}],
+            "parent": "/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "fov": 75.0,
+                    "aspect": 1.333,
+                    "orthographic_dimensions": {
+                        "horizontal": 800,
+                        "vertical": 600
+                    },
+                    "near_far_planes": {
+                        "near": 0.4,
+                        "far": 50
+                    },
+                    "projection_mode": "frustum",
+                    "type": "CameraProperties"
+                },
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 5.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ]
+        },
+
+        {
+            "name": "left",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ -4.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 0.5, 0.5, 0.5 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": 1.0,
+                    "velocity": [0.3, 0.0, 0.0]
+                },
+                { "resourceName": "SphereLeftModel", "type": "StaticModel" }
+            ]
+        },
+        {
+            "name": "right",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 4.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 0.5, 0.5, 0.5 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": 1.0,
+                    "velocity": [-0.3, 0.0, 0.0]
+                },
+                { "resourceName": "SphereRightModel", "type": "StaticModel" }
+            ]
+        }
+    ],
+
+    "connections":[]
+}
+

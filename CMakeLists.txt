@@ -8,7 +8,7 @@ project(
 )
 
 include(CMakeDependentOption)
-option(TOYMAKER_BUILD_EXAMPLE_CENTERTEXT "Build the executable for the basic toymaker example project" OFF)
+option(TOYMAKER_BUILD_EXAMPLES "Whether projects under `Examples/` should be built" OFF)
 cmake_dependent_option(TOYMAKER_USE_INSTALLED "Use locally installed ToyMaker library for the basic example project" ON TOYMAKER_BUILD_EXAMPLE_CENTERTEXT OFF)
 
 # Build toymaker examples and tests on top of engine built here
@@ -25,9 +25,9 @@ else()
 endif()
 
 # Build the centertext example project, if configured
-if(TOYMAKER_BUILD_EXAMPLE_CENTERTEXT)
+if(TOYMAKER_BUILD_EXAMPLES)
     message("The toymaker centertext example project has been configured to be built")
-    add_subdirectory(Examples/CenterText)
+    add_subdirectory(Examples)
 else()
     message("The ToyMaker centertext example project will not be built in this configuration")
 endif()

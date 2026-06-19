@@ -69,7 +69,7 @@ std::shared_ptr<IResource> StaticModelSphereLatLong::createResource(const nlohma
         })
     };
 
-    std::shared_ptr<StaticModel> sphereModel { 
+    std::shared_ptr<StaticModel> sphereModel {
         std::make_shared<StaticModel>(
             std::vector<std::shared_ptr<StaticMesh>>{ sphereMesh },
             std::vector<std::shared_ptr<Material>>{ sphereMaterial }

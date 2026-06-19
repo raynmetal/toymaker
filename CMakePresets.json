@@ -24,27 +24,27 @@
             }
         },
         {
-            "name": "FullBuild_Example_CenterText",
+            "name": "FullBuild_Examples",
             "displayName": "Build CenterText example (Debug) from ToyMaker source",
-            "description": "Build CenterText example with debug flags enabled from engine and project sources.  Demonstrates toymaker's text rendering feature.",
+            "description": "Build example projects with debug flags enabled from engine and project sources.  Demonstrates various toymaker features.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "TOYMAKER_BUILD_EXAMPLE_CENTERTEXT": "ON",
+                "TOYMAKER_BUILD_EXAMPLES": "ON",
                 "TOYMAKER_USE_INSTALLED": "OFF"
             }
         },
 
         {
-            "name": "AppBuild_Example_CenterText",
+            "name": "AppBuild_Examples",
             "displayName": "Build CenterText example (Debug) from local ToyMaker installation",
-            "description": "Build CenterText example with debug flags enabled from engine installation and project sources.  Demonstrates toymaker's text rendering feature.",
+            "description": "Build example projects with debug flags enabled from engine and project sources.  Demonstrates various toymaker features.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "TOYMAKER_BUILD_EXAMPLE_CENTERTEXT": "ON",
+                "TOYMAKER_BUILD_EXAMPLES": "ON",
                 "TOYMAKER_USE_INSTALLED": "ON"
             }
         }
