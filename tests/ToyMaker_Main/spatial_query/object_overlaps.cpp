@@ -1,7 +1,9 @@
-#include "toymaker/engine/spatial_query/math.hpp"
-#include "string_conversions.hpp"
-#include <doctest/doctest.h>
 #include <cmath>
+#include <doctest/doctest.h>
+
+#include "toymaker/engine/spatial_query/math.hpp"
+
+#include "string_conversions.hpp"
 
 namespace ToyMakerTests {
 

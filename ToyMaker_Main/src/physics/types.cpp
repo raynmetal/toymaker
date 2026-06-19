@@ -116,19 +116,19 @@ void CollisionConstraint::updateCollisionData(
     setParameter(1, parameterB);
 }
 
-
 void CollisionConstraint::applyConstraint(
-    std::unordered_map<ParticipantID, std::pair<ObjectBounds&, PhysicsLocal&>>& states,
+    const std::unordered_map<ParticipantID, std::pair<std::reference_wrapper<ObjectBounds>, std::reference_wrapper<PhysicsLocal>>>& states,
     float substepSeconds
 ) {
-    // no collision, so nothing to do
+    // guard: no collision, so nothing to do
     if(!mCollided) {
         return;
     }
+    assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
 
     // fetch relevant data
-    ObjectBounds& objectA { states.at(0).first };
-    ObjectBounds& objectB { states.at(1).first };
+    ObjectBounds& objectA { states.at(0).first.get() };
+    ObjectBounds& objectB { states.at(1).first.get() };
     const CollisionConstraintData contactA { getParameter(0) };
     const CollisionConstraintData contactB { getParameter(1) };
     const glm::vec3& contactNormal { glm::normalize (contactB.mContact.mNormal) };
@@ -169,19 +169,27 @@ void CollisionConstraint::applyConstraint(
     };
 
     // apply positional corrections
+    const glm::vec3 positionA { objectA.getPositionWorld() };
+    const glm::vec3 positionB { objectB.getPositionWorld() };
     objectA.setPositionWorld(
-        objectA.getPositionWorld() + positionalImpulse * contactA.mInverseMass
+        positionA + positionalImpulse * contactA.mInverseMass
     );
     objectB.setPositionWorld(
-        objectB.getPositionWorld() - positionalImpulse * contactB.mInverseMass
+        positionB - positionalImpulse * contactB.mInverseMass
     );
 
     // apply rotational corrections
     const glm::vec3 impulseRotationA {
-        glm::inverse(contactA.mRotationalInertia) * glm::cross(contactA.mContact.mPoint, positionalImpulse)
+        glm::inverse(contactA.mRotationalInertia) * glm::cross(
+            contactA.mContact.mPoint - positionA,
+            positionalImpulse
+        )
     };
     const glm::vec3 impulseRotationB {
-        glm::inverse(contactB.mRotationalInertia) * glm::cross(contactB.mContact.mPoint, positionalImpulse)
+        glm::inverse(contactB.mRotationalInertia) * glm::cross(
+            contactB.mContact.mPoint - positionB,
+            positionalImpulse
+        )
     };
     objectA.setOrientationWorld(
         objectA.getOrientationWorld() + .5f * glm::quat(

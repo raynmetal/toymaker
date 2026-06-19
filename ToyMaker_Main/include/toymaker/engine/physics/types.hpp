@@ -190,7 +190,7 @@ namespace ToyMaker {
          *
          */
         virtual void applyConstraint(
-            std::unordered_map<ParticipantID, std::pair<ObjectBounds&, PhysicsLocal&>>& states,
+            const std::unordered_map<ParticipantID, std::pair<std::reference_wrapper<ObjectBounds>, std::reference_wrapper<PhysicsLocal>>>& states,
             float substepSeconds
         ) = 0;
 
@@ -228,6 +228,10 @@ namespace ToyMaker {
         std::unordered_map<ParticipantID, TParameter> mParameters {};
 
     protected:
+        /**
+         * @brief Initializes this constraint with some initial compliance value.
+         *
+         */
         Constraint(float compliance): BaseConstraint { compliance } {}
 
         /**
@@ -244,12 +248,16 @@ namespace ToyMaker {
          */
         void setParameter(ParticipantID participant, const TParameter& parameter);
 
+        /**
+         * @brief Gets parameter belonging to a particular constraint participant
+         *
+         */
         inline TParameter getParameter(ParticipantID participant) const {
             return mParameters.at(participant);
         }
 
         /**
-         * @brief Removes a parameter stored at a particular index for this constraint
+         * @brief Removes a parameter belonging to a particular constraint participant
          *
          */
         void removeParameter(ParticipantID participant);
@@ -276,7 +284,6 @@ namespace ToyMaker {
          *
          */
         bool mCollided { false };
-
 
     public:
         /**
@@ -308,7 +315,7 @@ namespace ToyMaker {
          *
          */
         void applyConstraint(
-            std::unordered_map<ParticipantID, std::pair<ObjectBounds&, PhysicsLocal&>>& states,
+            const std::unordered_map<ParticipantID, std::pair<std::reference_wrapper<ObjectBounds>, std::reference_wrapper<PhysicsLocal>>>& states,
             float substepSeconds
         ) override;
     };
