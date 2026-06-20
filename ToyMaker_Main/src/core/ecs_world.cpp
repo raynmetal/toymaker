@@ -133,6 +133,10 @@ const std::set<EntityID>& BaseSystem::getEnabledEntities() {
     return mEnabledEntities;
 }
 
+const std::set<EntityID>& BaseSystem::getEnabledEntities() const {
+    return mEnabledEntities;
+}
+
 bool BaseSystem::isEnabled(EntityID entityID) const {
     return !isSingleton() && mEnabledEntities.find(entityID) != mEnabledEntities.end();
 }

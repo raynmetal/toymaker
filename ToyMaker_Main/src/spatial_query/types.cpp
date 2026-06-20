@@ -151,7 +151,7 @@ bool Polytope::append(const glm::vec3& newPoint, const glm::vec3& supportA, cons
         crossTriangle, mPoints[oldTriangle.mIndices[0]]
     ) };
     const float newDistance { glm::dot(crossTriangle, newPoint) };
-    assert(oldDistance >= 0 && "Old distance should be greater than or equal to 0");
+    assert(oldDistance >= -0.001 && "Old distance should be greater than or equal to 0 (or some negative epsilon)");
 
     // Our new point is not further from the origin in this direction; there
     // is nothing to be done

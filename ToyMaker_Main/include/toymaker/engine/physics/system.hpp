@@ -28,6 +28,63 @@
 namespace ToyMaker {
 
     /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Names two distinct entities participating in a constraint, with their entity
+     * IDs sorted in ascending order.
+     *
+     * Built to be used in an std::set
+     */
+    class ConstraintLink {
+    private:
+        /**
+         * @brief The first entity in a constraint link.
+         *
+         */
+        EntityID mFirst;
+
+        /**
+         * @brief The second entity in a constraint link.
+         *
+         */
+        EntityID mSecond;
+
+    public:
+        /**
+         * @brief Creates a constraint link out of two distinct entities.
+         *
+         */
+        ConstraintLink(EntityID first, EntityID second): mFirst { first }, mSecond { second } {
+            assert(first != second && "Entities in constraint must be distinct");
+            if (second < first) {
+                std::swap(mFirst, mSecond);
+            }
+        }
+
+        /**
+         * @brief Returns the first entity in the link
+         *
+         */
+        inline EntityID first() const { return mFirst; }
+
+        /**
+         * @brief Returns the second entity in the link
+         *
+         */
+        inline EntityID second() const { return mSecond; }
+
+        inline bool operator < (const ConstraintLink& other) const {
+            return (
+                mFirst < other.mFirst
+                || (
+                    mFirst == other.mFirst
+                    && mSecond < other.mSecond
+               )
+            );
+        }
+    };
+
+    /**
      * @ingroup ToyMakerPhysics ToyMakerECSSystem
      * @brief The physics system, an ECS system that tracks and updates the state of each physics
      * object in the scene according to its properties.
@@ -77,12 +134,13 @@ namespace ToyMaker {
 
     private:
 
-        /**
-         * @brief Computes rotational inertia from mass and object bounds
-         *
-         * @param entityID The entity in need of an update
-         */
-        void updatePhysicsProperties(EntityID entityID);
+        // storage for intermediate physics state
+        struct PhysicsStatePartial {
+            glm::vec3 mVelocity;
+            glm::vec3 mAngularVelocity;
+            glm::vec3 mPosition;
+            glm::quat mOrientation;
+        };
 
         /**
          * @brief Marks this system as requiring initialization on the nearest update.
@@ -119,6 +177,39 @@ namespace ToyMaker {
          */
         void onEntityDisabled(EntityID entityID) override;
 
+        /**
+         * @brief Computes rotational inertia from mass and object bounds
+         *
+         * @param entityID The entity in need of an update
+         */
+        void updatePhysicsProperties(EntityID entityID);
+
+        /**
+         * @brief Derives position and rotation updates for physics objects based on
+         * their current state and forces acting on them.
+         *
+         */
+        void integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStatePartial>& previousState);
+
+        /**
+         * @brief Derives actual object velocities after integration and constraint solve.
+         *
+         */
+        void deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStatePartial>& previousState);
+
+        /**
+         * @brief Correctly applies collision constraint for each potential collision
+         * detected
+         *
+         */
+        void applyCollisionConstraints(std::map<ConstraintLink, CollisionConstraint>& constraints, float substepSeconds);
+
+
+        /**
+         * @brief Collects potential collisions and builds constraints from them
+         *
+         */
+        std::map<ConstraintLink, CollisionConstraint> collectPotentialCollisions(float substepSeconds);
 
         /**
          * @brief Whether physics properties for all eligible entities should be recomputed

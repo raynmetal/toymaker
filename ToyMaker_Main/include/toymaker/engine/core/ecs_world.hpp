@@ -855,6 +855,13 @@ namespace ToyMaker {
         const std::set<EntityID>& getEnabledEntities();
 
         /**
+         * @brief Get a set of all entities that are influenced by this System
+         *
+         * @return const std::set<EntityID>& The active set of entities
+         */
+        const std::set<EntityID>& getEnabledEntities() const;
+
+        /**
          * @brief The actual implementation of getComponent for a system.
          * 
          * @tparam TComponent The type of component being retrieved.
