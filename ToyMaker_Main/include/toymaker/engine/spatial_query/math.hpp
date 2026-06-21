@@ -20,6 +20,7 @@
 namespace ToyMaker {
 
     static constexpr uint8_t kMaxIterations { 64 };
+    static constexpr float kSimplexEpsilon { 0.001 };
 
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
@@ -357,7 +358,37 @@ namespace ToyMaker {
 
             searchDirection = result.second;
         }
-        assert(false && "We should not have exited the loop without finding a simplex");
+
+        // handle degenerate simplexes by forcing them to expand to a full simplex
+        while(simplex.mNPoints != 4) {
+            switch(simplex.mNPoints) {
+                case 1:
+                    simplex.mPoints[simplex.mNPoints++] = simplex.mPoints[0] + glm::vec3 { kSimplexEpsilon, 0.f, 0.f };
+                    break;
+                case 2:
+                    {
+                        const glm::vec3 dirAB { glm::normalize(simplex.mPoints[1] - simplex.mPoints[0]) };
+                        assert(squareDistance(dirAB) > 0 && "A and B should never be the same point");
+                        const glm::vec3 dirOffset { (dirAB.x != 0.f || dirAB.z != 0.f)?
+                            glm::vec3{ 0.f, 1.f, 0.f } : glm::vec3{ 1.f, 0.f, 1.f }
+                        };
+                        searchDirection = glm::normalize(-dirAB + dirOffset);
+                        simplex.mPoints[simplex.mNPoints++] = kSimplexEpsilon * searchDirection;
+                    }
+                    break;
+                case 3:
+                    {
+                        const glm::vec3 normABC { glm::normalize(glm::cross(simplex.mPoints[1] - simplex.mPoints[0], simplex.mPoints[2] - simplex.mPoints[0])) };
+                        simplex.mPoints[simplex.mNPoints++] = kSimplexEpsilon * normABC;
+                    }
+                    break;
+                default:
+                    assert(false && "Simplex with invalid number of points for this section of the algorithm provided");
+                    break;
+            };
+        }
+
+        // If all else fails, and we end up here, report that no collision occurred
         return { false, simplex };
     }
 
