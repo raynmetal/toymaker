@@ -22,6 +22,15 @@ namespace ToyMaker {
     static constexpr uint8_t kMaxIterations { 64 };
     static constexpr float kSimplexEpsilon { 0.001 };
 
+
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Computes a Barycentric solver matrix based on an input triangle.
+     *
+     * @warning Error if triangle with colinear points provided.
+     */
+    glm::mat3 computeBarycentricSolver(const AreaTriangle& triangle);
+
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns a bool-vector pair, with bool indicating whether a point of intersection was found, and the vector containing the point of intersection.
@@ -415,9 +424,7 @@ namespace ToyMaker {
         // triangle in the difference shape it lies on
         const glm::vec3 closestPoint { polytope.getClosestPoint() };
         const AreaTriangle closestTriangle { polytope.getClosestTriangle() };
-        const glm::mat3 barycentricSolver { glm::inverse(glm::mat3 {
-            closestTriangle.mPoints[0], closestTriangle.mPoints[1], closestTriangle.mPoints[2]
-        }) };
+        const glm::mat3 barycentricSolver { computeBarycentricSolver(closestTriangle) };
         const glm::vec3 barycentricCoordinates {
             barycentricSolver * closestPoint
         };
@@ -436,7 +443,15 @@ namespace ToyMaker {
             closestTriangleTwo.mPoints[0], closestTriangleTwo.mPoints[1], closestTriangleTwo.mPoints[2]
         };
         collisionResult.mContactA.mPoint = barycentricOne * barycentricCoordinates;
+        assert(
+            isNumber(collisionResult.mContactA.mPoint) && isFinite(collisionResult.mContactA.mPoint)
+            && "Invalid contact point computed for object A"
+        );
         collisionResult.mContactB.mPoint = barycentricTwo * barycentricCoordinates;
+        assert(
+            isNumber(collisionResult.mContactB.mPoint) && isFinite(collisionResult.mContactB.mPoint)
+            && "Invalid contact point computed for object B"
+        );
 
         // build tangent vectors to the normal (used for friction calculations)
 

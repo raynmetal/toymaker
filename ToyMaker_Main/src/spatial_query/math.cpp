@@ -769,3 +769,56 @@ glm::vec3 getClosestPointOnBox(const glm::vec3& point, const ObjectBounds& box) 
         + saturatedPoint.z * boxAxes[2]
     );
 }
+
+glm::mat3 ToyMaker::computeBarycentricSolver(const AreaTriangle& triangle) {
+    assert(
+        isNumber(triangle.mPoints[0]) && isFinite(triangle.mPoints[0])
+        && isNumber(triangle.mPoints[1]) && isFinite(triangle.mPoints[1])
+        && isNumber(triangle.mPoints[2]) && isFinite(triangle.mPoints[2])
+        && "Triangle with invalid (infinite or not-a-number) point provided"
+    );
+
+    const bool isColinear {
+        squareDistance(glm::cross(
+            triangle.mPoints[0] - triangle.mPoints[1],
+            triangle.mPoints[0] - triangle.mPoints[2]
+        )) == 0.f
+    };
+    assert(!isColinear && "Cannot form barycentric solver from degenerate triangle");
+    const glm::mat3 matrixTriangle {
+        triangle.mPoints[0],
+        triangle.mPoints[1],
+        triangle.mPoints[2]
+    };
+
+    // return the (presumably faster, optimized) glm result
+    // if possible
+    const glm::mat3 glmResult { glm::inverse(matrixTriangle) };
+    if(
+        isNumber(glmResult[0]) && isFinite(glmResult[0])
+        && isNumber(glmResult[1]) && isFinite(glmResult[1])
+        && isNumber(glmResult[2]) && isFinite(glmResult[2])
+    ) {
+        return glmResult;
+    }
+
+    // otherwise compute this the old school way, with added
+    // precision
+    const double determinant { glm::determinant(static_cast<glm::dmat3>(matrixTriangle)) };
+    const glm::dmat3 matrixCofactor {
+        glm::vec3 { 1.f, -1.f, 1.f } * matrixTriangle[0],
+        glm::vec3 { -1.f, 1.f, -1.f } * matrixTriangle[1],
+        glm::vec3 { 1.f, -1.f, 1.f } * matrixTriangle[2],
+    };
+    const glm::dmat3 finalResult {
+        (1.0 / determinant) * glm::transpose(matrixCofactor)
+    };
+    assert(
+        isNumber(finalResult[0]) && isFinite(finalResult[0])
+        && isNumber(finalResult[1]) && isFinite(finalResult[1])
+        && isNumber(finalResult[2]) && isFinite(finalResult[2])
+        && "Could not compute a valid Barycentric solver for this triangle"
+    );
+
+    return finalResult;
+}

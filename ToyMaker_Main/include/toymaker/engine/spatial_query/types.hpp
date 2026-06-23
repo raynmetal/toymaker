@@ -93,6 +93,14 @@ namespace ToyMaker {
         return isPositiveStrict(vector.x) && isPositiveStrict(vector.y) && isPositiveStrict(vector.z);
     }
 
+    inline bool isNumber(float number) {
+        return !std::isnan(number);
+    };
+
+    inline bool isNumber(const glm::vec3& vector) {
+        return isNumber(vector.x) && isNumber(vector.y) && isNumber(vector.z);
+    };
+
     /**
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Tests whether a number is non-negative.

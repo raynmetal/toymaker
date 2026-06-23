@@ -163,6 +163,7 @@ void CollisionConstraint::applyConstraint(
             generalizedInverseA + generalizedInverseB + alphaDerivative2
         )
     };
+    assert(isNumber(lagrangeDelta) && "Lagrange delta calculation failed");
     applyLagrangeDelta(lagrangeDelta);
     const glm::vec3 positionalImpulse {
         lagrangeDelta * contactNormal

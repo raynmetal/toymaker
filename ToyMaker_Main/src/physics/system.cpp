@@ -86,6 +86,7 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
 
         // update object state per forces - linear
         physics.mVelocity += substepSeconds * physics.mForce / physics.mMass;
+        assert(isNumber(physics.mVelocity) && "Velocity computation failed");
         bounds.setPositionWorld(
             physicsState.mPosition
             // velocity is relative to local frame, and must be rotated

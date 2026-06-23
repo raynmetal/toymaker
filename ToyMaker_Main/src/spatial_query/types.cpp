@@ -5,6 +5,9 @@
 
 using namespace ToyMaker;
 
+constexpr float kEPAEpsilon { 0.0001 };
+
+
 // Gets the minimum and maximum points of a 3D box projected on an axis
 std::pair<float, float> axisProjectBox(const glm::vec3& axis, const ObjectBounds& box);
 // Gets the minimum and maximum points of a sphere projected on an axis
@@ -151,11 +154,10 @@ bool Polytope::append(const glm::vec3& newPoint, const glm::vec3& supportA, cons
         crossTriangle, mPoints[oldTriangle.mIndices[0]]
     ) };
     const float newDistance { glm::dot(crossTriangle, newPoint) };
-    assert(oldDistance >= -0.001 && "Old distance should be greater than or equal to 0 (or some negative epsilon)");
 
     // Our new point is not further from the origin in this direction; there
     // is nothing to be done
-    if(newDistance - oldDistance <= 0.001) {
+    if(newDistance - oldDistance <= kEPAEpsilon) {
         return false;
     }
 
@@ -233,6 +235,7 @@ void ObjectBounds::setPositionWorld(const glm::vec3& newPosition) {
     mPositionOrigin = newPosition - (
         glm::transpose(glm::mat3 { getRotationTransformOrigin() }) * mPositionOffset
     );
+    assert(isNumber(mPositionOrigin) && "Position update failed");
     requiresTransformUpdate = true;
 }
 
@@ -248,6 +251,11 @@ void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
     mOrientationOrigin = glm::normalize(glm::quat_cast(
         glm::mat3_cast(orientationNormalized) * glm::transpose(getRotationTransformLocal())
     ));
+    assert(
+        isNumber(mOrientationOrigin.w)
+        && isNumber(glm::vec3{mOrientationOrigin.x, mOrientationOrigin.y, mOrientationOrigin.z})
+        && "Orienation update failed"
+    );
     // update world position such that it stays in-place by
     // updating the origin's position instead
     setPositionWorld(worldPositionPrevious);
@@ -766,3 +774,5 @@ std::pair<bool, glm::vec3> Simplex::doSimplex4() {
     // that we're in the tetrahedron
     return { true, glm::vec3 { 0.f } };
 }
+
+
