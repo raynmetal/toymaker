@@ -75,8 +75,9 @@ GLint loadAndCompileShader(const std::vector<std::string>& shaderPaths, GLuint& 
     glGetShaderiv(shaderID, GL_COMPILE_STATUS, &success);
     //Source no longer required, so remove it
     delete[] shaderSource;
+
+    glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
     if(success != GL_TRUE) {
-        glGetShaderInfoLog(shaderID, 512, NULL, infoLog);
         std::string typeString {};
         switch(shaderType) {
             case GL_VERTEX_SHADER: typeString = "VERTEX"; break;
@@ -333,8 +334,8 @@ GLuint buildProgram(const std::vector<std::string>& vertexPaths, const std::vect
 
     //Report failure, if it occurred
     glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
+    glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
     if(success != GL_TRUE) {
-        glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
         std::cout << "ERROR::SHADER::PROGRAM::LINKING_FAILED\n"
             << infoLog << std::endl;
         glDeleteProgram(shaderProgram);

@@ -4,7 +4,7 @@
     "sources": [
         "common/versionHeader.glsl",
         "common/geometrySampler.fs",
-        "common/lightStruct.fs",
+        "lighting/lightStruct.fs",
         "lighting/deferredLighting.fs"
     ]
 }

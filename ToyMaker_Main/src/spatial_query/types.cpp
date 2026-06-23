@@ -233,6 +233,7 @@ void ObjectBounds::setPositionWorld(const glm::vec3& newPosition) {
     mPositionOrigin = newPosition - (
         glm::transpose(glm::mat3 { getRotationTransformOrigin() }) * mPositionOffset
     );
+    requiresTransformUpdate = true;
 }
 
 glm::quat ObjectBounds::getOrientationWorld() const {
@@ -250,6 +251,7 @@ void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
     // update world position such that it stays in-place by
     // updating the origin's position instead
     setPositionWorld(worldPositionPrevious);
+    requiresTransformUpdate = true;
 }
 
 std::array<glm::vec3, 8> ObjectBounds::getLocalOrientedBoxCorners() const {

@@ -310,6 +310,7 @@ void LightingRenderStage::validate() {
 void LightingRenderStage::execute() {
     std::shared_ptr<Material> lightMaterial{ getMaterial("lightMaterial") };
     mShaderHandle->use();
+    useViewport();
     mShaderHandle->setUInt(
         "uScreenWidth",
         lightMaterial->getIntProperty("screenWidth")
@@ -318,7 +319,6 @@ void LightingRenderStage::execute() {
         "uScreenHeight",
         lightMaterial->getIntProperty("screenHeight")
     );
-    useViewport();
 
     glDisable(GL_FRAMEBUFFER_SRGB);
     glDisable(GL_DEPTH_TEST);
@@ -327,7 +327,7 @@ void LightingRenderStage::execute() {
     glBlendFunc(GL_ONE, GL_ONE);
 
     mFramebufferHandle->bind();
-        glClear(GL_COLOR_BUFFER_BIT);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         while(!mLightQueue.empty()) {
             std::vector<glm::mat4> modelMatrices {};
@@ -340,7 +340,7 @@ void LightingRenderStage::execute() {
             lightEmissionList.push_back(first.mLightAttributes);
 
             while(
-                !mLightQueue.empty() 
+                !mLightQueue.empty()
                 && mLightQueue.top().mMeshHandle == first.mMeshHandle
             ) {
                 const LightRenderUnit renderLightUnit {mLightQueue.top()};
@@ -350,22 +350,16 @@ void LightingRenderStage::execute() {
                 lightEmissionList.push_back(renderLightUnit.mLightAttributes);
             }
 
-            mShaderHandle->use();
             const std::array<const std::string, 3> gBufferAliases {
                 "positionMap", "normalMap", "albedoSpecularMap"
             };
-            for(int i{0}; i < 3; ++i) {
-                mTextureAttachments.at(gBufferAliases[i])->bind(i);
-            }
-            mShaderHandle->setUInt("uGeometryPositionMap", 0);
-            mShaderHandle->setUInt("uGeometryNormalMap", 1);
-            mShaderHandle->setUInt("uGeometryAlbedoSpecMap", 2);
+            BuiltinModelMatrixAllocator modelMatrixAllocator{ modelMatrices };
+            LightInstanceAllocator lightInstanceAllocator{ lightEmissionList, modelMatrices };
+            mShaderHandle->use();
             glBindVertexArray(mVertexArrayObject);
                 first.mMeshHandle->bind(VertexLayout{{
-                    {"position", LOCATION_POSITION, 4, GL_FLOAT}
+                    {"position", LOCATION_POSITION, 4, GL_FLOAT},
                 }});
-                BuiltinModelMatrixAllocator modelMatrixAllocator{ modelMatrices };
-                LightInstanceAllocator lightInstanceAllocator{ lightEmissionList, modelMatrices };
                 modelMatrixAllocator.bind(BuiltinModelMatrixLayout);
                 lightInstanceAllocator.bind({{
                     {"attrLightPlacement_mPosition", RUNTIME, 4, GL_FLOAT},
@@ -380,6 +374,12 @@ void LightingRenderStage::execute() {
                     {"attrLightEmission_mCosCutoffInner", RUNTIME, 1, GL_FLOAT},
                     {"attrLightEmission_mCosCutoffOuter", RUNTIME, 1, GL_FLOAT}
                 }});
+                for(int i{0}; i < 3; ++i) {
+                    mTextureAttachments.at(gBufferAliases[i])->bind(i);
+                }
+                mShaderHandle->setUInt("uGeometryPositionMap", 0);
+                mShaderHandle->setUInt("uGeometryNormalMap", 1);
+                mShaderHandle->setUInt("uGeometryAlbedoSpecMap", 2);
                 glDrawElementsInstanced(
                     GL_TRIANGLES, first.mMeshHandle->getElementCount(),
                     GL_UNSIGNED_INT, nullptr, lightEmissionList.size()

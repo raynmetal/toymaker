@@ -337,9 +337,13 @@ void RenderSystem::LightQueue::enqueueTo(BaseRenderStage& renderStage, float sim
                 mSphereMesh,
             lightEmissionData,
             (lightEmissionData.mType==LightEmissionData::LightType::directional)?
-                glm::inverse(glm::transpose(entityTransform.mModelMatrix)):
-                glm::scale(entityTransform.mModelMatrix, glm::vec3{lightEmissionData.mRadius})
-        });
+                glm::inverse(glm::transpose(entityTransform.mModelMatrix)) :
+                entityTransform.getMatrixTranslation()
+                    * entityTransform.getMatrixRotation()
+                    * glm::scale(glm::mat4 { 1.f },
+                        glm::vec3 { lightEmissionData.mRadius }
+                    )
+        } );
     }
 }
 

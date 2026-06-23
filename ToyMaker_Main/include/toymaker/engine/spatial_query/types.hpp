@@ -1063,6 +1063,13 @@ namespace ToyMaker {
         InteractionLayerMask mInteractionMask { std::numeric_limits<InteractionLayerMask>::max() };
 
         /**
+         * @brief Flag set when object position or orientation has been set through this
+         * component, indicating that user facing Transform should be updated accordingly
+         *
+         */
+        bool requiresTransformUpdate { false };
+
+        /**
          * @brief Computes new mPosition and mOrientation offsets based on (presumably) the model transform of the underlying scene object.
          *
          * @param modelMatrix The transform specifying the new origin of the underlying scene object.

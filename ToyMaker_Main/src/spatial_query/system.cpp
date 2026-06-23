@@ -165,13 +165,19 @@ void SpatialQuerySystem::updateBounds(EntityID entity) {
 }
 
 void SpatialQuerySystem::updateTransform(EntityID entity) {
-    const ObjectBounds updatedBounds { getComponent<ObjectBounds>(entity) };
+    ObjectBounds updatedBounds { getComponent<ObjectBounds>(entity) };
+    if(!updatedBounds.requiresTransformUpdate) {
+        return;
+    }
+    updatedBounds.requiresTransformUpdate = false;
+
     Transform newTransform { getComponent<Transform>(entity) };
     // entities whose transforms are set by their object bounds should
     // only have their translation and rotation inherited
     newTransform.mInheritedComponents = (TRANSFORMCOMPONENT_TRANSLATION | TRANSFORMCOMPONENT_ROTATION);
     newTransform.mModelMatrix = updatedBounds.getTranslationTransformOrigin() * updatedBounds.getRotationTransformOrigin();
     updateComponent(entity, newTransform);
+    updateComponent(entity, updatedBounds);
 }
 
 void SpatialQuerySystem::rebuildOctree() {
@@ -245,7 +251,6 @@ void SpatialQuerySystem::onSimulationStep(uint32_t timestepMillis) {
         updateBounds(entity);
         mOctree->insertEntity(entity, getComponent<AxisAlignedBounds>(entity));
     }
-
     mUpdateQueueAABB.clear();
 }
 

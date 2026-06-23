@@ -247,6 +247,7 @@ void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_
         auto physicsProps { getComponent<PhysicsLocal>(entity) };
         const auto bounds { getComponent<ObjectBounds>(entity) };
         const auto orientationInverse { glm::inverse(bounds.getOrientationWorld()) };
+
         // update linear terms
         physicsProps.mVelocity = (
             orientationInverse // in local frame

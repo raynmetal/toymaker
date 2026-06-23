@@ -11,6 +11,8 @@
 #ifndef TOYMAKERENGINE_VERTEX_H
 #define TOYMAKERENGINE_VERTEX_H
 
+#include <SDL3/SDL_opengl.h>
+
 #include <string>
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>

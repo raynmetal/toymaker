@@ -439,7 +439,10 @@ namespace ToyMaker {
         collisionResult.mContactB.mPoint = barycentricTwo * barycentricCoordinates;
 
         // build tangent vectors to the normal (used for friction calculations)
-        const auto tangentPair { deriveTangents(closestPoint) };
+
+        const auto tangentPair { deriveTangents(
+            squareDistance(closestPoint)? closestPoint: one.getPositionWorld() - two.getPositionWorld()
+        ) };
         collisionResult.mContactB.mNormal = glm::normalize(closestPoint);
         collisionResult.mContactB.mTangent1 = glm::normalize(tangentPair.first);
         collisionResult.mContactB.mTangent2 = glm::normalize(tangentPair.second);
