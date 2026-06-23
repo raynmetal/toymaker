@@ -186,7 +186,7 @@ namespace ToyMaker {
          * @param intensityCutoff The nth fraction of the max intensity of the light beyond which the light is considered inactive.  Eg., intensityCutoff = 40.f => intensityAtRadius = maxIntensity/40.f.
          * @return float 
          */
-        static float CalculateRadius(const glm::vec4& diffuseColor, float decayLinear, float decayQuadratic, float intensityCutoff);
+        static float CalculateRadius(const glm::vec4& diffuseColor, double decayLinear, double decayQuadratic, double intensityCutoff);
 
         /**
          * @brief The component type string associated with this object.

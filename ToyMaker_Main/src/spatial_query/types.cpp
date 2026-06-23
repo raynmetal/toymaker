@@ -210,7 +210,13 @@ bool Polytope::append(const glm::vec3& newPoint, const glm::vec3& supportA, cons
 
 void ObjectBounds::applyModelMatrix(const glm::mat4& modelMatrix) {
     mPositionOrigin = static_cast<glm::vec3>(modelMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f});
+    assert(isNumber(mPositionOrigin) && "Position update failed");
     mOrientationOrigin = glm::normalize(glm::quat_cast(getRotationMatrix(modelMatrix)));
+    assert(
+        isNumber(mOrientationOrigin.w)
+        && isNumber(glm::vec3 { mOrientationOrigin.x, mOrientationOrigin.y, mOrientationOrigin.z })
+        && "Orientation update failed"
+    );
 }
 
 std::array<glm::vec3, 8> ObjectBounds::getVolumeRelativeBoxCorners() const {

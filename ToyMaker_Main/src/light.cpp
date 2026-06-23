@@ -7,11 +7,14 @@
 
 using namespace ToyMaker;
 
-float LightEmissionData::CalculateRadius(const glm::vec4& diffuseColor, float decayLinear, float decayQuadratic, float intensityCutoff) {
+float LightEmissionData::CalculateRadius(const glm::vec4& diffuseColor, double decayLinear, double decayQuadratic, double intensityCutoff) {
     float intensityMax = diffuseColor.r;
     if(diffuseColor.g > intensityMax) intensityMax = diffuseColor.g;
     if(diffuseColor.b > intensityMax) intensityMax = diffuseColor.b;
-    float radiusCutoff {
+
+    if(intensityMax <= intensityCutoff) return 0.f;
+
+    const double radiusCutoff {
         (
             -decayLinear
             + std::sqrt(
@@ -46,7 +49,7 @@ LightEmissionData LightEmissionData::MakePointLight(const glm::vec3& diffuse, co
         .mDecayQuadratic {quadraticConst},
         .mCosCutoffInner {0.f},
         .mCosCutoffOuter {0.f},
-        .mRadius {CalculateRadius({diffuse, 1.f}, linearConst, quadraticConst, .05f)}
+        .mRadius {CalculateRadius({diffuse, 1.f}, linearConst, quadraticConst, .0005f)}
     };
 }
 

@@ -156,6 +156,14 @@ void SpatialQuerySystem::updateBounds(EntityID entity) {
     ObjectBounds objectBounds { getComponent<ObjectBounds>(entity) };
     objectBounds.applyModelMatrix(modelMatrix);
 
+    /**
+     * @brief Skip bounds updates for insensible object bounds
+     *
+     */
+    if(!objectBounds.isSensible()) {
+        return;
+    }
+
     // Compute axis aligned bounds based on object bounds
     const AxisAlignedBounds axisAlignedBounds { objectBounds };
 

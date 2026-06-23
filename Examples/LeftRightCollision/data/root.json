@@ -59,7 +59,7 @@
                 {
                     "ambient": [ 0.01, 0.02, 0.04 ],
                     "diffuse": [ 0.5, 0.3, 0.08 ],
-                    "specular": [ 0.1, 0.1, 0.1 ],
+                    "specular": [ 0.01, 0.01, 0.01 ],
                     "lightType": "directional",
                     "type": "LightEmissionData"
                 }
@@ -78,11 +78,11 @@
                     "type": "Placement"
                 },
                 {
-                    "ambient": [ 0.0, 0.01, 0.0 ],
-                    "diffuse": [ 0.0, 0.2, 0.0 ],
-                    "specular": [ 0.07, 0.07, 0.07 ],
+                    "ambient": [ 0.0, 0.001, 0.0 ],
+                    "diffuse": [ 0.0, 0.01, 0.0 ],
+                    "specular": [ 0.03, 0.03, 0.03 ],
                     "linearConst": 0.01,
-                    "quadraticConst": 0.0002,
+                    "quadraticConst": 0.002,
                     "lightType": "point",
                     "type": "LightEmissionData"
                 }
