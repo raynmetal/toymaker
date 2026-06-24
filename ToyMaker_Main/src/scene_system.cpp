@@ -57,9 +57,11 @@ SceneNodeCore::SceneNodeCore(const nlohmann::json& sceneNodeDescription) {
     addComponent<Transform>({}, true);
     addComponent<SceneHierarchyData>({}, true);
     addComponent<AxisAlignedBounds>({}, true);
-    addComponent<ObjectBounds>({}, true);
     for(const nlohmann::json& componentDescription: sceneNodeDescription.at("components")) {
         addComponent(componentDescription, true);
+    }
+    if(!hasComponent<ObjectBounds>()) {
+        addComponent<ObjectBounds>({}, true);
     }
     assert(hasComponent<Placement>() && "scene nodes must define a placement component");
     const Placement placement { getComponent<Placement>() };

@@ -54,11 +54,11 @@ namespace ToyMaker {
          * @brief A subsystem of the SpatialQuery system which tracks StaticModel objects in the scene and updates the position and shapes of their associated object bounds accordingly.
          *
          */
-        class StaticModelBoundsComputeSystem: public System<StaticModelBoundsComputeSystem, std::tuple<std::shared_ptr<StaticModel>, Transform>, std::tuple<ObjectBounds>> {
+        class StaticModelBoundsComputeSystem: public System<StaticModelBoundsComputeSystem, std::tuple<std::shared_ptr<StaticModel>, Transform, ObjectBounds>, std::tuple<>> {
         public:
 
             explicit StaticModelBoundsComputeSystem(std::weak_ptr<ECSWorld> world):
-            System<SpatialQuerySystem::StaticModelBoundsComputeSystem, std::tuple<std::shared_ptr<StaticModel>, Transform>, std::tuple<ObjectBounds>> { world }
+            System<SpatialQuerySystem::StaticModelBoundsComputeSystem, std::tuple<std::shared_ptr<StaticModel>, Transform, ObjectBounds>, std::tuple<>> { world }
             {}
 
             /**
@@ -178,6 +178,46 @@ namespace ToyMaker {
          * @return std::vector<std::shared_ptr<SceneNodeCore>> The list of nodes contained by or overlapping the search region.
          */
         std::vector<std::shared_ptr<SceneNodeCore>> findNodesOverlappingCoarse(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask=std::numeric_limits<InteractionLayerMask>::max());
+
+        /**
+         * @brief Manually updates the volume component of an entity
+         *
+         */
+        void updateBoundingVolume(
+            EntityID entity,
+            ObjectBounds::TrueVolumeType volumeType,
+            const ObjectBounds::TrueVolume& volume,
+            const glm::vec3& positionOffset,
+            const glm::quat& orientationOffset
+        );
+
+        /**
+         * @brief Manually updates the object bounds component of a scene object
+         *
+         * Does _not_ change the value of the origin of the bounds.
+         *
+         */
+        inline void updateBounds(
+            const std::shared_ptr<SceneNodeCore>& sceneNode,
+            ObjectBounds::TrueVolumeType volumeType,
+            const ObjectBounds::TrueVolume& volume,
+            const glm::vec3& positionOffset,
+            const glm::quat& orientationOffset
+        ) {
+            assert(sceneNode && "Scene node pointer cannot be nullptr");
+            updateBoundingVolume(sceneNode->getEntityID(),
+                volumeType, volume,
+                positionOffset, orientationOffset
+            );
+        };
+
+        /**
+         * @brief Allows bounds to be computed by spatial bounds compute systems.
+         *
+         */
+        void resetBoundsOverride(
+            EntityID entity
+        );
 
     private:
         /**

@@ -134,6 +134,17 @@
                     "mass": 1.0,
                     "velocity": [0.3, 0.0, 0.0]
                 },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "sphere",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "radius": 1.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
                 { "resourceName": "SphereLeftModel", "type": "StaticModel" }
             ]
         },
@@ -152,6 +163,17 @@
                     "type": "PhysicsState",
                     "mass": 1.0,
                     "velocity": [-0.3, 0.0, 0.0]
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "sphere",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "radius": 1.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
                 },
                 { "resourceName": "SphereRightModel", "type": "StaticModel" }
             ]

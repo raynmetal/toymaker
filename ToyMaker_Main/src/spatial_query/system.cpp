@@ -30,7 +30,6 @@ std::vector<std::shared_ptr<SceneNodeCore>> SpatialQuerySystem::findNodesOverlap
     return mWorld.lock()->getSystem<SceneSystem>()->getNodesByID(resultNodeQuery);
 }
 
-
 std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEntitiesOverlappingCoarse(const AxisAlignedBounds& searchBounds, InteractionLayerMask interactionMask) const {
     if(mRequiresInitialization) {
         return std::vector<std::pair<EntityID, AxisAlignedBounds>>{};
@@ -46,11 +45,27 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEnti
 }
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityEnabled(EntityID entityID) {
+    const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
+    if(
+        !bounds.isSystemComputed
+        || bounds.requiresVolumeUpdate
+    ) {
+        return;
+    }
     recomputeObjectBounds(entityID);
 }
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
-    (void) updatedComponent; // prevent unused parameter warning
+    const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
+    if(
+        !bounds.isSystemComputed
+        || (
+            updatedComponent == mWorld.lock()->getComponentType<ObjectBounds>()
+            && !bounds.requiresVolumeUpdate
+        )
+    ) {
+        return;
+    }
     recomputeObjectBounds(entityID);
 }
 
@@ -129,11 +144,27 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
 }
 
 void SpatialQuerySystem::LightBoundsComputeSystem::onEntityEnabled(EntityID entityID) {
+    const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
+    if(
+        !bounds.isSystemComputed
+        || !bounds.requiresVolumeUpdate
+    ) {
+        return;
+    }
     recomputeObjectBounds(entityID);
 }
 
 void SpatialQuerySystem::LightBoundsComputeSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
-    (void) updatedComponent; // prevent unused parameter warning
+    const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
+    if(
+        !bounds.isSystemComputed
+        || (
+            updatedComponent == mWorld.lock()->getComponentType<ObjectBounds>()
+            && !bounds.requiresVolumeUpdate
+        )
+    ) {
+        return;
+    }
     recomputeObjectBounds(entityID);
 }
 
@@ -149,20 +180,11 @@ void SpatialQuerySystem::LightBoundsComputeSystem::recomputeObjectBounds(EntityI
     updateComponent(entityID, objectBounds);
 }
 
-
 void SpatialQuerySystem::updateBounds(EntityID entity) {
     // Compute new object position based on its transform
     const glm::mat4 modelMatrix { getComponent<Transform>(entity).mModelMatrix };
     ObjectBounds objectBounds { getComponent<ObjectBounds>(entity) };
     objectBounds.applyModelMatrix(modelMatrix);
-
-    /**
-     * @brief Skip bounds updates for insensible object bounds
-     *
-     */
-    if(!objectBounds.isSensible()) {
-        return;
-    }
 
     // Compute axis aligned bounds based on object bounds
     const AxisAlignedBounds axisAlignedBounds { objectBounds };
@@ -261,4 +283,70 @@ void SpatialQuerySystem::onSimulationStep(uint32_t timestepMillis) {
     }
     mUpdateQueueAABB.clear();
 }
+
+void SpatialQuerySystem::updateBoundingVolume(
+    EntityID entity,
+    ObjectBounds::TrueVolumeType volumeType,
+    const ObjectBounds::TrueVolume& volume,
+    const glm::vec3& positionOffset,
+    const glm::quat& orientationOffset
+) {
+    const auto& enabledEntities { getEnabledEntities() };
+    assert(enabledEntities.find(entity) != enabledEntities.end() && "This entity is not managed by this system");
+    switch(volumeType) {
+        case ObjectBounds::TrueVolumeType::BOX:
+            assert(volume.mBox.isSensible() && "Invalid box dimensions specified");
+            break;
+        case ObjectBounds::TrueVolumeType::CAPSULE:
+            assert(volume.mCapsule.isSensible() && "Invalid capsule parameters specified");
+            break;
+        case ObjectBounds::TrueVolumeType::SPHERE:
+            assert(volume.mCapsule.isSensible() && "Invalid sphere parameters specified");
+            break;
+        default:
+            assert(false && "Unrecognized volume type specified");
+    }
+    assert(
+        isNumber(positionOffset) && isFinite(positionOffset)
+        && "Invalid position offset specified"
+    );
+    assert(
+        isNumber(orientationOffset.w) && isFinite(orientationOffset.w)
+        && isNumber(orientationOffset.x) && isFinite(orientationOffset.x)
+        && isNumber(orientationOffset.y) && isFinite(orientationOffset.y)
+        && isNumber(orientationOffset.z) && isFinite(orientationOffset.z)
+        && (
+            orientationOffset.w != 0.f
+            || orientationOffset.x != 0.f
+            || orientationOffset.y != 0.f
+            || orientationOffset.z != 0.f
+       ) && "Invalid orientation offset specified"
+    );
+
+    ObjectBounds bounds { getComponent<ObjectBounds>(entity) };
+
+    bounds.mTrueVolume = volume;
+    bounds.mType = volumeType;
+    bounds.mPositionOffset = positionOffset;
+    bounds.mOrientationOffset = glm::normalize(orientationOffset);
+    bounds.requiresTransformUpdate = true;
+    bounds.isSystemComputed = false;
+
+    updateComponent<ObjectBounds>(entity, bounds);
+}
+
+void SpatialQuerySystem::resetBoundsOverride(EntityID entity) {
+    const auto& enabledEntities { getEnabledEntities() };
+    assert(enabledEntities.find(entity) != enabledEntities.end() && "This entity is not managed by this system");
+
+    ObjectBounds bounds { getComponent<ObjectBounds>(entity) };
+    if(bounds.isSystemComputed) {
+        return;
+    }
+
+    bounds.isSystemComputed = true;
+    bounds.requiresVolumeUpdate = true;
+    updateComponent(entity, bounds);
+}
+
 

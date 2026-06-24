@@ -1956,7 +1956,7 @@ namespace ToyMaker {
         validateName(name);
         mName = name;
         mEntity = std::make_shared<Entity>(
-            ECSWorld::createEntityPrototype<Placement, SceneHierarchyData, Transform, ObjectBounds, AxisAlignedBounds, TComponents...>(
+            ECSWorld::createEntityPrototype<Placement, SceneHierarchyData, Transform, AxisAlignedBounds, TComponents...>(
                 placement,
                 SceneHierarchyData{},
                 Transform{
@@ -1964,18 +1964,20 @@ namespace ToyMaker {
                     .mInheritedComponents { placement.mInheritedComponents },
                     .mInheritMode { placement.mInheritMode },
                 },
-                ObjectBounds {},
                 AxisAlignedBounds {},
                 components...
             )
         );
+        if(!hasComponent<ObjectBounds>()) {
+            addComponent<ObjectBounds>({}, true);
+        }
     }
 
     template <typename ...TComponents>
     SceneNodeCore::SceneNodeCore(const Key&, const Placement& placement, const std::string& name, TComponents...components) {
         mName = name;
         mEntity = std::make_shared<Entity>(
-            ECSWorld::createEntityPrototype<Placement, SceneHierarchyData, Transform, ObjectBounds, AxisAlignedBounds, TComponents...>(
+            ECSWorld::createEntityPrototype<Placement, SceneHierarchyData, Transform, AxisAlignedBounds, TComponents...>(
                 placement,
                 SceneHierarchyData{},
                 Transform{
@@ -1983,11 +1985,13 @@ namespace ToyMaker {
                     .mInheritedComponents { placement.mInheritedComponents },
                     .mInheritMode { placement.mInheritMode },
                 },
-                ObjectBounds {},
-                AxisAlignedBounds{},
+                AxisAlignedBounds {},
                 components...
             )
         );
+        if(!hasComponent<ObjectBounds>()) {
+            addComponent<ObjectBounds>({}, true);
+        }
     }
 
     template <typename TComponent>
