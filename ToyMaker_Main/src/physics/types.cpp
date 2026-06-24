@@ -54,21 +54,13 @@ float BaseConstraint::getCompliance() const {
     return mCompliance;
 }
 
-float BaseConstraint::getLagrange() const {
-    return mLagrangeMultiplier;
-}
-
-void BaseConstraint::applyLagrangeDelta(float delta){
-    mLagrangeMultiplier += delta;
-}
-
 CollisionConstraint::CollisionConstraint(
     const Collision& collision,
     const PhysicsLocal& physicsA,
     const ObjectBounds& boundsA,
     const PhysicsLocal& physicsB,
     const ObjectBounds& boundsB
-): Constraint<CollisionConstraintData> { 0.f } {
+): Constraint<CollisionConstraintData, 3> { 0.f } {
 
     updateCollisionData( collision,
         physicsA, boundsA,
@@ -83,8 +75,6 @@ void CollisionConstraint::updateCollisionData(
     const PhysicsLocal& physicsB,
     const ObjectBounds& boundsB
 ) {
-    mCollided = collision.mCollided;
-
     // rotations from local to global frame for each body
     const glm::mat3 rotationA { boundsA.getOrientationWorld() };
     const glm::mat3 rotationB { boundsA.getOrientationWorld() };
@@ -114,6 +104,16 @@ void CollisionConstraint::updateCollisionData(
 
     setParameter(0, parameterA);
     setParameter(1, parameterB);
+
+    mCollided = collision.mCollided;
+    mLastPointContactA = collision.mContactA.mPoint;
+    mLastPointContactB = collision.mContactB.mPoint;
+    mRelativePointContactA = glm::transpose(rotationA) * (
+        collision.mContactA.mPoint - boundsA.getPositionWorld()
+    );
+    mRelativePointContactB = glm::transpose(rotationB) * (
+        collision.mContactB.mPoint - boundsB.getPositionWorld()
+    );
 }
 
 void CollisionConstraint::applyConstraint(
@@ -158,13 +158,13 @@ void CollisionConstraint::applyConstraint(
     };
     const float lagrangeDelta {
         -(
-            contactA.mContact.mPenetrationDepth + alphaDerivative2 * getLagrange()
+            contactA.mContact.mPenetrationDepth + alphaDerivative2 * getLagrange().at(0)
         ) / (
             generalizedInverseA + generalizedInverseB + alphaDerivative2
         )
     };
     assert(isNumber(lagrangeDelta) && "Lagrange delta calculation failed");
-    applyLagrangeDelta(lagrangeDelta);
+    applyLagrangeDelta(lagrangeDelta, 0);
     const glm::vec3 positionalImpulse {
         lagrangeDelta * contactNormal
     };
@@ -172,12 +172,14 @@ void CollisionConstraint::applyConstraint(
     // apply positional corrections
     const glm::vec3 positionA { objectA.getPositionWorld() };
     const glm::vec3 positionB { objectB.getPositionWorld() };
-    objectA.setPositionWorld(
+    const glm::vec3 positionANew {
         positionA + positionalImpulse * contactA.mInverseMass
-    );
-    objectB.setPositionWorld(
+    };
+    const glm::vec3 positionBNew {
         positionB - positionalImpulse * contactB.mInverseMass
-    );
+    };
+    objectA.setPositionWorld(positionANew);
+    objectB.setPositionWorld(positionBNew);
 
     // apply rotational corrections
     const glm::vec3 impulseRotationA {
@@ -192,22 +194,32 @@ void CollisionConstraint::applyConstraint(
             positionalImpulse
         )
     };
-    objectA.setOrientationWorld(
-        objectA.getOrientationWorld() + .5f * glm::quat(
+    const glm::quat orientationA { objectA.getOrientationWorld() };
+    const glm::quat orientationB { objectB.getOrientationWorld() };
+    const glm::quat orientationANew {
+        orientationA + .5f * glm::quat(
              0.f,
             impulseRotationA.x,
             impulseRotationA.y,
             impulseRotationA.z
-        ) * objectA.getOrientationWorld()
-    );
-    objectB.setOrientationWorld(
-        objectB.getOrientationWorld() - .5f * glm::quat(
+        ) * orientationA
+    };
+    const glm::quat orientationBNew {
+        orientationB - .5f * glm::quat(
              0.f,
             impulseRotationB.x,
             impulseRotationB.y,
             impulseRotationB.z
-        ) * objectB.getOrientationWorld()
-    );
+        ) * orientationB
+    };
+    objectA.setOrientationWorld(orientationANew);
+    objectB.setOrientationWorld(orientationBNew);
+
+    // derive relative motion of point of contact
+    const glm::vec3 pointContactANew { positionANew + orientationANew * mRelativePointContactA };
+    const glm::vec3 pointContactBNew { positionBNew + orientationBNew * mRelativePointContactB };
+    const glm::vec3 deltaA { pointContactANew - mLastPointContactA };
+    const glm::vec3 deltaB { pointContactBNew - mLastPointContactB };
 }
 
 float computeGeneralizedInverseMassPositional(

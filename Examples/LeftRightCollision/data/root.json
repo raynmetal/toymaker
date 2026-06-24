@@ -1,5 +1,16 @@
 {
     "resources": [
+
+
+        {
+            "name": "Sad_Texture",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/Sad.png",
+                "cubemap_layout": "row"
+            }
+        },
         {
             "method": "sphereLatLong",
             "name": "SphereLeftModel",
@@ -7,10 +18,25 @@
             "parameters": {
                 "nLatitudes": 32,
                 "nMeridians": 16,
-                "material_properties": []
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [1.2, 0.2, 0.4, 1.0]
+                    },
+                    {
+                        "name": "textureAlbedo",
+                        "type": "texture",
+                        "value": "Sad_Texture"
+                    },
+                    {
+                        "name": "usesTextureAlbedo",
+                        "type": "int",
+                        "value": 1
+                    }
+                ]
             }
         },
-
         {
             "method": "sphereLatLong",
             "name": "SphereRightModel",
@@ -22,7 +48,17 @@
                     {
                         "name": "colorMultiplier",
                         "type": "vec4",
-                        "value": [0.05, 0.05, 0.05, 1.0]
+                        "value": [0.2, 1.2, 0.4, 1.0]
+                    },
+                    {
+                        "name": "textureAlbedo",
+                        "type": "texture",
+                        "value": "Sad_Texture"
+                    },
+                    {
+                        "name": "usesTextureAlbedo",
+                        "type": "int",
+                        "value": 1
                     }
                 ]
             }
@@ -73,14 +109,14 @@
             "components": [
                 {
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, -2.0, -1.0, 1.0 ],
+                    "position": [ 0.0, -2.0, -4.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ],
                     "type": "Placement"
                 },
                 {
                     "ambient": [ 0.0, 0.001, 0.0 ],
                     "diffuse": [ 0.0, 0.01, 0.0 ],
-                    "specular": [ 0.03, 0.03, 0.03 ],
+                    "specular": [ 0.003, 0.003, 0.003 ],
                     "linearConst": 0.01,
                     "quadraticConst": 0.002,
                     "lightType": "point",

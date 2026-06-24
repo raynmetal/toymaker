@@ -94,6 +94,20 @@ namespace ToyMaker {
         float mMass { 1.f };
 
         /**
+         * @brief The friction coefficient of the force that prevents relative motion between
+         * two objects when they are stationary
+         *
+         */
+        float mCoefficientFrictionStatic { 0.f };
+
+        /**
+         * @brief The friction coefficient of the force that hinders motion between
+         * two objects when they are moving relative to each other.
+         *
+         */
+        float mCoefficientFrictionDynamic { 0.f };
+
+        /**
          * @brief Applies a force `force` at position `atPosition`, updating the torque
          * and central force of an object whose state is represented by `physics`.
          *
@@ -141,30 +155,7 @@ namespace ToyMaker {
          */
         float mCompliance { 0.f };
 
-        /**
-         *
-         * @brief The Lagrange multiplier, computed every substep since the start of the
-         * physics simulation till the current time.
-         *
-         * Allows position and orientation corrections applied by this constraint to be
-         * independent of the length of substep.
-         *
-         */
-        float mLagrangeMultiplier { 0.f };
-
     protected:
-
-        /**
-         * @brief Adds a delta to the lagrange value based on some parameters.
-         *
-         */
-        void applyLagrangeDelta(float delta);
-
-        /**
-         * @brief Gets the current Lagrange value for this constraint
-         *
-         */
-        float getLagrange() const;
 
         /**
          * @brief Initializes this constraint.
@@ -207,12 +198,6 @@ namespace ToyMaker {
          */
         void setCompliance(float newCompliance);
 
-        /**
-         * @brief Sets the Lagrange multiplier to zero
-         *
-         */
-        inline void resetLagrange() { mLagrangeMultiplier = 0; }
-
         virtual ~BaseConstraint() {};
     };
 
@@ -222,10 +207,20 @@ namespace ToyMaker {
      * @tparam TParameter A parameter specific to this constraint.
      *
      */
-    template <typename TParameter>
+    template <typename TParameter, uint8_t LagrangeCount>
     class Constraint: public BaseConstraint {
-
     private:
+        /**
+         *
+         * @brief The Lagrange multiplier, computed every substep since the start of the
+         * physics simulation till the current time.
+         *
+         * Allows position and orientation corrections applied by this constraint to be
+         * independent of the length of substep.
+         *
+         */
+        std::array<float, LagrangeCount> mLagrangeMultipliers { 0.f };
+
         /**
          * @brief A set of parameters associated with each entity
          *
@@ -242,13 +237,24 @@ namespace ToyMaker {
         Constraint(float compliance): BaseConstraint { compliance } {}
 
         /**
+         * @brief Adds a delta to a lagrange value located at `index`
+         *
+         */
+        void applyLagrangeDelta(float delta, uint8_t index);
+
+        /**
+         * @brief Gets the current Lagrange multiplier values for this constraint
+         *
+         */
+        const std::array<float, LagrangeCount>& getLagrange() const;
+
+        /**
          * @brief Returns all parameters known to this constraint.
          *
          */
         const std::unordered_map<ParticipantID, TParameter>& getParameters() const;
 
     public:
-
         /**
          * @brief Adds a parameter for this constraint.
          *
@@ -268,6 +274,7 @@ namespace ToyMaker {
          *
          */
         void removeParameter(ParticipantID participant);
+
     };
 
     struct CollisionConstraintData {
@@ -283,7 +290,7 @@ namespace ToyMaker {
      * Repositions objects such that they no longer intersect along the axis of collision.
      *
      */
-    class CollisionConstraint: protected Constraint<CollisionConstraintData> {
+    class CollisionConstraint: protected Constraint<CollisionConstraintData, 3> {
     private:
         /**
          * @brief Whether or not two objects are currently intersecting (and therefore whether
@@ -291,6 +298,30 @@ namespace ToyMaker {
          *
          */
         bool mCollided { false };
+
+        /**
+         * @brief The contact point of object A participating in this constraint in world space.
+         *
+         */
+        glm::vec3 mLastPointContactA { 0.f };
+
+        /**
+         * @brief The contact point of object A relative to its own frame.
+         *
+         */
+        glm::vec3 mRelativePointContactA { 0.f };
+
+        /**
+         * @brief The contact point of object B participating in this constraint in world space.
+         *
+         */
+        glm::vec3 mLastPointContactB { 0.f };
+
+        /**
+         * @brief The contact point of object B relative to its own frame.
+         *
+         */
+        glm::vec3 mRelativePointContactB { 0.f };
 
     public:
         /**
@@ -318,7 +349,8 @@ namespace ToyMaker {
         );
 
         /**
-         * @brief Separates intersecting/colliding objects.
+         * @brief Separates intersecting/colliding objects and applies static friction.
+         * 
          *
          */
         void applyConstraint(
@@ -363,6 +395,12 @@ namespace ToyMaker {
                 json.at("torque")[2],
             };
         }
+        if(json.find("coefficient_friction_static") != json.end()) {
+            physics.mCoefficientFrictionStatic = json.at("coefficient_friction_static");
+        }
+        if(json.find("coefficient_friction_dynamic") != json.end()) {
+            physics.mCoefficientFrictionStatic = json.at("coefficient_friction_dynamic");
+        }
     }
 
     inline void to_json(
@@ -372,22 +410,34 @@ namespace ToyMaker {
         json = {
             { "type", PhysicsLocal::getComponentTypeName() },
             { "mass", physics.mMass },
+            { "coefficient_friction_static", physics.mCoefficientFrictionStatic },
+            { "coefficient_friction_dynamic", physics.mCoefficientFrictionDynamic },
         };
     }
 
-    template<typename TParameter>
-    void Constraint<TParameter>::setParameter(BaseConstraint::ParticipantID participant, const TParameter& parameter) {
+    template<typename TParameter, uint8_t LagrangeCount>
+    void Constraint<TParameter, LagrangeCount>::setParameter(BaseConstraint::ParticipantID participant, const TParameter& parameter) {
         mParameters[participant] = parameter;
     }
 
-    template<typename TParameter>
-    void Constraint<TParameter>::removeParameter(BaseConstraint::ParticipantID participant) {
+    template<typename TParameter, uint8_t LagrangeCount>
+    void Constraint<TParameter, LagrangeCount>::removeParameter(BaseConstraint::ParticipantID participant) {
         mParameters.erase(participant);
     }
 
-    template <typename TParameter>
-    const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& Constraint<TParameter>::getParameters() const {
+    template <typename TParameter, uint8_t LagrangeCount>
+    const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& Constraint<TParameter, LagrangeCount>::getParameters() const {
         return mParameters;
+    }
+
+    template <typename TParameter, uint8_t LagrangeCount>
+    const std::array<float, LagrangeCount>& Constraint<TParameter, LagrangeCount>::getLagrange() const {
+        return mLagrangeMultipliers;
+    }
+
+    template <typename TParameter, uint8_t LagrangeCount>
+    void Constraint<TParameter, LagrangeCount>::applyLagrangeDelta(float delta, uint8_t index) {
+        mLagrangeMultipliers.at(index) += delta;
     }
 }
 
