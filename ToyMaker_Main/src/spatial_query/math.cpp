@@ -770,6 +770,11 @@ glm::vec3 getClosestPointOnBox(const glm::vec3& point, const ObjectBounds& box) 
     );
 }
 
+bool ToyMaker::isSensible(const glm::mat3& matrix) {
+    return isNumber(matrix[0]) && isFinite(matrix[0])
+        && isNumber(matrix[1]) && isFinite(matrix[1])
+        && isNumber(matrix[2]) && isFinite(matrix[2]);
+}
 glm::mat3 ToyMaker::computeBarycentricSolver(const AreaTriangle& triangle) {
     assert(
         isNumber(triangle.mPoints[0]) && isFinite(triangle.mPoints[0])
@@ -813,12 +818,6 @@ glm::mat3 ToyMaker::computeBarycentricSolver(const AreaTriangle& triangle) {
     const glm::dmat3 finalResult {
         (1.0 / determinant) * glm::transpose(matrixCofactor)
     };
-    assert(
-        isNumber(finalResult[0]) && isFinite(finalResult[0])
-        && isNumber(finalResult[1]) && isFinite(finalResult[1])
-        && isNumber(finalResult[2]) && isFinite(finalResult[2])
-        && "Could not compute a valid Barycentric solver for this triangle"
-    );
 
     return finalResult;
 }

@@ -290,7 +290,7 @@ namespace ToyMaker {
      * Repositions objects such that they no longer intersect along the axis of collision.
      *
      */
-    class CollisionConstraint: protected Constraint<CollisionConstraintData, 3> {
+    class CollisionConstraint: protected Constraint<CollisionConstraintData, 2> {
     private:
         /**
          * @brief Whether or not two objects are currently intersecting (and therefore whether
@@ -397,9 +397,11 @@ namespace ToyMaker {
         }
         if(json.find("coefficient_friction_static") != json.end()) {
             physics.mCoefficientFrictionStatic = json.at("coefficient_friction_static");
+            assert(physics.mCoefficientFrictionStatic >= 0.f && "Coefficient friction must be non-negative");
         }
         if(json.find("coefficient_friction_dynamic") != json.end()) {
-            physics.mCoefficientFrictionStatic = json.at("coefficient_friction_dynamic");
+            physics.mCoefficientFrictionDynamic = json.at("coefficient_friction_dynamic");
+            assert(physics.mCoefficientFrictionDynamic >= 0.f && "Coefficient friction must be non-negative");
         }
     }
 
@@ -437,7 +439,7 @@ namespace ToyMaker {
 
     template <typename TParameter, uint8_t LagrangeCount>
     void Constraint<TParameter, LagrangeCount>::applyLagrangeDelta(float delta, uint8_t index) {
-        mLagrangeMultipliers.at(index) += delta;
+        mLagrangeMultipliers[index] += delta;
     }
 }
 

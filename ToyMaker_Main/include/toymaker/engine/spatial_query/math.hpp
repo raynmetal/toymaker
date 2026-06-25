@@ -31,6 +31,13 @@ namespace ToyMaker {
      */
     glm::mat3 computeBarycentricSolver(const AreaTriangle& triangle);
 
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Determines whether a particular matrix is valid and finite
+     *
+     */
+    bool isSensible(const glm::mat3& matrix);
+
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns a bool-vector pair, with bool indicating whether a point of intersection was found, and the vector containing the point of intersection.
@@ -425,6 +432,11 @@ namespace ToyMaker {
         const glm::vec3 closestPoint { polytope.getClosestPoint() };
         const AreaTriangle closestTriangle { polytope.getClosestTriangle() };
         const glm::mat3 barycentricSolver { computeBarycentricSolver(closestTriangle) };
+        // If we can't solve this, then there's nothing for us to do
+        if(!isSensible(barycentricSolver)) {
+            return { false };
+        }
+
         const glm::vec3 barycentricCoordinates {
             barycentricSolver * closestPoint
         };
@@ -497,5 +509,7 @@ namespace ToyMaker {
         return polytope;
     }
 }
+
+
 
 #endif
