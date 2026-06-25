@@ -12,6 +12,14 @@ float computeGeneralizedInverseMassPositional(
     const glm::vec3& contactDirection
 );
 
+ObjectBounds impulseApplied(
+    ObjectBounds object,
+    float inertiaPositional,
+    const glm::mat3& inertiaRotational,
+    const glm::vec3& positionalImpulse,
+    const glm::vec3& impulsePoint
+);
+
 void PhysicsLocal::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition) {
     // no force, nothing to do
     if(force == glm::vec3 { 0.f }) {
@@ -169,57 +177,51 @@ void CollisionConstraint::applyConstraint(
         lagrangeDelta * contactNormal
     };
 
-    // apply positional corrections
+    // cache old placement data
     const glm::vec3 positionA { objectA.getPositionWorld() };
     const glm::vec3 positionB { objectB.getPositionWorld() };
-    const glm::vec3 positionANew {
-        positionA + positionalImpulse * contactA.mInverseMass
-    };
-    const glm::vec3 positionBNew {
-        positionB - positionalImpulse * contactB.mInverseMass
-    };
-    objectA.setPositionWorld(positionANew);
-    objectB.setPositionWorld(positionBNew);
-
-    // apply rotational corrections
-    const glm::vec3 impulseRotationA {
-        glm::inverse(contactA.mRotationalInertia) * glm::cross(
-            contactA.mContact.mPoint - positionA,
-            positionalImpulse
-        )
-    };
-    const glm::vec3 impulseRotationB {
-        glm::inverse(contactB.mRotationalInertia) * glm::cross(
-            contactB.mContact.mPoint - positionB,
-            positionalImpulse
-        )
-    };
     const glm::quat orientationA { objectA.getOrientationWorld() };
     const glm::quat orientationB { objectB.getOrientationWorld() };
-    const glm::quat orientationANew {
-        orientationA + .5f * glm::quat(
-             0.f,
-            impulseRotationA.x,
-            impulseRotationA.y,
-            impulseRotationA.z
-        ) * orientationA
-    };
-    const glm::quat orientationBNew {
-        orientationB - .5f * glm::quat(
-             0.f,
-            impulseRotationB.x,
-            impulseRotationB.y,
-            impulseRotationB.z
-        ) * orientationB
-    };
-    objectA.setOrientationWorld(orientationANew);
-    objectB.setOrientationWorld(orientationBNew);
+
+    // apply corrections
+    objectA = impulseApplied(
+        objectA,
+        contactA.mInverseMass,
+        contactA.mRotationalInertia,
+        positionalImpulse,
+        contactA.mContact.mPoint
+    );
+    objectB = impulseApplied(
+        objectB,
+        contactB.mInverseMass,
+        contactB.mRotationalInertia,
+        -positionalImpulse,
+        contactB.mContact.mPoint
+    );
+
+    // retrieve new placement data
+    const glm::vec3 positionANew { objectA.getPositionWorld() };
+    const glm::vec3 positionBNew { objectB.getPositionWorld() };
+    const glm::quat orientationANew { objectA.getOrientationWorld() };
+    const glm::quat orientationBNew { objectB.getOrientationWorld() };
 
     // derive relative motion of point of contact
     const glm::vec3 pointContactANew { positionANew + orientationANew * mRelativePointContactA };
     const glm::vec3 pointContactBNew { positionBNew + orientationBNew * mRelativePointContactB };
     const glm::vec3 deltaA { pointContactANew - mLastPointContactA };
     const glm::vec3 deltaB { pointContactBNew - mLastPointContactB };
+    const glm::vec3 deltaAB { deltaA - deltaB };
+    const glm::vec3 deltaABTangent {
+        deltaAB - glm::dot(deltaAB, contactNormal) * contactNormal
+    };
+
+    // const float lagrangeDeltaTangent {
+    //     -(
+    //         contactA.mContact.mPenetrationDepth + alphaDerivative2 * getLagrange().at(1)
+    //     ) / (
+    //         generalizedInverseA + generalizedInverseB + alphaDerivative2
+    //     )
+    // };
 }
 
 float computeGeneralizedInverseMassPositional(
@@ -242,3 +244,37 @@ float computeGeneralizedInverseMassPositional(
     );
 }
 
+ObjectBounds impulseApplied(
+    ObjectBounds object,
+    float inertiaPositional,
+    const glm::mat3& inertiaRotational,
+    const glm::vec3& positionalImpulse,
+    const glm::vec3& impulsePoint
+) {
+    // apply positional corrections
+    const glm::vec3 position { object.getPositionWorld() };
+    const glm::vec3 positionNew {
+        position + positionalImpulse * inertiaPositional
+    };
+    object.setPositionWorld(positionNew);
+
+    // apply rotational corrections
+    const glm::vec3 impulseRotation {
+        glm::inverse(inertiaRotational) * glm::cross(
+            impulsePoint - position,
+            positionalImpulse
+        )
+    };
+    const glm::quat orientation { object.getOrientationWorld() };
+    const glm::quat orientationNew {
+        orientation + .5f * glm::quat(
+             0.f,
+            impulseRotation.x,
+            impulseRotation.y,
+            impulseRotation.z
+        ) * orientation
+    };
+    object.setOrientationWorld(orientationNew);
+
+    return object;
+}
