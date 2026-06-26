@@ -17,11 +17,10 @@
 #ifndef TOYMAKERENGINE_PHYSICSSYSTEM_H
 #define TOYMAKERENGINE_PHYSICSSYSTEM_H
 
+#include <unordered_set>
 
 #include <nlohmann/json.hpp>
-
 #include "../core/ecs_world.hpp"
-
 #include "../spatial_query/types.hpp"
 #include "types.hpp"
 
@@ -99,8 +98,9 @@ namespace ToyMaker {
      *
      */
     class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsLocal, ObjectBounds>, std::tuple<>> {
-
     public:
+        using ConstraintID = std::size_t;
+
         explicit PhysicsSystem(std::weak_ptr<ECSWorld> world):
         System<PhysicsSystem, std::tuple<PhysicsLocal, ObjectBounds>, std::tuple<>>{ world }
         {}
@@ -125,12 +125,25 @@ namespace ToyMaker {
         }
 
         /**
-         * @brief Gets the number of substeps used in the physics solver's XPBD implementation
+         * @brief Gets the number of substeps used in the physics solver's XPBD implementation.
          *
          */
         inline uint8_t getSubsteps() const {
             return mSubsteps;
         }
+
+        /**
+         * @brief Registers a constraint for the physics system to evaluate every substep.
+         *
+         */
+        template<typename TConstraint, typename TConstraintData>
+        ConstraintID registerConstraint(const std::vector<std::pair<EntityID, TConstraintData>>& constraintData, float compliance);
+
+        /**
+         * @brief Removes a constraint.
+         *
+         */
+        void unregisterConstraint(ConstraintID constraint);
 
     private:
 
@@ -177,12 +190,21 @@ namespace ToyMaker {
          */
         void onEntityDisabled(EntityID entityID) override;
 
+        bool isConstraintActive(ConstraintID constraint) const;
+
         /**
          * @brief Computes rotational inertia from mass and object bounds
          *
          * @param entityID The entity in need of an update
          */
         void updatePhysicsProperties(EntityID entityID);
+
+        /**
+         * @brief Determines which constraints are inactive (by virtue of all of their entities
+         * being enabled) and which ones aren't.
+         *
+         */
+        void refreshActiveConstraints();
 
         /**
          * @brief Derives position and rotation updates for physics objects based on
@@ -204,6 +226,11 @@ namespace ToyMaker {
          */
         void applyCollisionConstraints(std::map<ConstraintLink, CollisionConstraint>& constraints, float substepSeconds);
 
+        /**
+         * @brief Applies all active position constraints
+         *
+         */
+        void applyPositionConstraints(float substepSeconds);
 
         /**
          * @brief Collects potential collisions and builds constraints from them
@@ -212,17 +239,38 @@ namespace ToyMaker {
         std::map<ConstraintLink, CollisionConstraint> collectPotentialCollisions(float substepSeconds);
 
         /**
-         * @brief Whether physics properties for all eligible entities should be recomputed
-         *
-         */
-        bool mRequiresInitialization { true };
-
-        /**
          * @brief Holds entities that haven't undergone proper initialization, and therefore
          * aren't eligible for proper physics updates
          *
          */
         std::set<EntityID> mEntitiesUninitialized {};
+
+        /**
+         * @brief Associates each entity with its set of constraints, used to determine whether the constraint
+         * can be evaluated at a given substep.
+         *
+         */
+        std::unordered_map<EntityID, std::set<ConstraintID>> mEntityConstraintMap {};
+
+        /**
+         * @brief A list of all constraints known to the physics system, evaluated every frame.
+         *
+         * Constraints whose indices are found in mDeletedConstraints are inactive, and will not be evaluated.
+         *
+         */
+        std::vector<std::pair<std::unique_ptr<BaseConstraint>, std::vector<EntityID>>> mConstraints {};
+
+        /**
+         * @brief IDs of constraints that were deleted and which may be reused to define a new constraint
+         *
+         */
+        std::unordered_set<ConstraintID> mDeletedConstraints {};
+
+        /**
+         * @brief Constraints whose entities are not active, causing the constraint itself to become inactive.
+         *
+         */
+        std::unordered_set<ConstraintID> mInactiveConstraints {};
 
         /**
          * @brief The number of substeps used in the physics system's XPBD implementation.
@@ -234,7 +282,52 @@ namespace ToyMaker {
          * Muller et al](https://matthias-research.github.io/pages/publications/PBDBodies.pdf)
          */
         uint8_t mSubsteps { 8 };
+
+        /**
+         * @brief Whether physics properties for all eligible entities should be recomputed
+         *
+         */
+        bool mRequiresInitialization { true };
+
+        /**
+         * @brief Whether we have yet to determine which constraints are active and which are not
+         *
+         */
+        bool mConstraintsInitialized { true };
     };
+
+    template<typename TConstraint, typename TConstraintData>
+    PhysicsSystem::ConstraintID PhysicsSystem::registerConstraint(const std::vector<std::pair<EntityID, TConstraintData>>& participants, float compliance) {
+        // reclaim a deleted constraint id if possible
+        ConstraintID newConstraint { mConstraints.size() };
+        if(!mDeletedConstraints.empty()) {
+            newConstraint = *mDeletedConstraints.begin();
+            mDeletedConstraints.erase(newConstraint);
+        }
+
+        // get separate constraint parameter and participating entity lists
+        std::vector<EntityID> entities {};
+        std::vector<TConstraintData> constraintData {};
+        for(const std::pair<EntityID, TConstraintData>& participant: participants) {
+            constraintData.push_back(participant.second);
+            entities.push_back(participant.first);
+        }
+
+        // create constraint
+        if(newConstraint == mConstraints.size()) {
+            mConstraints.push_back({
+                std::make_unique<TConstraint>(constraintData, compliance),
+                entities
+            });
+        } else {
+            mConstraints[newConstraint] = {
+                std::make_unique<TConstraint>(constraintData, compliance),
+                entities
+            };
+        }
+
+        return newConstraint;
+    }
 }
 
 #endif

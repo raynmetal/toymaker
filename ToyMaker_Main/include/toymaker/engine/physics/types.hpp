@@ -17,7 +17,9 @@
 #ifndef TOYMAKERENGINE_PHYSICSTYPES_H
 #define TOYMAKERENGINE_PHYSICSTYPES_H
 
+#include <array>
 #include <string>
+#include <utility>
 
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
@@ -25,6 +27,33 @@
 #include "../spatial_query/types.hpp"
 
 namespace ToyMaker {
+    /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Returns object bounds in state it would be post application of
+     * a positional impulse.
+     *
+     */
+    ObjectBounds impulseApplied(
+        ObjectBounds object,
+        float inertiaPositional,
+        const glm::mat3& inertiaRotational,
+        const glm::vec3& impulsePositional,
+        const glm::vec3& impulsePoint
+    );
+
+    /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Returns object bounds in state it would be post application of
+     * a rotational impulse.
+     *
+     */
+    ObjectBounds impulseApplied(
+        ObjectBounds object,
+        const glm::mat3& inertiaRotational,
+        const glm::vec3& impulseRotational
+    );
 
     /**
      * @ingroup ToyMakerPhysics
@@ -190,7 +219,14 @@ namespace ToyMaker {
         virtual void applyConstraint(
             const ParticipantTable& states,
             float substepSeconds
-        ) = 0;
+        ) {}
+
+        /**
+         * @brief Resets all lagrange multipliers, preparing them for a new sequence of
+         * constraint solve substeps.
+         *
+         */
+        virtual void resetLagrange() {}
 
         /**
          * @brief Sets the compliance value for this constraint
@@ -210,6 +246,14 @@ namespace ToyMaker {
     template <typename TParameter, uint8_t LagrangeCount>
     class Constraint: public BaseConstraint {
     private:
+        /**
+         * @brief Private implementation for each lagrange multiplier index in need of
+         * a reset
+         *
+         */
+        template<uint8_t... ints>
+        void resetLagrange(std::integer_sequence<uint8_t, ints...> index);
+
         /**
          *
          * @brief The Lagrange multiplier, computed every substep since the start of the
@@ -275,12 +319,42 @@ namespace ToyMaker {
          */
         void removeParameter(ParticipantID participant);
 
+        /**
+         *
+         */
+        void resetLagrange() override;
     };
 
+    /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Constraint data used for the computation of collision constraint corrections.
+     *
+     */
     struct CollisionConstraintData {
         Contact mContact;
         float mInverseMass;
         glm::mat3 mRotationalInertia;
+    };
+
+    /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Constraint data used for the computation of a fixed constraint corrections.
+     *
+     */
+    struct PinConstraintData {
+        /**
+         * @brief The desired origin for the object affected by this constraint.
+         *
+         */
+        glm::vec3 mOrigin;
+
+        /**
+         * @brief The desired orientation for the object affected by this constraint.
+         *
+         */
+        glm::quat mOrientation;
     };
 
     /**
@@ -351,6 +425,26 @@ namespace ToyMaker {
         /**
          * @brief Separates intersecting/colliding objects and applies static friction.
          * 
+         *
+         */
+        void applyConstraint(
+            const ParticipantTable& states,
+            float substepSeconds
+        ) override;
+    };
+
+    class PinConstraint: public Constraint<PinConstraintData, 2> {
+
+    public:
+        PinConstraint(const std::vector<PinConstraintData>& data, float compliance) :
+        Constraint<PinConstraintData, 2> { compliance }
+        {
+            assert(data.size() == 1 && "Pin constraint takes exactly one participant");
+            setParameter(0, data[0]);
+        }
+
+        /**
+         * @brief Moves object to pin location and orientation
          *
          */
         void applyConstraint(
@@ -440,6 +534,17 @@ namespace ToyMaker {
     template <typename TParameter, uint8_t LagrangeCount>
     void Constraint<TParameter, LagrangeCount>::applyLagrangeDelta(float delta, uint8_t index) {
         mLagrangeMultipliers[index] += delta;
+    }
+
+    template <typename TParameter, uint8_t LagrangeCount>
+    void Constraint<TParameter, LagrangeCount>::resetLagrange() {
+        resetLagrange(std::make_integer_sequence<uint8_t, LagrangeCount>());
+    }
+
+    template<typename TParameter, uint8_t LagrangeCount>
+    template<uint8_t ...indices>
+    void Constraint<TParameter, LagrangeCount>::resetLagrange(std::integer_sequence<uint8_t, indices...> sequence) {
+        ((mLagrangeMultipliers[indices] = 0.f), ...);
     }
 }
 

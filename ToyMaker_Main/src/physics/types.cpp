@@ -5,22 +5,45 @@
 
 using namespace ToyMaker;
 
+/**
+ * @brief Computes the generalized inverse mass used for positional corrections applied by
+ * constraints.
+ *
+ * @param inverseMass 1 divided by the mass of the object.
+ * @param offsetWorld Vector going from the center of mass of the object to the point
+ * of application of force
+ * @param rotationalInertia The rotational inertia of the object in the world frame.
+ * @param correctionGradient The direction of the greatest increase in error with respect to
+ * the desired object state
+ *
+ */
 float computeGeneralizedInverseMassPositional(
     float inverseMass,
     const glm::vec3& offsetWorld,
     const glm::mat3& rotationalInertia,
-    const glm::vec3& contactDirection
+    const glm::vec3& correctionGradient
+);
+
+
+/**
+ * @brief Computes the generalized inverse mass used by constraints to apply strictly rotational
+ * corrections
+ *
+ * @param inverseMass 1 divided by the mass of the object.
+ * @param offsetWorld Vector going from the center of mass of the object to the point
+ * of application of force
+ * @param rotationalInertia The rotational inertia of the object in the world frame.
+ * @param correctionGradient The direction of the greatest increase in error with respect to
+ * the desired object state
+ *
+ */
+float computeGeneralizedInverseMassRotational(
+    const glm::mat3& rotationalInertia,
+    const glm::vec3& correctionGradient
 );
 
 glm::mat3 computeInertiaRotationalWorld(const glm::vec3& rotationalInertiaLocal, const glm::quat& orientation);
 
-ObjectBounds impulseApplied(
-    ObjectBounds object,
-    float inertiaPositional,
-    const glm::mat3& inertiaRotational,
-    const glm::vec3& positionalImpulse,
-    const glm::vec3& impulsePoint
-);
 
 void PhysicsLocal::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition) {
     // no force, nothing to do
@@ -261,18 +284,103 @@ void CollisionConstraint::applyConstraint(
     );
 }
 
+void PinConstraint::applyConstraint(const ParticipantTable& states, float substepSeconds) {
+    // fetch relevant data
+    ObjectBounds& object { states.at(0).first.get() };
+    const PhysicsLocal& physics { states.at(0).second.get() };
+    const PinConstraintData constraint { getParameter(0) };
+    const float alphaDerivative2 {
+        getCompliance() / (substepSeconds * substepSeconds)
+    };
+    const glm::vec3 position { object.getPositionWorld() };
+    const glm::quat orientation { object.getOrientationWorld() };
+    const glm::mat3 rotationalInertiaWorld {
+        computeInertiaRotationalWorld(physics.mRotationalInertia, object.getOrientationWorld())
+    };
+
+    // See if a positional correction is required, and apply it if it is
+    const glm::vec3 correctionPositional { position - constraint.mOrigin };
+    const float correctionPositionalSquared { squareDistance(correctionPositional) };
+    if(correctionPositionalSquared) {
+        const glm::vec3 correctionAxis { glm::normalize(correctionPositional) };
+        const float generalizedInverseMass {
+            computeGeneralizedInverseMassPositional(
+                1.f / physics.mMass,
+                glm::vec3 { 0.f },
+                rotationalInertiaWorld,
+                correctionAxis
+            )
+        };
+
+        // discover and apply the required positional correction
+        // compute and update correction value
+        const float lagrangeDeltaPositional {
+            -(
+                std::sqrt(correctionPositionalSquared) + alphaDerivative2 * getLagrange().at(0)
+            ) / (
+                generalizedInverseMass + alphaDerivative2
+            )
+        };
+        assert(isNumber(lagrangeDeltaPositional) && "Lagrange delta calculation failed");
+        applyLagrangeDelta(lagrangeDeltaPositional, 0);
+        const glm::vec3 impulsePositional {
+            lagrangeDeltaPositional * correctionAxis
+        };
+
+        object = impulseApplied(
+            object,
+            1.f / physics.mMass,
+            rotationalInertiaWorld,
+            impulsePositional,
+            position
+        );
+    }
+
+    // See if a rotational correction is required, then apply it if it is
+    const glm::quat deltaOrientation {
+        orientation * glm::inverse(constraint.mOrientation)
+    };
+    const glm::vec3 correctionRotational {
+        2.f * glm::vec3{ deltaOrientation.x, deltaOrientation.y, deltaOrientation.z }
+    };
+    const float correctionRotationalSquared { squareDistance(correctionRotational) };
+    if(correctionRotationalSquared) {
+        const float generalizedInverseMass { computeGeneralizedInverseMassRotational(
+                rotationalInertiaWorld, glm::normalize(correctionRotational)
+        ) };
+
+
+        // discover and apply the required rotational correction,  update correction value
+        const float lagrangeDeltaRotational {
+            -(
+                std::sqrt(correctionRotationalSquared) + alphaDerivative2 * getLagrange().at(1)
+            ) / (generalizedInverseMass + alphaDerivative2)
+        };
+        assert(isNumber(lagrangeDeltaRotational) && "Lagrange delta calculation failed");
+        applyLagrangeDelta(lagrangeDeltaRotational, 1);
+        const glm::vec3 impulseRotational {
+            lagrangeDeltaRotational * glm::normalize(correctionRotational)
+        };
+        object = impulseApplied(
+            object,
+            rotationalInertiaWorld,
+            impulseRotational
+        );
+    }
+}
+
 float computeGeneralizedInverseMassPositional(
     float inverseMass,
     const glm::vec3& offset,
     const glm::mat3& rotationalInertia,
-    const glm::vec3& contactDirection
+    const glm::vec3& correctionGradient
 ) {
     const auto inertiaMatrixInverse {
         glm::inverse(rotationalInertia)
     };
 
     const auto crossOffsetContact {
-        glm::cross(offset, contactDirection)
+        glm::cross(offset, correctionGradient)
     };
 
     return inverseMass + glm::dot(
@@ -281,7 +389,17 @@ float computeGeneralizedInverseMassPositional(
     );
 }
 
-ObjectBounds impulseApplied(
+float computeGeneralizedInverseMassRotational(
+    const glm::mat3& rotationalInertia,
+    const glm::vec3& correctionGradient
+) {
+    return glm::dot(
+        correctionGradient,
+        glm::inverse(rotationalInertia) * correctionGradient
+    );
+}
+
+ObjectBounds ToyMaker::impulseApplied(
     ObjectBounds object,
     float inertiaPositional,
     const glm::mat3& inertiaRotational,
@@ -307,6 +425,26 @@ ObjectBounds impulseApplied(
         orientation
         + .5f * glm::quat{ impulseRotation } * orientation
     };
+    object.setOrientationWorld(orientationNew);
+
+    return object;
+}
+
+ObjectBounds ToyMaker::impulseApplied(
+    ObjectBounds object,
+    const glm::mat3& inertiaRotational,
+    const glm::vec3& impulseRotational
+) {
+    const glm::quat orientation { object.getOrientationWorld() };
+    const glm::quat orientationNew { glm::normalize( orientation
+        + (
+            .5f * glm::quat {
+                glm::inverse(inertiaRotational)
+                * impulseRotational
+            }
+            * orientation
+        )
+    ) };
     object.setOrientationWorld(orientationNew);
 
     return object;

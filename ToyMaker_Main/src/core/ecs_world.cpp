@@ -268,13 +268,15 @@ void SystemManager::handleEntitySignatureChanged(EntityID entityID, Signature si
         if(system.isSingleton()) continue;
 
         if(
-            (signature&systemSignature) == systemSignature 
+            (signature&systemSignature) == systemSignature
             && !system.isRegistered(entityID)
         ) {
             system.addEntity(entityID, false);
-
+            // NOTE: ECS user should manually enable any additional systems they want after they
+            // change an entity's signature (which is why we don't attempt to enable theentity
+            // here)
         } else if(
-            (signature&systemSignature) != systemSignature 
+            (signature&systemSignature) != systemSignature
             && system.isRegistered(entityID) 
         ) {
             system.disableEntity(entityID);

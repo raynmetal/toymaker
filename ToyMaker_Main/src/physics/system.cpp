@@ -44,17 +44,24 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
     std::unordered_map<EntityID, PhysicsStatePartial> previousStates {};
     const float substepInterval { (static_cast<float>(timestepMillis) / static_cast<float>(mSubsteps)) / static_cast<float>(1e3) };
 
+    // clear lagrange multipliers in preparation for this physics update
+    for(auto& constraint: mConstraints) {
+        constraint.first->resetLagrange();
+    }
+
     std::map<ConstraintLink, CollisionConstraint> potentialCollisions {
         collectPotentialCollisions(substepInterval)
     };
+
 
     for(auto substep { 0 }; substep < mSubsteps; ++substep) {
         integrateForces(substepInterval, previousStates);
 
         applyCollisionConstraints(potentialCollisions, substepInterval);
-        // TODO: Implement other contraint solvers
+        applyPositionConstraints(substepInterval);
 
         deriveVelocities(substepInterval, previousStates);
+        // TODO: implement velocity constraint solvers
     }
 
     // clear forces (which are expected to be applied per frame)
@@ -234,6 +241,45 @@ void PhysicsSystem::applyCollisionConstraints(
     }
 }
 
+void PhysicsSystem::applyPositionConstraints(float substepSeconds) {
+    for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
+        // skip deleted or inactive constraints
+        if(
+            mDeletedConstraints.find(constraint) != mDeletedConstraints.end()
+            || mInactiveConstraints.find(constraint) != mDeletedConstraints.end()
+        ) {
+            continue;
+        }
+
+        // gather current entity states and prepare them for consumption by
+        // constraint
+        std::map<EntityID, std::pair<ObjectBounds, PhysicsLocal>> entities {};
+        BaseConstraint::ParticipantTable participants {};
+        std::unique_ptr<BaseConstraint>& solver { mConstraints[constraint].first };
+        BaseConstraint::ParticipantID participantID {0};
+        for(const EntityID entity: mConstraints[constraint].second) {
+            entities.insert({
+                entity,
+                { getComponent<ObjectBounds>(entity), getComponent<PhysicsLocal>(entity) }
+            });
+            participants.insert({
+                participantID++,
+                {
+                    entities[entity].first,
+                    entities[entity].second
+                }
+            });
+        }
+
+        // apply constraints and update relevant entity component tables
+        solver->applyConstraint(participants, substepSeconds);
+        for(const auto& entity: entities) {
+            updateComponent(entity.first, entity.second.first);
+            updateComponent(entity.first, entity.second.second);
+        }
+    }
+}
+
 void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStatePartial>& previousStates) {
     // derive actual physics properties post constraint solve
     for(const auto entity: getEnabledEntities()) {
@@ -278,10 +324,48 @@ void PhysicsSystem::onEntityEnabled(EntityID entityID) {
 
 void PhysicsSystem::onEntityDisabled(EntityID entityID) {
     mEntitiesUninitialized.erase(entityID);
+    const auto foundEntity { mEntityConstraintMap.find(entityID) };
+    if(foundEntity == mEntityConstraintMap.end()) {
+        return;
+    }
+    for(const ConstraintID constraint: foundEntity->second) {
+        mInactiveConstraints.insert(constraint);
+    }
 }
 
 void PhysicsSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
     updatePhysicsProperties(entityID);
+}
+
+void PhysicsSystem::unregisterConstraint(ConstraintID constraint) {
+    assert(constraint < mConstraints.size() && "Invalid constraint ID specified");
+    for(const auto& entity: mConstraints.at(constraint).second) {
+        mEntityConstraintMap.at(entity).erase(constraint);
+    }
+    mDeletedConstraints.insert(constraint);
+}
+
+void PhysicsSystem::refreshActiveConstraints() {
+    mInactiveConstraints.clear();
+    for(ConstraintID constraintID { 0 }; constraintID < mConstraints.size(); ++constraintID) {
+        if(!isConstraintActive(constraintID)) {
+            mInactiveConstraints.insert(constraintID);
+        }
+    }
+}
+
+bool PhysicsSystem::isConstraintActive(ConstraintID constraintID) const {
+    const auto& enabledEntities { getEnabledEntities() };
+    const auto& constraint { mConstraints.at(constraintID) };
+    for(const auto& entity: constraint.second) {
+        if(
+            enabledEntities.find(entity) == enabledEntities.end()
+            || mEntitiesUninitialized.find(entity) != enabledEntities.end()
+        ) {
+            return false;
+        }
+    }
+    return true;
 }
 
 void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
@@ -298,6 +382,19 @@ void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
         return;
     }
     mEntitiesUninitialized.erase(entityID);
+
+    // Enable any constraints that depend on this entity if possible
+    if(mConstraintsInitialized) {
+        const auto foundEntityConstraint { mEntityConstraintMap.find(entityID) };
+        if(foundEntityConstraint == mEntityConstraintMap.end()) {
+            return;
+        }
+        for(const ConstraintID constraint: foundEntityConstraint->second) {
+            if(isConstraintActive(constraint)) {
+                mInactiveConstraints.erase(constraint);
+            }
+        }
+    }
 
     switch(bounds.mType) {
         case ToyMaker::ObjectBounds::TrueVolumeType::BOX:

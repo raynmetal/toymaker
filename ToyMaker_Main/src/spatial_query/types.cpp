@@ -260,7 +260,7 @@ void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
     assert(
         isNumber(mOrientationOrigin.w)
         && isNumber(glm::vec3{mOrientationOrigin.x, mOrientationOrigin.y, mOrientationOrigin.z})
-        && "Orienation update failed"
+        && "Orientation update failed"
     );
     // update world position such that it stays in-place by
     // updating the origin's position instead
