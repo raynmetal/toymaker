@@ -326,6 +326,10 @@ namespace ToyMaker {
             };
         }
 
+        for(const auto& entity: entities) {
+            mEntityConstraintMap[entity].insert(newConstraint);
+        }
+
         return newConstraint;
     }
 }
