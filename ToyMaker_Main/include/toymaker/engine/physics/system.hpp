@@ -29,12 +29,13 @@ namespace ToyMaker {
     /**
      * @ingroup ToyMakerPhysics
      *
-     * @brief Names two distinct entities participating in a constraint, with their entity
+     * @brief Names two distinct entities participating in a collision, with their entity
      * IDs sorted in ascending order.
      *
      * Built to be used in an std::set
+     *
      */
-    class ConstraintLink {
+    class CollisionPair {
     private:
         /**
          * @brief The first entity in a constraint link.
@@ -53,7 +54,7 @@ namespace ToyMaker {
          * @brief Creates a constraint link out of two distinct entities.
          *
          */
-        ConstraintLink(EntityID first, EntityID second): mFirst { first }, mSecond { second } {
+        CollisionPair(EntityID first, EntityID second): mFirst { first }, mSecond { second } {
             assert(first != second && "Entities in constraint must be distinct");
             if (second < first) {
                 std::swap(mFirst, mSecond);
@@ -72,7 +73,7 @@ namespace ToyMaker {
          */
         inline EntityID second() const { return mSecond; }
 
-        inline bool operator < (const ConstraintLink& other) const {
+        inline bool operator < (const CollisionPair& other) const {
             return (
                 mFirst < other.mFirst
                 || (
@@ -97,12 +98,12 @@ namespace ToyMaker {
      * @see ToyMakerSpatialQuerySystem
      *
      */
-    class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsLocal, ObjectBounds>, std::tuple<>> {
+    class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>> {
     public:
         using ConstraintID = std::size_t;
 
         explicit PhysicsSystem(std::weak_ptr<ECSWorld> world):
-        System<PhysicsSystem, std::tuple<PhysicsLocal, ObjectBounds>, std::tuple<>>{ world }
+        System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>>{ world }
         {}
 
         /**
@@ -224,19 +225,27 @@ namespace ToyMaker {
          * detected
          *
          */
-        void applyCollisionConstraints(std::map<ConstraintLink, CollisionConstraint>& constraints, float substepSeconds);
+        void applyPositionCollisionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
+
+        void applyVelocityCollisionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
 
         /**
          * @brief Applies all active position constraints
          *
          */
-        void applyPositionConstraints(float substepSeconds);
+        void applyPositionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
+
+        /**
+         * @brief Applies all active velocity constraints
+         *
+         */
+        void applyVelocityConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
 
         /**
          * @brief Collects potential collisions and builds constraints from them
          *
          */
-        std::map<ConstraintLink, CollisionConstraint> collectPotentialCollisions(float substepSeconds);
+        std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> collectPotentialCollisions(float substepSeconds);
 
         /**
          * @brief Holds entities that haven't undergone proper initialization, and therefore

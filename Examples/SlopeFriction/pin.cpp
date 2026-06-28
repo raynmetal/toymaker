@@ -91,7 +91,7 @@ void Pin::onActivated() {
     mConstraint = getLocalViewport()
         .getWorld().lock()->getSystem<ToyMaker::PhysicsSystem>()
         ->registerConstraint<ToyMaker::PinConstraint>(
-            pinnedEntity, .1f
+            pinnedEntity, 0.f
     );
 }
 

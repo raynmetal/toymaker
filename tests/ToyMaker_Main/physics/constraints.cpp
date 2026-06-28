@@ -22,7 +22,7 @@ TEST_CASE("Head-On") {
         glm::vec3 { 4.5, 0.f, 0.f },
         glm::vec3 { 0.f }
     ) };
-    ToyMaker::PhysicsLocal physics1 {
+    ToyMaker::PhysicsState physics1 {
         .mForce { 0.f },
         .mTorque { 0.f },
         .mVelocity { 0.f },
@@ -30,7 +30,7 @@ TEST_CASE("Head-On") {
         .mRotationalInertia { 1.f },
         .mMass { 1.f }
     };
-    ToyMaker::PhysicsLocal physics2 { physics1 };
+    ToyMaker::PhysicsState physics2 { physics1 };
 
     const ToyMaker::BaseConstraint::ParticipantTable participantTable {
         { 0, { object1, physics1 } },
@@ -48,7 +48,7 @@ TEST_CASE("Head-On") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(participantTable, 0.0001);
+        collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         CHECK(glm::abs(object1.getPositionWorld().x - (-5.f)) <= .001f);
         CHECK(glm::abs(object2.getPositionWorld().x - 5.f) <= .001f);
@@ -66,7 +66,7 @@ TEST_CASE("Head-On") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(participantTable, 0.0001);
+        collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
         const auto collisionAfter { ToyMaker::checkCollision(object1, object2) };
@@ -87,7 +87,7 @@ TEST_CASE("Head-On") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(participantTable, 0.0001);
+        collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
         const auto collisionAfter { ToyMaker::checkCollision(object1, object2) };
@@ -112,7 +112,7 @@ TEST_CASE("Offset") {
         glm::vec3 { 4.5, -4.5f, 0.f },
         glm::vec3 { 0.f }
     ) };
-    ToyMaker::PhysicsLocal physics1 {
+    ToyMaker::PhysicsState physics1 {
         .mForce { 0.f },
         .mTorque { 0.f },
         .mVelocity { 0.f },
@@ -120,7 +120,7 @@ TEST_CASE("Offset") {
         .mRotationalInertia { 1.f },
         .mMass { 1.f }
     };
-    ToyMaker::PhysicsLocal physics2 { physics1 };
+    ToyMaker::PhysicsState physics2 { physics1 };
     const float originalCenterSeparation { glm::length(object1.getPositionWorld() - object2.getPositionWorld()) };
 
     const ToyMaker::BaseConstraint::ParticipantTable participantTable {
@@ -141,7 +141,7 @@ TEST_CASE("Offset") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(participantTable, 0.0001);
+        collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching
         const float centerSeparation { glm::length(object1.getPositionWorld() - object2.getPositionWorld()) };
@@ -180,7 +180,7 @@ TEST_CASE("Offset") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(participantTable, 0.0001);
+        collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching
         const float centerSeparation { glm::length(object1.getPositionWorld() - object2.getPositionWorld()) };
@@ -218,7 +218,7 @@ TEST_CASE("Offset") {
             physics2,
             object2
         };
-        collisionConstraint.applyConstraint(participantTable, 0.0001);
+        collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching
         const float centerSeparation { glm::length(object1.getPositionWorld() - object2.getPositionWorld()) };

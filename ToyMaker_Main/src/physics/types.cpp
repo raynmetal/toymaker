@@ -1,4 +1,3 @@
-
 #include <glm/gtc/quaternion.hpp>
 
 #include <toymaker/engine/physics/types.hpp>
@@ -42,40 +41,38 @@ float computeGeneralizedInverseMassRotational(
     const glm::vec3& correctionGradient
 );
 
-glm::mat3 computeInertiaRotationalWorld(const glm::vec3& rotationalInertiaLocal, const glm::quat& orientation);
 
 
-void PhysicsLocal::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition) {
+void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
+    const glm::vec3 position { bounds.getPositionWorld() };
+    const glm::quat orientation { bounds.getOrientationWorld() };
+    const glm::vec3 positionGlobal { position + orientation * atPosition };
+    const glm::vec3 forceGlobal { orientation * force };
+    applyForceGlobal(forceGlobal, positionGlobal, bounds);
+}
+
+void PhysicsState::applyForceGlobal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     // no force, nothing to do
     if(force == glm::vec3 { 0.f }) {
         return;
     }
 
+    const glm::vec3 position { bounds.getPositionWorld() };
+    const glm::vec3 forceOffset { atPosition - position };
+
     // calculate force being applied to the center of mass of the object
-    const glm::vec3 centerForceDirection { atPosition != glm::vec3 { 0.f } ?
-        -glm::normalize(atPosition) : glm::normalize(force)
+    const glm::vec3 toCenter { forceOffset != glm::vec3 { 0.f }?
+        -glm::normalize(forceOffset) : glm::normalize(force)
     };
-    const glm::vec3 centerForce { glm::dot(force, centerForceDirection) * centerForceDirection };
+    const glm::vec3 centerForce { glm::dot(force, toCenter) * force };
 
     // calculate torque being applied tangentially
-    const glm::vec3 axialTorque { atPosition != glm::vec3 { 0.f }?
-        glm::cross(atPosition, force) : glm::vec3 { 0.f }
+    const glm::vec3 axialTorque { forceOffset != glm::vec3 { 0.f }?
+        glm::cross(forceOffset, force) : glm::vec3 { 0.f }
     };
 
     mForce += centerForce;
     mTorque += axialTorque;
-}
-
-void PhysicsLocal::applyForceGlobal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
-    const glm::vec3 objectPosition { bounds.getPositionWorld() };
-    const glm::quat objectRotationInverse { glm::inverse(bounds.getOrientationWorld()) };
-
-    const glm::vec3 positionDelta { atPosition - objectPosition };
-
-    const glm::vec3 positionLocal { objectRotationInverse * positionDelta };
-    const glm::vec3 forceLocal { objectRotationInverse * force };
-
-    applyForceLocal(forceLocal, positionLocal);
 }
 
 void BaseConstraint::setCompliance(float newCompliance) {
@@ -89,9 +86,9 @@ float BaseConstraint::getCompliance() const {
 
 CollisionConstraint::CollisionConstraint(
     const Collision& collision,
-    const PhysicsLocal& physicsA,
+    const PhysicsState& physicsA,
     const ObjectBounds& boundsA,
-    const PhysicsLocal& physicsB,
+    const PhysicsState& physicsB,
     const ObjectBounds& boundsB
 ): Constraint<CollisionConstraintData, 2> { 0.f } {
 
@@ -103,9 +100,9 @@ CollisionConstraint::CollisionConstraint(
 
 void CollisionConstraint::updateCollisionData(
     const Collision& collision,
-    const PhysicsLocal& physicsA,
+    const PhysicsState& physicsA,
     const ObjectBounds& boundsA,
-    const PhysicsLocal& physicsB,
+    const PhysicsState& physicsB,
     const ObjectBounds& boundsB
 ) {
     // rotations from local to global frame for each body
@@ -118,7 +115,7 @@ void CollisionConstraint::updateCollisionData(
     setParameter(1, {
         .mInverseMass { 1.f / physicsB.mMass },
         .mRotationalInertia { computeInertiaRotationalWorld(
-            physicsA.mRotationalInertia, boundsA.getOrientationWorld()
+            physicsB.mRotationalInertia, boundsB.getOrientationWorld()
         ) },
     });
 
@@ -134,19 +131,19 @@ void CollisionConstraint::updateCollisionData(
     mCollided = collision.mCollided;
     mLastPointContactA = collision.mContactA.mPoint;
     mLastPointContactB = collision.mContactB.mPoint;
-    mRelativePointContactA = glm::transpose(
-        glm::mat3 { boundsA.getOrientationWorld() }
-    ) * (
-        collision.mContactA.mPoint - boundsA.getPositionWorld()
+    mRelativePointContactA = (
+        glm::inverse(boundsA.getOrientationWorld()) * (
+            collision.mContactA.mPoint - boundsA.getPositionWorld()
+        )
     );
-    mRelativePointContactB = glm::transpose(
-        glm::mat3 { boundsB.getOrientationWorld() }
-    ) * (
-        collision.mContactB.mPoint - boundsB.getPositionWorld()
+    mRelativePointContactB = (
+        glm::inverse(boundsB.getOrientationWorld()) * (
+            collision.mContactB.mPoint - boundsB.getPositionWorld()
+        )
     );
 }
 
-void CollisionConstraint::applyConstraint(
+void CollisionConstraint::applyConstraintPosition(
     const ParticipantTable& states,
     float substepSeconds
 ) {
@@ -159,8 +156,8 @@ void CollisionConstraint::applyConstraint(
     // fetch relevant data
     ObjectBounds& objectA { states.at(0).first.get() };
     ObjectBounds& objectB { states.at(1).first.get() };
-    const PhysicsLocal& physicsA { states.at(0).second.get() };
-    const PhysicsLocal& physicsB { states.at(0).second.get() };
+    const PhysicsState& physicsA { states.at(0).second.get() };
+    const PhysicsState& physicsB { states.at(1).second.get() };
     const CollisionConstraintData contactA { getParameter(0) };
     const CollisionConstraintData contactB { getParameter(1) };
     const glm::vec3& contactNormal { glm::normalize(contactB.mContact.mNormal) };
@@ -191,9 +188,10 @@ void CollisionConstraint::applyConstraint(
     const float alphaDerivative2 {
         getCompliance() / (substepSeconds * substepSeconds)
     };
+    const float lagrangeCollision { getLagrange().at(0) };
     const float lagrangeDeltaCollision {
         -(
-            contactA.mContact.mPenetrationDepth + alphaDerivative2 * getLagrange().at(0)
+            contactA.mContact.mPenetrationDepth + alphaDerivative2 * lagrangeCollision
         ) / (
             generalizedInverseA + generalizedInverseB + alphaDerivative2
         )
@@ -211,14 +209,14 @@ void CollisionConstraint::applyConstraint(
     // apply corrections
     objectA = impulseApplied(
         objectA,
-        contactA.mInverseMass,
+        physicsA.mMass,
         contactA.mRotationalInertia,
         positionalImpulse,
         contactA.mContact.mPoint
     );
     objectB = impulseApplied(
         objectB,
-        contactB.mInverseMass,
+        physicsB.mMass,
         contactB.mRotationalInertia,
         -positionalImpulse,
         contactB.mContact.mPoint
@@ -248,12 +246,6 @@ void CollisionConstraint::applyConstraint(
         glm::min(physicsA.mCoefficientFrictionStatic, physicsB.mCoefficientFrictionStatic)
     };
     const float lagrangeFriction { getLagrange().at(1) };
-    const float lagrangeCollision { getLagrange().at(0) };
-    if(glm::abs(lagrangeFriction) >= glm::abs(combinedFrictionCoefficient * lagrangeCollision)) {
-        return;
-    }
-
-    // apply static friction costraint
     const float lagrangeDeltaFriction {
         -(
             glm::length(deltaABTangent) + alphaDerivative2 * lagrangeFriction
@@ -261,6 +253,11 @@ void CollisionConstraint::applyConstraint(
             generalizedInverseA + generalizedInverseB + alphaDerivative2
         )
     };
+    if(glm::abs(lagrangeFriction + lagrangeDeltaFriction) >= glm::abs(combinedFrictionCoefficient * (lagrangeCollision + lagrangeDeltaCollision))) {
+        return;
+    }
+
+    // apply static friction costraint
     assert(isNumber(lagrangeDeltaFriction) && "Lagrange delta calculation failed");
     applyLagrangeDelta(lagrangeDeltaFriction, 1);
     const glm::vec3 positionalImpulseFriction {
@@ -270,24 +267,127 @@ void CollisionConstraint::applyConstraint(
     // apply corrections
     objectA = impulseApplied(
         objectA,
-        contactA.mInverseMass,
+        physicsA.mMass,
         computeInertiaRotationalWorld(physicsA.mRotationalInertia, orientationANew),
         positionalImpulseFriction,
         pointContactANew
     );
     objectB = impulseApplied(
         objectB,
-        contactB.mInverseMass,
-        computeInertiaRotationalWorld(physicsA.mRotationalInertia, orientationANew),
+        physicsB.mMass,
+        computeInertiaRotationalWorld(physicsB.mRotationalInertia, orientationBNew),
         -positionalImpulseFriction,
         pointContactBNew
     );
 }
 
-void PinConstraint::applyConstraint(const ParticipantTable& states, float substepSeconds) {
+void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+    // guard: no collision, so nothing to do
+    if(!mCollided) {
+        return;
+    }
+    assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
+
+    // fetch minimal data
+    PhysicsState& physicsA { states.at(0).second.get() };
+    PhysicsState& physicsB { states.at(1).second.get() };
+    const float coefficientFrictionDynamic { glm::min(
+        physicsA.mCoefficientFrictionDynamic,
+        physicsB.mCoefficientFrictionDynamic
+    ) };
+
+    // No friction, no problem, so exit early
+    if(coefficientFrictionDynamic <= 0.f) {
+        return;
+    }
+
+    // fetch other relevant data
+    const ObjectBounds& objectA { states.at(0).first.get() };
+    const ObjectBounds& objectB { states.at(1).first.get() };
+    const CollisionConstraintData contactA { getParameter(0) };
+    const CollisionConstraintData contactB { getParameter(1) };
+    const glm::vec3& contactNormal { glm::normalize(contactB.mContact.mNormal) };
+    const glm::vec3 positionA { objectA.getPositionWorld() };
+    const glm::vec3 positionB { objectB.getPositionWorld() };
+    const glm::quat orientationA { objectA.getOrientationWorld() };
+    const glm::quat orientationB { objectB.getOrientationWorld() };
+
+    // compute generalized inverse masses for A and B -- these will
+    // be recomputed each substep, so there's no point in storing them
+    const float generalizedInverseA {
+        computeGeneralizedInverseMassPositional(
+            contactA.mInverseMass,
+            contactA.mContact.mPoint - positionA,
+            contactA.mRotationalInertia,
+            contactNormal
+        )
+    };
+    const float generalizedInverseB {
+        computeGeneralizedInverseMassPositional(
+            contactB.mInverseMass,
+            contactB.mContact.mPoint - positionB,
+            contactB.mRotationalInertia,
+            contactNormal
+        )
+    };
+
+    // Discover just how fast the contact points on each surface are moving
+    // relative to each other
+    const glm::vec3 contactVelocityA {
+        physicsA.mVelocity
+        + glm::cross(
+            physicsA.mAngularVelocity,
+            contactA.mContact.mPoint - positionA
+        )
+    };
+    const glm::vec3 contactVelocityB {
+        physicsB.mVelocity
+        + glm::cross(
+            physicsB.mAngularVelocity,
+            contactB.mContact.mPoint - positionB
+        )
+    };
+    const glm::vec3 contactVelocity { contactVelocityA - contactVelocityB };
+    const glm::vec3 tangentialVelocity {
+        contactVelocity - glm::dot(contactVelocity, contactNormal) * contactNormal
+    };
+
+    // derive the impulse required to fix our velocities
+    const float lagrangeCollision { getLagrange().at(0) };
+    const float forceNormal {
+        lagrangeCollision / (substepSeconds * substepSeconds)
+    };
+    const glm::vec3 velocityCorrection {
+        -glm::normalize(tangentialVelocity) * glm::min(
+            glm::abs(substepSeconds * coefficientFrictionDynamic * forceNormal),
+            glm::abs(glm::length(tangentialVelocity))
+        )
+    };
+    const glm::vec3 impulsePositional {
+        velocityCorrection / (
+            generalizedInverseA + generalizedInverseB
+        )
+    };
+
+    // apply the impulse
+    physicsA = impulseApplied(
+        objectA,
+        physicsA,
+        impulsePositional,
+        contactA.mContact.mPoint
+    );
+    physicsB = impulseApplied(
+        objectB,
+        physicsB,
+        -impulsePositional,
+        contactB.mContact.mPoint
+    );
+}
+
+void PinConstraint::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
     // fetch relevant data
     ObjectBounds& object { states.at(0).first.get() };
-    const PhysicsLocal& physics { states.at(0).second.get() };
+    const PhysicsState& physics { states.at(0).second.get() };
     const PinConstraintData constraint { getParameter(0) };
     const float alphaDerivative2 {
         getCompliance() / (substepSeconds * substepSeconds)
@@ -295,7 +395,7 @@ void PinConstraint::applyConstraint(const ParticipantTable& states, float subste
     const glm::vec3 position { object.getPositionWorld() };
     const glm::quat orientation { object.getOrientationWorld() };
     const glm::mat3 rotationalInertiaWorld {
-        computeInertiaRotationalWorld(physics.mRotationalInertia, object.getOrientationWorld())
+        computeInertiaRotationalWorld(physics.mRotationalInertia, orientation)
     };
 
     // See if a positional correction is required, and apply it if it is
@@ -329,7 +429,7 @@ void PinConstraint::applyConstraint(const ParticipantTable& states, float subste
 
         object = impulseApplied(
             object,
-            1.f / physics.mMass,
+            physics.mMass,
             rotationalInertiaWorld,
             impulsePositional,
             position
@@ -348,7 +448,6 @@ void PinConstraint::applyConstraint(const ParticipantTable& states, float subste
         const float generalizedInverseMass { computeGeneralizedInverseMassRotational(
                 rotationalInertiaWorld, glm::normalize(correctionRotational)
         ) };
-
 
         // discover and apply the required rotational correction,  update correction value
         const float lagrangeDeltaRotational {
@@ -409,25 +508,43 @@ ObjectBounds ToyMaker::impulseApplied(
     // apply positional corrections
     const glm::vec3 position { object.getPositionWorld() };
     const glm::vec3 positionNew {
-        position + positionalImpulse * inertiaPositional
+        position + positionalImpulse * (1.f / inertiaPositional)
     };
     object.setPositionWorld(positionNew);
 
     // apply rotational corrections
-    const glm::vec3 impulseRotation {
-        glm::inverse(inertiaRotational) * glm::cross(
-            impulsePoint - position,
-            positionalImpulse
-        )
-    };
-    const glm::quat orientation { object.getOrientationWorld() };
-    const glm::quat orientationNew {
-        orientation
-        + .5f * glm::quat{ impulseRotation } * orientation
-    };
-    object.setOrientationWorld(orientationNew);
-
+    const glm::vec3 impulseRotation { glm::cross(
+        impulsePoint - position,
+        positionalImpulse
+    ) };
+    object = impulseApplied(
+        object,
+        inertiaRotational,
+        impulseRotation
+    );
     return object;
+}
+
+PhysicsState ToyMaker::impulseApplied(
+    const ObjectBounds& object,
+    PhysicsState physics,
+    const glm::vec3& impulsePositional,
+    const glm::vec3& impulsePoint
+) {
+    const glm::vec3 deltaVelocity {
+        impulsePositional / physics.mMass
+    };
+    physics.mVelocity += deltaVelocity;
+    const glm::vec3 impulseRotational { glm::cross(
+        impulsePoint - object.getPositionWorld(),
+        impulsePositional
+    ) };
+    physics = impulseApplied(
+        object,
+        physics,
+        impulseRotational
+    );
+    return physics;
 }
 
 ObjectBounds ToyMaker::impulseApplied(
@@ -436,8 +553,8 @@ ObjectBounds ToyMaker::impulseApplied(
     const glm::vec3& impulseRotational
 ) {
     const glm::quat orientation { object.getOrientationWorld() };
-    const glm::quat orientationNew { glm::normalize( orientation
-        + (
+    const glm::quat orientationNew { glm::normalize(
+        orientation + (
             .5f * glm::quat {
                 glm::inverse(inertiaRotational)
                 * impulseRotational
@@ -450,7 +567,27 @@ ObjectBounds ToyMaker::impulseApplied(
     return object;
 }
 
-glm::mat3 computeInertiaRotationalWorld(const glm::vec3& rotationalInertiaLocal, const glm::quat& orientation) {
+PhysicsState ToyMaker::impulseApplied(
+    const ObjectBounds& object,
+    PhysicsState physics,
+    const glm::vec3& impulseRotational
+) {
+    const glm::quat orientation { object.getOrientationWorld() };
+    const glm::mat3 inertiaRotational {
+        computeInertiaRotationalWorld(
+            physics.mRotationalInertia,
+            orientation
+        )
+    };
+    const glm::vec3 deltaVelocityAngular {
+        glm::inverse(inertiaRotational)
+        * impulseRotational
+    };
+    physics.mAngularVelocity += deltaVelocityAngular;
+    return physics;
+}
+
+glm::mat3 ToyMaker::computeInertiaRotationalWorld(const glm::vec3& rotationalInertiaLocal, const glm::quat& orientation) {
     const glm::mat3 matrixRotation { orientation };
     return { matrixRotation
         * glm::mat3 { glm::scale(glm::mat4 { 1.f }, rotationalInertiaLocal) }

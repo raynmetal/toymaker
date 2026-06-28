@@ -10,7 +10,7 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> SpinOnClick::create(const nlohman
 
 bool SpinOnClick::onPointerLeftClick(glm::vec4 clickLocation) {
     const auto currentBounds { getComponent<ToyMaker::ObjectBounds>() };
-    auto currentState { getComponent<ToyMaker::PhysicsLocal>() };
+    auto currentState { getComponent<ToyMaker::PhysicsState>() };
 
     currentState.applyForceGlobal(glm::vec3 { 0.f, 0.f, -1000.f }, glm::vec3 { clickLocation }, currentBounds);
 

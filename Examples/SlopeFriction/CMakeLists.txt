@@ -13,6 +13,7 @@ add_executable(Example_SlopeFriction)
 target_sources(Example_SlopeFriction
     PRIVATE
         pin.cpp
+        gravity.cpp
     PRIVATE
 )
 

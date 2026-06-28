@@ -27,6 +27,17 @@
 #include "../spatial_query/types.hpp"
 
 namespace ToyMaker {
+    struct PhysicsState;
+
+    /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Returns an objects rotation tensor in the global frame given its tensor in the local frame
+     * according to its current orientation.
+     *
+     */
+    glm::mat3 computeInertiaRotationalWorld(const glm::vec3& rotationalInertiaLocal, const glm::quat& orientation);
+
     /**
      * @ingroup ToyMakerPhysics
      *
@@ -58,13 +69,38 @@ namespace ToyMaker {
     /**
      * @ingroup ToyMakerPhysics
      *
+     * @brief Returns new physics state after application of global impulse
+     *
+     */
+    PhysicsState impulseApplied(
+        const ObjectBounds& object,
+        PhysicsState physics,
+        const glm::vec3& impulsePositional,
+        const glm::vec3& impulsePoint
+    );
+
+    /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Returns new physics state after application of global angular impulse
+     */
+    PhysicsState impulseApplied(
+        const ObjectBounds& object,
+        PhysicsState physics,
+        const glm::vec3& impulseRotational
+    );
+
+    /**
+     * @ingroup ToyMakerPhysics
+     *
      * @brief Component representing the physics state of the body
      * it's attached to at some particular point in time.
      *
-     * All forces are expressed relative to the frame of the body.
+     * All vectors are expressed in terms of world space coordinates.
+     *
+     * Rotational inertia alone is stored in the object's local frame.
      */
-    struct PhysicsLocal {
-
+    struct PhysicsState {
         /**
          * @brief Fetches the component type string associated with this class.
          *
@@ -76,7 +112,7 @@ namespace ToyMaker {
          * @brief The sum of all the forces acting on this object's center of mass,
          * causing it to move through space.
          *
-         * Expressed as a vector in this object's local frame.
+         * Expressed as a vector in the world frame.
          *
          */
         glm::vec3 mForce { 0.f };
@@ -86,7 +122,7 @@ namespace ToyMaker {
          * from the point at which the forces are being applied to this object' center of
          * mass, causing it to rotate about its axis.
          *
-         * Expressed as a vector in this object's local frame.
+         * Expressed as a vector in the world frame.
          *
          */
         glm::vec3 mTorque { 0.f };
@@ -94,7 +130,7 @@ namespace ToyMaker {
         /**
          * @brief The velocity of this object.
          *
-         * Expressed as a vector in this object's local frame.
+         * Expressed as a vector in the world frame.
          *
          */
         glm::vec3 mVelocity { 0.f };
@@ -102,7 +138,7 @@ namespace ToyMaker {
         /**
          * @brief The angular velocity of this object.
          *
-         * Expressed as a vector in this object's local frame.
+         * Expressed as a vector in the world frame.
          *
          */
         glm::vec3 mAngularVelocity { 0.f };
@@ -117,20 +153,20 @@ namespace ToyMaker {
         glm::vec3 mRotationalInertia { 1.f };
 
         /**
-         * @brief How heavy and resistant to translational change this object is.
+         * @brief How heavy and resistant to positional change this object is.
          *
          */
         float mMass { 1.f };
 
         /**
-         * @brief The friction coefficient of the force that prevents relative motion between
-         * two objects when they are stationary
+         * @brief The friction coefficient of the force that prevents relative motion between the
+         * surface of two objects when they are stationary.
          *
          */
         float mCoefficientFrictionStatic { 0.f };
 
         /**
-         * @brief The friction coefficient of the force that hinders motion between
+         * @brief The friction coefficient of the force that hinders motion between the surface of
          * two objects when they are moving relative to each other.
          *
          */
@@ -142,10 +178,8 @@ namespace ToyMaker {
          *
          * @warning All forces applied to an object are cleared once per simulation frame.
          *
-         * @param force The amount of force being applied to an object
+         * @param force The force being applied to the object
          * @param atPosition The world position at which the force is applied
-         * @param bounds The bounds of the object to which the force is applied, used
-         * to find local frame force and position equivalents
          */
         void applyForceGlobal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds);
 
@@ -155,10 +189,12 @@ namespace ToyMaker {
          *
          * @warning All forces applied to an object are cleared once per simulation frame.
          *
-         * @param force The amount of force being applied to an object
+         * @param force The force being applied to the object
          * @param atPosition The object-local position at which the force is applied
+         * @param bounds The bounds of the object to which the force is applied, used
+         * to find global frame force and position equivalents
          */
-        void applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition);
+        void applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds);
     };
 
     /**
@@ -199,7 +235,7 @@ namespace ToyMaker {
             ParticipantID,
             std::pair<
                 std::reference_wrapper<ObjectBounds>,
-                std::reference_wrapper<PhysicsLocal>
+                std::reference_wrapper<PhysicsState>
             >
         >;
 
@@ -210,13 +246,25 @@ namespace ToyMaker {
         float getCompliance() const;
 
         /**
-         * @brief Applies constraint to current set of bounds and physics states.
+         * @brief Applies positional constraint to current set of bounds and physics states.
          *
          * Will update values stored in ObjectBounds and PhysicsLocal to maintain the
          * constraint and update its own compliance parameters
          *
          */
-        virtual void applyConstraint(
+        virtual void applyConstraintPosition(
+            const ParticipantTable& states,
+            float substepSeconds
+        ) {}
+
+        /**
+         * @brief Applies velocity-based constraint to current set of bounds and physics states.
+         *
+         * Will update values stored in ObjectBounds and PhysicsLocal to maintain the
+         * constraint and update its own compliance parameters
+         *
+         */
+        virtual void applyConstraintVelocity(
             const ParticipantTable& states,
             float substepSeconds
         ) {}
@@ -404,9 +452,9 @@ namespace ToyMaker {
          */
         CollisionConstraint(
             const Collision& collision,
-            const PhysicsLocal& physicsA,
+            const PhysicsState& physicsA,
             const ObjectBounds& boundsA,
-            const PhysicsLocal& objectB,
+            const PhysicsState& objectB,
             const ObjectBounds& boundsB
         );
 
@@ -416,18 +464,27 @@ namespace ToyMaker {
          */
         void updateCollisionData(
             const Collision& collision,
-            const PhysicsLocal& physicsA,
+            const PhysicsState& physicsA,
             const ObjectBounds& boundsA,
-            const PhysicsLocal& physicsB,
+            const PhysicsState& physicsB,
             const ObjectBounds& boundsB
         );
 
         /**
          * @brief Separates intersecting/colliding objects and applies static friction.
-         * 
+         *
          *
          */
-        void applyConstraint(
+        void applyConstraintPosition(
+            const ParticipantTable& states,
+            float substepSeconds
+        ) override;
+
+        /**
+         * @brief Applies dynamic friction
+         *
+         */
+        void applyConstraintVelocity(
             const ParticipantTable& states,
             float substepSeconds
         ) override;
@@ -447,7 +504,7 @@ namespace ToyMaker {
          * @brief Moves object to pin location and orientation
          *
          */
-        void applyConstraint(
+        void applyConstraintPosition(
             const ParticipantTable& states,
             float substepSeconds
         ) override;
@@ -455,11 +512,12 @@ namespace ToyMaker {
 
     inline void from_json(
         const nlohmann::json& json,
-        PhysicsLocal& physics
+        PhysicsState& physics
     ) {
-        assert(json.at("type") == PhysicsLocal::getComponentTypeName() && "Incorrect type property for an physics property component");
+        assert(json.at("type") == PhysicsState::getComponentTypeName() && "Incorrect type property for an physics property component");
         const float mass { json.at("mass") };
         physics = { .mMass { mass } };
+        assert(mass > 0.f && "Mass must be positive");
 
         if(json.find("velocity") != json.end()) {
             physics.mVelocity = glm::vec3 {
@@ -467,6 +525,7 @@ namespace ToyMaker {
                 json.at("velocity")[1],
                 json.at("velocity")[2],
             };
+            assert(isNumber(physics.mVelocity) && isFinite(physics.mVelocity) && "Velocity must be sensible");
         }
         if(json.find("angular_velocity") != json.end()) {
             physics.mAngularVelocity = glm::vec3 {
@@ -474,6 +533,7 @@ namespace ToyMaker {
                 json.at("angular_velocity")[1],
                 json.at("angular_velocity")[2],
             };
+            assert(isNumber(physics.mAngularVelocity) && isFinite(physics.mAngularVelocity) && "Angular velocity must be sensible");
         }
         if(json.find("force") != json.end()) {
             physics.mForce = glm::vec3 {
@@ -481,6 +541,7 @@ namespace ToyMaker {
                 json.at("force")[1],
                 json.at("force")[2],
             };
+            assert(isNumber(physics.mForce) && isFinite(physics.mForce) && "Force must be sensible");
         }
         if(json.find("torque") != json.end()) {
             physics.mForce = glm::vec3 {
@@ -488,6 +549,7 @@ namespace ToyMaker {
                 json.at("torque")[1],
                 json.at("torque")[2],
             };
+            assert(isNumber(physics.mTorque) && isFinite(physics.mTorque) && "Torque must be sensible");
         }
         if(json.find("coefficient_friction_static") != json.end()) {
             physics.mCoefficientFrictionStatic = json.at("coefficient_friction_static");
@@ -501,10 +563,10 @@ namespace ToyMaker {
 
     inline void to_json(
         nlohmann::json& json,
-        const PhysicsLocal& physics
+        const PhysicsState& physics
     ) {
         json = {
-            { "type", PhysicsLocal::getComponentTypeName() },
+            { "type", PhysicsState::getComponentTypeName() },
             { "mass", physics.mMass },
             { "coefficient_friction_static", physics.mCoefficientFrictionStatic },
             { "coefficient_friction_dynamic", physics.mCoefficientFrictionDynamic },

@@ -1,16 +1,11 @@
-#define GLM_ENABLE_EXPERIMENTAL
-
 #include <map>
-
-#include <glm/gtx/string_cast.hpp>
-
 #include <unordered_map>
 
 #include "toymaker/engine/spatial_query/system.hpp"
 #include "toymaker/engine/spatial_query/math.hpp"
 
-#include <toymaker/engine/physics/system.hpp>
-
+#include "toymaker/engine/physics/types.hpp"
+#include "toymaker/engine/physics/system.hpp"
 
 using namespace ToyMaker;
 
@@ -49,7 +44,7 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
         constraint.first->resetLagrange();
     }
 
-    std::map<ConstraintLink, CollisionConstraint> potentialCollisions {
+    std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> potentialCollisions {
         collectPotentialCollisions(substepInterval)
     };
 
@@ -57,16 +52,16 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
     for(auto substep { 0 }; substep < mSubsteps; ++substep) {
         integrateForces(substepInterval, previousStates);
 
-        applyCollisionConstraints(potentialCollisions, substepInterval);
-        applyPositionConstraints(substepInterval);
+        applyPositionConstraints(potentialCollisions, substepInterval);
 
         deriveVelocities(substepInterval, previousStates);
-        // TODO: implement velocity constraint solvers
+
+        applyVelocityConstraints(potentialCollisions, substepInterval);
     }
 
     // clear forces (which are expected to be applied per frame)
     for(const auto entity: getEnabledEntities()) {
-        auto physicsState { getComponent<PhysicsLocal>(entity) };
+        auto physicsState { getComponent<PhysicsState>(entity) };
         physicsState.mForce = glm::vec3 { 0.f };
         physicsState.mTorque = glm::vec3 { 0.f };
         updateComponent(entity, physicsState);
@@ -81,7 +76,7 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
         }
 
         // snapshot current object state
-        PhysicsLocal physics { getComponent<PhysicsLocal>(entity) };
+        PhysicsState physics { getComponent<PhysicsState>(entity) };
         ObjectBounds bounds { getComponent<ObjectBounds>(entity) };
         const PhysicsStatePartial physicsState {
             .mVelocity { physics.mVelocity },
@@ -91,18 +86,17 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
         };
         previousStates[entity] = physicsState;
 
-        // update object state per forces - linear
+        // update object state per positional derivatives
         physics.mVelocity += substepSeconds * physics.mForce / physics.mMass;
         assert(isNumber(physics.mVelocity) && "Velocity computation failed");
         bounds.setPositionWorld(
-            physicsState.mPosition
-            // velocity is relative to local frame, and must be rotated
-            + substepSeconds * (physicsState.mOrientation * physics.mVelocity)
+            physicsState.mPosition + substepSeconds * physics.mVelocity
         );
 
-        // update object state per forces - angular
+        // update object state per rotational derivatives, see [Brian Mirtich's
+        // paper Appendix A.3](https://people.eecs.berkeley.edu/~jfc/mirtich/impulse.html)
         const glm::mat3 inertiaTensor {
-            glm::mat3 { glm::scale(glm::mat4{ 1.f }, physics.mRotationalInertia) }
+            glm::scale(glm::mat4 { 1.f }, physics.mRotationalInertia)
         };
         physics.mAngularVelocity += substepSeconds * (
             glm::inverse(inertiaTensor) * (
@@ -115,13 +109,14 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
         const float deltaTheta {
             substepSeconds * glm::length(physics.mAngularVelocity)
         };
-        // only for sensible angular velocities
+
+        // only for sensible angular velocities, update orientation
         if(glm::length(physics.mAngularVelocity) != 0.f) {
-            const glm::vec3 normalizedAngularVelocity {
-                physicsState.mOrientation * glm::normalize(physics.mAngularVelocity)
+            const glm::vec3 axisAngularVelocity {
+                glm::normalize(physics.mAngularVelocity)
             };
             const glm::quat orientationUpdate {
-                glm::angleAxis(deltaTheta, normalizedAngularVelocity)
+                glm::angleAxis(deltaTheta, axisAngularVelocity)
             };
             const auto newOrientation {
                 glm::normalize(orientationUpdate * physicsState.mOrientation)
@@ -137,8 +132,8 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
     }
 }
 
-std::map<ConstraintLink, CollisionConstraint> PhysicsSystem::collectPotentialCollisions(float substepSeconds) {
-    std::map<ConstraintLink, CollisionConstraint> potentialCollisions {};
+std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> PhysicsSystem::collectPotentialCollisions(float substepSeconds) {
+    std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> potentialCollisions {};
     const std::set<EntityID>& enabledEntities { getEnabledEntities() };
     for(const EntityID entity: enabledEntities) {
         // find an AABB that can contain the object regardless of orientation, with some
@@ -158,11 +153,10 @@ std::map<ConstraintLink, CollisionConstraint> PhysicsSystem::collectPotentialCol
         };
 
         // expand AABB along object's current velocity
-        const PhysicsLocal physicsLocal { getComponent<PhysicsLocal>(entity) };
-        const glm::vec3 globalVelocity { objectBounds.getOrientationWorld() * physicsLocal.mVelocity };
+        const PhysicsState physics { getComponent<PhysicsState>(entity) };
         AxisAlignedBounds endSearch { startSearch };
         endSearch.setPosition(
-            endSearch.getPositionWorld() + substepSeconds * globalVelocity
+            endSearch.getPositionWorld() + mSubsteps * substepSeconds * physics.mVelocity
         );
         const AxisAlignedBounds expandedSearch { startSearch + endSearch };
 
@@ -174,7 +168,7 @@ std::map<ConstraintLink, CollisionConstraint> PhysicsSystem::collectPotentialCol
                 objectBounds.getInteractionMask()
             )
         };
-        for(const auto& candidate: candidates) {
+        for(const std::pair<EntityID, AxisAlignedBounds>& candidate: candidates) {
             // self-collisions, collisions with non-physical objects are invalid
             if(
                 candidate.first == entity
@@ -184,7 +178,7 @@ std::map<ConstraintLink, CollisionConstraint> PhysicsSystem::collectPotentialCol
             }
 
             // skip already discovered collision constraints
-            const ConstraintLink link { entity, candidate.first };
+            const CollisionPair link { entity, candidate.first };
             if(
                 potentialCollisions.find(link) != potentialCollisions.end()
             ) {
@@ -193,32 +187,32 @@ std::map<ConstraintLink, CollisionConstraint> PhysicsSystem::collectPotentialCol
 
             potentialCollisions.emplace(
                 link,
-                CollisionConstraint {
+                std::make_unique<CollisionConstraint> (
                     checkCollision(
                         objectBounds,
                         getComponent<ObjectBounds>(candidate.first)
                     ),
-                    getComponent<PhysicsLocal>(entity),
+                    getComponent<PhysicsState>(entity),
                     objectBounds,
-                    getComponent<PhysicsLocal>(candidate.first),
+                    getComponent<PhysicsState>(candidate.first),
                     getComponent<ObjectBounds>(candidate.first)
-                }
+                )
             );
         }
     }
     return potentialCollisions;
 }
 
-void PhysicsSystem::applyCollisionConstraints(
-    std::map<ConstraintLink, CollisionConstraint>& constraints,
+void PhysicsSystem::applyPositionCollisionConstraints(
+    std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints,
     float substepSeconds
 ) {
-    for(auto linkConstraint: constraints) {
+    for(auto& linkConstraint: constraints) {
         // retrieve data
         auto objectOne { getComponent<ObjectBounds>(linkConstraint.first.first()) };
         auto objectTwo { getComponent<ObjectBounds>(linkConstraint.first.second()) };
-        auto physicsOne { getComponent<PhysicsLocal>(linkConstraint.first.first()) };
-        auto physicsTwo { getComponent<PhysicsLocal>(linkConstraint.first.second()) };
+        auto physicsOne { getComponent<PhysicsState>(linkConstraint.first.first()) };
+        auto physicsTwo { getComponent<PhysicsState>(linkConstraint.first.second()) };
         const auto collisionData { checkCollision(
             objectOne, objectTwo
         ) };
@@ -228,12 +222,12 @@ void PhysicsSystem::applyCollisionConstraints(
         };
 
         // apply constraint
-        linkConstraint.second.updateCollisionData(
+        linkConstraint.second->updateCollisionData(
             collisionData,
             physicsOne, objectOne,
             physicsTwo, objectTwo
         );
-        linkConstraint.second.applyConstraint(participantTable, substepSeconds);
+        linkConstraint.second->applyConstraintPosition(participantTable, substepSeconds);
 
         // push data to component arrays
         updateComponent<ObjectBounds>(linkConstraint.first.first(), objectOne);
@@ -241,7 +235,9 @@ void PhysicsSystem::applyCollisionConstraints(
     }
 }
 
-void PhysicsSystem::applyPositionConstraints(float substepSeconds) {
+void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& collisionConstraints, float substepSeconds) {
+    applyPositionCollisionConstraints(collisionConstraints, substepSeconds);
+
     for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
         // skip deleted or inactive constraints
         if(
@@ -253,14 +249,14 @@ void PhysicsSystem::applyPositionConstraints(float substepSeconds) {
 
         // gather current entity states and prepare them for consumption by
         // constraint
-        std::map<EntityID, std::pair<ObjectBounds, PhysicsLocal>> entities {};
+        std::map<EntityID, std::pair<ObjectBounds, PhysicsState>> entities {};
         BaseConstraint::ParticipantTable participants {};
         std::unique_ptr<BaseConstraint>& solver { mConstraints[constraint].first };
         BaseConstraint::ParticipantID participantID {0};
         for(const EntityID entity: mConstraints[constraint].second) {
             entities.insert({
                 entity,
-                { getComponent<ObjectBounds>(entity), getComponent<PhysicsLocal>(entity) }
+                { getComponent<ObjectBounds>(entity), getComponent<PhysicsState>(entity) }
             });
             participants.insert({
                 participantID++,
@@ -272,7 +268,7 @@ void PhysicsSystem::applyPositionConstraints(float substepSeconds) {
         }
 
         // apply constraints and update relevant entity component tables
-        solver->applyConstraint(participants, substepSeconds);
+        solver->applyConstraintPosition(participants, substepSeconds);
         for(const auto& entity: entities) {
             updateComponent(entity.first, entity.second.first);
             updateComponent(entity.first, entity.second.second);
@@ -280,6 +276,38 @@ void PhysicsSystem::applyPositionConstraints(float substepSeconds) {
     }
 }
 
+void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& collisionConstraints, float substepSeconds) {
+    applyVelocityCollisionConstraints(collisionConstraints, substepSeconds);
+}
+
+void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds) {
+    for(auto& linkConstraint: constraints) {
+        // retrieve data
+        auto objectOne { getComponent<ObjectBounds>(linkConstraint.first.first()) };
+        auto objectTwo { getComponent<ObjectBounds>(linkConstraint.first.second()) };
+        auto physicsOne { getComponent<PhysicsState>(linkConstraint.first.first()) };
+        auto physicsTwo { getComponent<PhysicsState>(linkConstraint.first.second()) };
+        const auto collisionData { checkCollision(
+            objectOne, objectTwo
+        ) };
+        const BaseConstraint::ParticipantTable participantTable {
+            { 0, { objectOne, physicsOne }},
+            { 1, { objectTwo, physicsTwo }}
+        };
+
+        // apply constraint
+        linkConstraint.second->updateCollisionData(
+            collisionData,
+            physicsOne, objectOne,
+            physicsTwo, objectTwo
+        );
+        linkConstraint.second->applyConstraintVelocity(participantTable, substepSeconds);
+
+        // push data to component arrays
+        updateComponent<PhysicsState>(linkConstraint.first.first(), physicsOne);
+        updateComponent<PhysicsState>(linkConstraint.first.second(), physicsTwo);
+    }
+}
 void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStatePartial>& previousStates) {
     // derive actual physics properties post constraint solve
     for(const auto entity: getEnabledEntities()) {
@@ -291,14 +319,13 @@ void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_
 
         // retrieve current and previous states
         const PhysicsStatePartial previousState { previousStates.at(entity) };
-        auto physicsProps { getComponent<PhysicsLocal>(entity) };
+        auto physicsProps { getComponent<PhysicsState>(entity) };
         const auto bounds { getComponent<ObjectBounds>(entity) };
         const auto orientationInverse { glm::inverse(bounds.getOrientationWorld()) };
 
         // update linear terms
         physicsProps.mVelocity = (
-            orientationInverse // in local frame
-            * (bounds.getPositionWorld() - previousState.mPosition)
+            (bounds.getPositionWorld() - previousState.mPosition)
             / substepSeconds
         );
 
@@ -306,11 +333,9 @@ void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_
         const glm::quat deltaOrientation {
             (bounds.getOrientationWorld() * glm::inverse(previousState.mOrientation))
         };
-        physicsProps.mAngularVelocity = orientationInverse * (
-            2.f * glm::vec3 {
-                deltaOrientation.x, deltaOrientation.y, deltaOrientation.z
-            } / substepSeconds
-        );
+        physicsProps.mAngularVelocity = (2.f * glm::vec3 {
+            deltaOrientation.x, deltaOrientation.y, deltaOrientation.z
+        } / substepSeconds);
         physicsProps.mAngularVelocity *= deltaOrientation.w >= 0.f ? 1.f : -1.f;
 
         // push updates to component table
@@ -369,7 +394,7 @@ bool PhysicsSystem::isConstraintActive(ConstraintID constraintID) const {
 }
 
 void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
-    auto physicsProps { getComponent<PhysicsLocal>(entityID) };
+    auto physicsProps { getComponent<PhysicsState>(entityID) };
     assert((
         isPositiveStrict(physicsProps.mMass)
     ) && "Entity must have non-zero positive mass");
