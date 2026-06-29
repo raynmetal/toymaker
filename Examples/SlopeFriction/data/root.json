@@ -59,15 +59,15 @@
             "type": "SceneNode",
             "components": [
                 {
-                    "orientation": [ 0.707, -0.408, -0.408, -0.408 ],
+                    "orientation": [ 0.707, 0.408, 0.408, -0.408 ],
                     "position": [ 0.0, 0.0, 0.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ],
                     "type": "Placement"
                 },
                 {
-                    "ambient": [ 0.01, 0.02, 0.04 ],
-                    "diffuse": [ 0.5, 0.3, 0.08 ],
-                    "specular": [ 0.01, 0.01, 0.01 ],
+                    "ambient": [ 0.1, 0.2, 0.3 ],
+                    "diffuse": [ 7.5, 5.4, 3.7 ],
+                    "specular": [ 0.5, 0.5, 0.5 ],
                     "lightType": "directional",
                     "type": "LightEmissionData"
                 }
@@ -81,13 +81,13 @@
             "components": [
                 {
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, -2.0, -4.0, 1.0 ],
+                    "position": [ 0.0, 5.0, -4.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ],
                     "type": "Placement"
                 },
                 {
                     "ambient": [ 0.0, 0.001, 0.0 ],
-                    "diffuse": [ 0.0, 0.01, 0.0 ],
+                    "diffuse": [ 0.0, 0.1, 0.02 ],
                     "specular": [ 0.003, 0.003, 0.003 ],
                     "linearConst": 0.01,
                     "quadraticConst": 0.002,
@@ -142,7 +142,7 @@
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 100000.0,
+                    "mass": 10000.0,
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
                     "velocity": [0.0, 0.0, 0.0]
