@@ -1514,6 +1514,20 @@ void SceneSystem::onApplicationInitialize(const ViewportNode::RenderConfiguratio
 void SceneSystem::onApplicationStart() {
     nodeActivationChanged(mRootNode, true);
     updateTransformsPlacements();
+
+    // signal first post transform update to all active viewports
+    std::queue<std::shared_ptr<ViewportNode>> viewportsToVisit { {mRootNode} };
+    while(!viewportsToVisit.empty()) {
+        std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
+        viewportsToVisit.pop();
+        if(!viewport->isActive()) continue;
+        if(viewport->mOwnWorld) {
+            viewport->mOwnWorld->postTransformUpdate(0.f);
+        }
+        for(auto& childViewport: viewport->mChildViewports) {
+            viewportsToVisit.push(childViewport);
+        }
+    }
 }
 
 void SceneSystem::PlacementUpdateReporter::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {

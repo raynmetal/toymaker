@@ -275,6 +275,16 @@ void SpatialQuerySystem::onSimulationStep(uint32_t timestepMillis) {
         updateTransform(entity);
     }
     mUpdateQueueTransform.clear();
+}
+
+void SpatialQuerySystem::onPostTransformUpdate(uint32_t timestepMillis) {
+    (void)timestepMillis; // prevent unused parameter warning
+    if(mRequiresInitialization)  {
+        mUpdateQueueAABB.clear();
+        rebuildOctree();
+        mRequiresInitialization = false;
+        return;
+    }
 
     for(EntityID entity: mUpdateQueueAABB) {
         mOctree->removeEntity(entity);

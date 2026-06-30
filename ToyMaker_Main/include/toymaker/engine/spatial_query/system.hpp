@@ -262,6 +262,14 @@ namespace ToyMaker {
         void onSimulationStep(uint32_t timestepMillis) override;
 
         /**
+         * @brief Uses latest transforms to update object bounds if required.
+         *
+         * @param timestepMillis The time by which the simulation will be advanced
+         * this step
+         */
+        void onPostTransformUpdate(uint32_t timestepMillis) override;
+
+        /**
          * @brief Marks this entity as requiring an octree update on the nearest simulation
          * step.
          *

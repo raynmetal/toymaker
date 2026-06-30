@@ -104,7 +104,7 @@
             "type": "SimObject",
             "components": [
                 {
-                    "fov": 65.0,
+                    "fov": 75.0,
                     "aspect": 1.333,
                     "orthographic_dimensions": {
                         "horizontal": 800,
