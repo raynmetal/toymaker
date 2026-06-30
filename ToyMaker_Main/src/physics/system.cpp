@@ -87,7 +87,7 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
         previousStates[entity] = physicsState;
 
         // update object state per positional derivatives
-        physics.mVelocity += substepSeconds * physics.mForce / physics.mMass;
+        physics.mVelocity += substepSeconds * physics.mForce * physics.mMassInverse;
         assert(isNumber(physics.mVelocity) && "Velocity computation failed");
         bounds.setPositionWorld(
             physicsState.mPosition + substepSeconds * physics.mVelocity
@@ -95,35 +95,28 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
 
         // update object state per rotational derivatives, see [Brian Mirtich's
         // paper Appendix A.3](https://people.eecs.berkeley.edu/~jfc/mirtich/impulse.html)
-        const glm::mat3 inertiaTensor {
-            glm::scale(glm::mat4 { 1.f }, physics.mRotationalInertia)
-        };
-        physics.mAngularVelocity += substepSeconds * (
-            glm::inverse(inertiaTensor) * (
-                physics.mTorque - glm::cross(
-                    physics.mAngularVelocity,
-                    inertiaTensor * physics.mAngularVelocity
+        const glm::quat toLocal { glm::inverse(physicsState.mOrientation) };
+        const glm::vec3 rotationalInertiaLocal { physics.getRotationalInertia() };
+        const glm::vec3 angularVelocityLocal { toLocal * physics.mAngularVelocity };
+        const glm::vec3 torqueLocal { toLocal * physics.mTorque };
+        const glm::vec3 deltaAngularVLocal { substepSeconds
+            * physics.mRotationalInertiaInverse * (
+                torqueLocal - glm::cross(
+                    angularVelocityLocal,
+                    rotationalInertiaLocal * angularVelocityLocal
                 )
-            )
-        );
-        const float deltaTheta {
-            substepSeconds * glm::length(physics.mAngularVelocity)
-        };
+        ) };
+        physics.mAngularVelocity += physicsState.mOrientation * deltaAngularVLocal;
 
         // only for sensible angular velocities, update orientation
-        if(glm::length(physics.mAngularVelocity) != 0.f) {
-            const glm::vec3 axisAngularVelocity {
-                glm::normalize(physics.mAngularVelocity)
+        if(squareDistance(physics.mAngularVelocity) != 0.f) {
+            const float deltaAngle {
+                substepSeconds * glm::length(physics.mAngularVelocity)
             };
-            const glm::quat orientationUpdate {
-                glm::angleAxis(deltaTheta, axisAngularVelocity)
-            };
-            const auto newOrientation {
-                glm::normalize(orientationUpdate * physicsState.mOrientation)
-            };
-            bounds.setOrientationWorld(
-                newOrientation
-            );
+            const glm::vec3 axisAngularVelocity { glm::normalize(physics.mAngularVelocity) };
+            const glm::quat orientationUpdate { glm::angleAxis(deltaAngle, axisAngularVelocity) };
+            const auto newOrientation { glm::normalize(orientationUpdate * physicsState.mOrientation) };
+            bounds.setOrientationWorld(newOrientation);
         }
 
         // push updates to component table
@@ -222,11 +215,6 @@ void PhysicsSystem::applyPositionCollisionConstraints(
         };
 
         // apply constraint
-        linkConstraint.second->updateCollisionData(
-            collisionData,
-            physicsOne, objectOne,
-            physicsTwo, objectTwo
-        );
         linkConstraint.second->applyConstraintPosition(participantTable, substepSeconds);
 
         // push data to component arrays
@@ -296,11 +284,6 @@ void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, st
         };
 
         // apply constraint
-        linkConstraint.second->updateCollisionData(
-            collisionData,
-            physicsOne, objectOne,
-            physicsTwo, objectTwo
-        );
         linkConstraint.second->applyConstraintVelocity(participantTable, substepSeconds);
 
         // push data to component arrays
@@ -396,7 +379,8 @@ bool PhysicsSystem::isConstraintActive(ConstraintID constraintID) const {
 void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
     auto physicsProps { getComponent<PhysicsState>(entityID) };
     assert((
-        isPositiveStrict(physicsProps.mMass)
+        isNonNegative(physicsProps.mMassInverse)
+        && isFinite(physicsProps.mMassInverse)
     ) && "Entity must have non-zero positive mass");
 
     // senseless bounds usually mean that spatial query system has not
@@ -408,7 +392,7 @@ void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
     }
     mEntitiesUninitialized.erase(entityID);
 
-    // Enable any constraints that depend on this entity if possible
+    // enable any constraints that depend on this entity if possible
     if(mConstraintsInitialized) {
         const auto foundEntityConstraint { mEntityConstraintMap.find(entityID) };
         if(foundEntityConstraint == mEntityConstraintMap.end()) {
@@ -423,18 +407,22 @@ void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
 
     switch(bounds.mType) {
         case ToyMaker::ObjectBounds::TrueVolumeType::BOX:
-            physicsProps.mRotationalInertia = computeRotationalInertiaBox(
-                physicsProps.mMass, bounds
+            physicsProps.setRotationalInertia(
+                computeRotationalInertiaBox(physicsProps.getMass(), bounds)
             );
             break;
         case ToyMaker::ObjectBounds::TrueVolumeType::CAPSULE:
-            physicsProps.mRotationalInertia = computeRotationalInertiaCapsule(
-                physicsProps.mMass, bounds
+            physicsProps.setRotationalInertia(
+                computeRotationalInertiaCapsule(
+                    physicsProps.getMass(), bounds
+                )
             );
             break;
         case ToyMaker::ObjectBounds::TrueVolumeType::SPHERE:
-            physicsProps.mRotationalInertia = computeRotationalInertiaSphere(
-                physicsProps.mMass, bounds
+            physicsProps.setRotationalInertia(
+                computeRotationalInertiaSphere(
+                    physicsProps.getMass(), bounds
+                )
             );
             break;
         default:

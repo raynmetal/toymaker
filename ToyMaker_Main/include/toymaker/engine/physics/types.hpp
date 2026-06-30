@@ -29,6 +29,49 @@
 namespace ToyMaker {
     struct PhysicsState;
 
+    constexpr float kPhysicsEpsilon { 0.0001 };
+
+    /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Computes the generalized inverse mass used for positional corrections applied by
+     * constraints.
+     *
+     * @param object The bounds indicating the current position and orientation of the object in world space
+     * @param inverseMass 1 divided by the mass of the object.
+     * @param inverseRotationalInertia The inverse of the rotational inertia of this object in its local frame
+     * @param correctionPoint Location of the point of application of the correction
+     * @param correctionGradient The direction of the greatest increase in error with respect to
+     * the desired object state in terms of its position.
+     *
+     */
+    float computeGeneralizedInverseMassPositional(
+        const ObjectBounds& object,
+        float inverseMass,
+        const glm::vec3& inverseRotationalInertia,
+        const glm::vec3& correctionPoint,
+        const glm::vec3& correctionGradient
+    );
+
+    /**
+     * @ingroup ToyMakerPhysics
+     *
+     * @brief Computes the generalized inverse mass used by constraints to apply strictly rotational
+     * corrections
+     *
+     * @param inverseMass 1 divided by the mass of the object.
+     * @param inverseRotationalInertia The inverse of the rotational inertia of the object in its local frame.
+     * @param correction The vector representing the desired rotational correction, usually a product
+     * of an impulse vector and its offset from the object's center-of-mass.  Moving along its direction 
+     * _increases_ the magnitude of the correction required
+     *
+     */
+    float computeGeneralizedInverseMassRotational(
+        const ObjectBounds& object,
+        const glm::vec3& inverseRotationalInertia,
+        const glm::vec3& correctionRotational
+    );
+
     /**
      * @ingroup ToyMakerPhysics
      *
@@ -47,8 +90,8 @@ namespace ToyMaker {
      */
     ObjectBounds impulseApplied(
         ObjectBounds object,
-        float inertiaPositional,
-        const glm::mat3& inertiaRotational,
+        float massInverse,
+        const glm::vec3& rotationalInertiaInverse,
         const glm::vec3& impulsePositional,
         const glm::vec3& impulsePoint
     );
@@ -62,7 +105,7 @@ namespace ToyMaker {
      */
     ObjectBounds impulseApplied(
         ObjectBounds object,
-        const glm::mat3& inertiaRotational,
+        const glm::vec3& rotationalInertiaInverse,
         const glm::vec3& impulseRotational
     );
 
@@ -144,19 +187,19 @@ namespace ToyMaker {
         glm::vec3 mAngularVelocity { 0.f };
 
         /**
-         * @brief This object's resistance to rotational change.
+         * @brief The inverse of this object's resistance to rotational change.
          *
          * Expressed in terms of the object's local frame, and should be derived from
          * the objects mass and shape.
          *
          */
-        glm::vec3 mRotationalInertia { 1.f };
+        glm::vec3 mRotationalInertiaInverse { 1.f };
 
         /**
-         * @brief How heavy and resistant to positional change this object is.
+         * @brief The inverse of this object's mass.
          *
          */
-        float mMass { 1.f };
+        float mMassInverse { 1.f };
 
         /**
          * @brief The friction coefficient of the force that prevents relative motion between the
@@ -195,6 +238,54 @@ namespace ToyMaker {
          * to find global frame force and position equivalents
          */
         void applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds);
+
+        /**
+         * @brief Gets the mass of this object
+         *
+         */
+        inline float getMass() const {
+            if(mMassInverse == 0.f) {
+                return std::numeric_limits<float>::max();
+            }
+            return 1.f / mMassInverse;
+        }
+
+        /**
+         * @brief Sets the mass of this object
+         *
+         */
+        inline void setMass(float mass) {
+            assert(isNumber(mass) && isPositiveStrict(mass) && "Mass must be a valid positive number");
+            if(mass == std::numeric_limits<float>::max()) {
+                mMassInverse = 0.f;
+                return;
+            }
+            mMassInverse = 1.f / mass;
+        }
+
+        /**
+         * @brief Gets the rotational inertia for this object along each axis in the object's local frame
+         *
+         */
+        inline glm::vec3 getRotationalInertia() const {
+            return glm::vec3 {
+                mRotationalInertiaInverse.x == 0.f? std::numeric_limits<float>::max(): 1.f / mRotationalInertiaInverse.x,
+                mRotationalInertiaInverse.y == 0.f? std::numeric_limits<float>::max(): 1.f / mRotationalInertiaInverse.y,
+                mRotationalInertiaInverse.z == 0.f? std::numeric_limits<float>::max(): 1.f / mRotationalInertiaInverse.z,
+            };
+        }
+
+        /**
+         * @brief Sets the rotational inertia for this object along each axis in the object's local frame
+         *
+         */
+        inline void setRotationalInertia(const glm::vec3& rotationalInertia) {
+            assert(
+                isNumber(rotationalInertia) && isPositiveStrict(rotationalInertia)
+                && "Rotational inertia must be valid positive number for each axis"
+            );
+            mRotationalInertiaInverse = 1.f / rotationalInertia;
+        }
     };
 
     /**
@@ -225,9 +316,7 @@ namespace ToyMaker {
         /**
          * @brief Initializes this constraint.
          */
-        BaseConstraint(float compliance) {
-            setCompliance(compliance);
-        }
+        BaseConstraint(float compliance) { setCompliance(compliance); }
 
     public:
         using ParticipantID = std::size_t;
@@ -285,13 +374,13 @@ namespace ToyMaker {
         virtual ~BaseConstraint() {};
     };
 
+
     /**
-     * @brief Subclass implementation for any constraint which takes data of type TParameter
+     * @brief Any constraint storing LagrangeCount correction multipliers.
      *
-     * @tparam TParameter A parameter specific to this constraint.
-     *
+     * @tparameter LagrangeCount The number of Lagrange multipliers in usage by this constraint
      */
-    template <typename TParameter, uint8_t LagrangeCount>
+    template<uint8_t LagrangeCount>
     class Constraint: public BaseConstraint {
     private:
         /**
@@ -313,14 +402,6 @@ namespace ToyMaker {
          */
         std::array<float, LagrangeCount> mLagrangeMultipliers { 0.f };
 
-        /**
-         * @brief A set of parameters associated with each entity
-         *
-         * These parameters store values that augment the values known by the engine -- i.e.,
-         * physics state and object bounds -- but are specific to the constraint itself
-         */
-        std::unordered_map<ParticipantID, TParameter> mParameters {};
-
     protected:
         /**
          * @brief Initializes this constraint with some initial compliance value.
@@ -328,6 +409,7 @@ namespace ToyMaker {
          */
         Constraint(float compliance): BaseConstraint { compliance } {}
 
+    public:
         /**
          * @brief Adds a delta to a lagrange value located at `index`
          *
@@ -341,23 +423,48 @@ namespace ToyMaker {
         const std::array<float, LagrangeCount>& getLagrange() const;
 
         /**
-         * @brief Returns all parameters known to this constraint.
+         * @brief Sets all lagrange multipliers to 0 in preparation for the next physics update
+         */
+        void resetLagrange() override;
+    };
+
+    /**
+     * @brief Subclass implementation for any constraint which takes data of type TParameter
+     *
+     * @tparam TParameter A parameter specific to this constraint.
+     * @tparam LagrangeCount The number of Lagrange multipliers used by this constraint
+     *
+     */
+    template <typename TParameter, uint8_t LagrangeCount>
+    class ParametrizedConstraint: public Constraint<LagrangeCount> {
+    private:
+        /**
+         * @brief A set of parameters associated with each entity
+         *
+         * These parameters store values that augment the values known by the engine -- i.e.,
+         * physics state and object bounds -- but are specific to the constraint itself
+         */
+        std::unordered_map<BaseConstraint::ParticipantID, TParameter> mParameters {};
+
+    protected:
+        /**
+         * @brief Initializes this constraint with some initial compliance value.
          *
          */
-        const std::unordered_map<ParticipantID, TParameter>& getParameters() const;
+        ParametrizedConstraint(float compliance): Constraint<LagrangeCount> { compliance } {}
 
     public:
         /**
          * @brief Adds a parameter for this constraint.
          *
          */
-        void setParameter(ParticipantID participant, const TParameter& parameter);
+        void setParameter(BaseConstraint::ParticipantID participant, const TParameter& parameter);
 
         /**
          * @brief Gets parameter belonging to a particular constraint participant
          *
          */
-        inline TParameter getParameter(ParticipantID participant) const {
+        inline TParameter getParameter(BaseConstraint::ParticipantID participant) const {
             return mParameters.at(participant);
         }
 
@@ -365,25 +472,15 @@ namespace ToyMaker {
          * @brief Removes a parameter belonging to a particular constraint participant
          *
          */
-        void removeParameter(ParticipantID participant);
+        void removeParameter(BaseConstraint::ParticipantID participant);
 
         /**
+         * @brief Returns all parameters known to this constraint.
          *
          */
-        void resetLagrange() override;
+        const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& getParameters() const;
     };
 
-    /**
-     * @ingroup ToyMakerPhysics
-     *
-     * @brief Constraint data used for the computation of collision constraint corrections.
-     *
-     */
-    struct CollisionConstraintData {
-        Contact mContact;
-        float mInverseMass;
-        glm::mat3 mRotationalInertia;
-    };
 
     /**
      * @ingroup ToyMakerPhysics
@@ -412,7 +509,7 @@ namespace ToyMaker {
      * Repositions objects such that they no longer intersect along the axis of collision.
      *
      */
-    class CollisionConstraint: protected Constraint<CollisionConstraintData, 2> {
+    class CollisionConstraint: protected Constraint<2> {
     private:
         /**
          * @brief Whether or not two objects are currently intersecting (and therefore whether
@@ -445,7 +542,22 @@ namespace ToyMaker {
          */
         glm::vec3 mRelativePointContactB { 0.f };
 
+        /**
+         * @brief Upon collision, points in the direction object B would need to move in order to
+         * be separated from object A
+         *
+         */
+        glm::vec3 mContactNormal { 0.f };
+
+        /**
+         * @brief The velocity of A's point of contact relative to B at the time the collision took
+         * place
+         *
+         */
+        float mCollisionVelocity { 0.f };
+
     public:
+
         /**
          * @brief Initializes constraint with collision data from two potentially intersecting objects
          *
@@ -459,7 +571,7 @@ namespace ToyMaker {
         );
 
         /**
-         * @brief Updates collision data to value to be used for current substep
+         * @brief Caches collision related information shared across position and velocity corrections
          *
          */
         void updateCollisionData(
@@ -472,7 +584,6 @@ namespace ToyMaker {
 
         /**
          * @brief Separates intersecting/colliding objects and applies static friction.
-         *
          *
          */
         void applyConstraintPosition(
@@ -490,11 +601,10 @@ namespace ToyMaker {
         ) override;
     };
 
-    class PinConstraint: public Constraint<PinConstraintData, 2> {
-
+    class PinConstraint: public ParametrizedConstraint<PinConstraintData, 2> {
     public:
         PinConstraint(const std::vector<PinConstraintData>& data, float compliance) :
-        Constraint<PinConstraintData, 2> { compliance }
+        ParametrizedConstraint<PinConstraintData, 2> { compliance }
         {
             assert(data.size() == 1 && "Pin constraint takes exactly one participant");
             setParameter(0, data[0]);
@@ -515,11 +625,18 @@ namespace ToyMaker {
         PhysicsState& physics
     ) {
         assert(json.at("type") == PhysicsState::getComponentTypeName() && "Incorrect type property for an physics property component");
-        const float mass { json.at("mass") };
-        physics = { .mMass { mass } };
-        assert(mass > 0.f && "Mass must be positive");
+        physics = {};
+
+        float mass;
+        if(json.at("mass").is_string() && json.at("mass") == "infinity") {
+            mass = std::numeric_limits<float>::max();
+        } else {
+            mass = json.at("mass");
+        }
+        physics.setMass(mass);
 
         if(json.find("velocity") != json.end()) {
+
             physics.mVelocity = glm::vec3 {
                 json.at("velocity")[0],
                 json.at("velocity")[1],
@@ -565,49 +682,53 @@ namespace ToyMaker {
         nlohmann::json& json,
         const PhysicsState& physics
     ) {
+        const float mass { physics.getMass() };
         json = {
             { "type", PhysicsState::getComponentTypeName() },
-            { "mass", physics.mMass },
+            mass != std::numeric_limits<float>::max()?
+                nlohmann::json::object({ "mass", mass }):
+                nlohmann::json::object({ "mass", "infinity" }),
             { "coefficient_friction_static", physics.mCoefficientFrictionStatic },
             { "coefficient_friction_dynamic", physics.mCoefficientFrictionDynamic },
         };
     }
 
+    template <uint8_t LagrangeCount>
+    inline const std::array<float, LagrangeCount>& Constraint<LagrangeCount>::getLagrange() const {
+        return mLagrangeMultipliers;
+    }
+
+    template <uint8_t LagrangeCount>
+    inline void Constraint<LagrangeCount>::applyLagrangeDelta(float delta, uint8_t index) {
+        mLagrangeMultipliers[index] += delta;
+    }
+
+    template <uint8_t LagrangeCount>
+    inline void Constraint<LagrangeCount>::resetLagrange() {
+        resetLagrange(std::make_integer_sequence<uint8_t, LagrangeCount>());
+    }
+
+    template<uint8_t LagrangeCount>
+    template<uint8_t ...indices>
+    inline void Constraint<LagrangeCount>::resetLagrange(std::integer_sequence<uint8_t, indices...> sequence) {
+        ((mLagrangeMultipliers[indices] = 0.f), ...);
+    }
+
     template<typename TParameter, uint8_t LagrangeCount>
-    void Constraint<TParameter, LagrangeCount>::setParameter(BaseConstraint::ParticipantID participant, const TParameter& parameter) {
+    inline void ParametrizedConstraint<TParameter, LagrangeCount>::setParameter(BaseConstraint::ParticipantID participant, const TParameter& parameter) {
         mParameters[participant] = parameter;
     }
 
     template<typename TParameter, uint8_t LagrangeCount>
-    void Constraint<TParameter, LagrangeCount>::removeParameter(BaseConstraint::ParticipantID participant) {
+    inline void ParametrizedConstraint<TParameter, LagrangeCount>::removeParameter(BaseConstraint::ParticipantID participant) {
         mParameters.erase(participant);
     }
 
     template <typename TParameter, uint8_t LagrangeCount>
-    const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& Constraint<TParameter, LagrangeCount>::getParameters() const {
+    inline const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& ParametrizedConstraint<TParameter, LagrangeCount>::getParameters() const {
         return mParameters;
     }
 
-    template <typename TParameter, uint8_t LagrangeCount>
-    const std::array<float, LagrangeCount>& Constraint<TParameter, LagrangeCount>::getLagrange() const {
-        return mLagrangeMultipliers;
-    }
-
-    template <typename TParameter, uint8_t LagrangeCount>
-    void Constraint<TParameter, LagrangeCount>::applyLagrangeDelta(float delta, uint8_t index) {
-        mLagrangeMultipliers[index] += delta;
-    }
-
-    template <typename TParameter, uint8_t LagrangeCount>
-    void Constraint<TParameter, LagrangeCount>::resetLagrange() {
-        resetLagrange(std::make_integer_sequence<uint8_t, LagrangeCount>());
-    }
-
-    template<typename TParameter, uint8_t LagrangeCount>
-    template<uint8_t ...indices>
-    void Constraint<TParameter, LagrangeCount>::resetLagrange(std::integer_sequence<uint8_t, indices...> sequence) {
-        ((mLagrangeMultipliers[indices] = 0.f), ...);
-    }
 }
 
 #endif

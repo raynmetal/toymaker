@@ -70,7 +70,7 @@ void Gravity::simulationUpdate(uint32_t timestep) {
     auto physics { getComponent<ToyMaker::PhysicsState>() };
     const auto bounds { getComponent<ToyMaker::ObjectBounds>() };
     physics.applyForceGlobal(
-        physics.mMass * glm::vec3 { 0.f, -10.f, 0.f },
+        physics.getMass() * glm::vec3 { 0.f, -10.f, 0.f },
         bounds.getPositionWorld(),
         bounds
     );

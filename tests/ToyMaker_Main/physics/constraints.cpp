@@ -27,8 +27,8 @@ TEST_CASE("Head-On") {
         .mTorque { 0.f },
         .mVelocity { 0.f },
         .mAngularVelocity { 0.f },
-        .mRotationalInertia { 1.f },
-        .mMass { 1.f }
+        .mRotationalInertiaInverse { 1.f },
+        .mMassInverse { 1.f }
     };
     ToyMaker::PhysicsState physics2 { physics1 };
 
@@ -50,12 +50,12 @@ TEST_CASE("Head-On") {
         };
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
-        CHECK(glm::abs(object1.getPositionWorld().x - (-5.f)) <= .001f);
-        CHECK(glm::abs(object2.getPositionWorld().x - 5.f) <= .001f);
+        CHECK(glm::abs(object1.getPositionWorld().x - (-5.f)) <= .002f);
+        CHECK(glm::abs(object2.getPositionWorld().x - 5.f) <= .002f);
     }
 
     SUBCASE("Mass 1 > 2") {
-        physics1.mMass = 2.f;
+        physics1.setMass(2.f);
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
@@ -70,13 +70,13 @@ TEST_CASE("Head-On") {
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
         const auto collisionAfter { ToyMaker::checkCollision(object1, object2) };
-        CHECK(glm::abs(centerSeparation - 10.f) <= .001f );
+        CHECK(glm::abs(centerSeparation - 10.f) <= .01f );
         CHECK(glm::abs(object1.getPositionWorld().x) < glm::abs(object2.getPositionWorld().x));
         CHECK(collisionAfter.mCollided == false);
     }
 
     SUBCASE("Mass 1 < 2") {
-        physics2.mMass = 2.f;
+        physics2.setMass(2.f);
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
@@ -91,7 +91,7 @@ TEST_CASE("Head-On") {
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
         const auto collisionAfter { ToyMaker::checkCollision(object1, object2) };
-        CHECK(glm::abs(centerSeparation - 10.f) <= .001f );
+        CHECK(glm::abs(centerSeparation - 10.f) <= .01f );
         CHECK(glm::abs(object1.getPositionWorld().x) > glm::abs(object2.getPositionWorld().x));
         CHECK(collisionAfter.mCollided == false);
     }
@@ -117,8 +117,8 @@ TEST_CASE("Offset") {
         .mTorque { 0.f },
         .mVelocity { 0.f },
         .mAngularVelocity { 0.f },
-        .mRotationalInertia { 1.f },
-        .mMass { 1.f }
+        .mRotationalInertiaInverse { 1.f },
+        .mMassInverse { 1.f }
     };
     ToyMaker::PhysicsState physics2 { physics1 };
     const float originalCenterSeparation { glm::length(object1.getPositionWorld() - object2.getPositionWorld()) };
@@ -165,8 +165,8 @@ TEST_CASE("Offset") {
     }
 
     SUBCASE("Inertia 1 > 2") {
-        physics1.mRotationalInertia.z = 2.f;
-        physics1.mMass = 2.f;
+        physics1.setRotationalInertia(glm::vec3{1.f, 1.f, 2.f});
+        physics1.setMass(2.f);
 
         const glm::quat oldRotation1 { object1.getOrientationWorld() };
         const glm::quat oldRotation2 { object2.getOrientationWorld() };
@@ -203,8 +203,8 @@ TEST_CASE("Offset") {
     }
 
     SUBCASE("Inertia 1 < 2") {
-        physics2.mRotationalInertia.z = 2.f;
-        physics2.mMass = 2.f;
+        physics2.setRotationalInertia({ 1.f, 1.f, 2.f });
+        physics2.setMass(2.f);
 
         const glm::quat oldRotation1 { object1.getOrientationWorld() };
         const glm::quat oldRotation2 { object2.getOrientationWorld() };

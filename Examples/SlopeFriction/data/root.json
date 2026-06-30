@@ -142,7 +142,7 @@
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 10000.0,
+                    "mass": "infinity",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
                     "velocity": [0.0, 0.0, 0.0]
