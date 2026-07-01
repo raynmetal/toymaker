@@ -291,6 +291,7 @@ void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, st
         updateComponent<PhysicsState>(linkConstraint.first.second(), physicsTwo);
     }
 }
+
 void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStatePartial>& previousStates) {
     // derive actual physics properties post constraint solve
     for(const auto entity: getEnabledEntities()) {

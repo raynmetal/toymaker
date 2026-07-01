@@ -274,16 +274,16 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
 
     // Discover just how fast the contact points on each surface are moving
     // relative to each other
-    const glm::vec3 contactVelocityA { physicsA.mVelocity + glm::cross(
+    const glm::vec3 pointVelocityA { physicsA.mVelocity + glm::cross(
         physicsA.mAngularVelocity,
         contactPositionA - positionA
     ) };
-    const glm::vec3 contactVelocityB { physicsB.mVelocity + glm::cross(
+    const glm::vec3 pointVelocityB { physicsB.mVelocity + glm::cross(
         physicsB.mAngularVelocity,
         contactPositionB - positionB
     ) };
-    const glm::vec3 contactVelocity { contactVelocityA - contactVelocityB };
-    const float bounceVelocity { glm::dot(contactVelocity, mContactNormal) };
+    const glm::vec3 pointVelocityAB { pointVelocityA - pointVelocityB };
+    const float bounceVelocity { glm::dot(pointVelocityAB, mContactNormal) };
 
     // Apply static friction if required
     const float coefficientFrictionDynamic { glm::min(
@@ -292,7 +292,7 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
     ) };
     if(coefficientFrictionDynamic > 0.f) {
         const glm::vec3 tangentialVelocity {
-            contactVelocity - bounceVelocity * mContactNormal
+            pointVelocityAB - bounceVelocity * mContactNormal
         };
 
         // derive the impulse required to fix our velocities
@@ -319,6 +319,38 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
             objectB,
             physicsB,
             -impulseFriction,
+            contactPositionB
+        );
+    }
+
+    // derive the current coefficient of restitution between this pair of objects, set
+    // to 0 when small separation velocity detected
+    const float coefficientRestitution { (glm::abs(bounceVelocity) <= 20.f * substepSeconds)?
+        0.f :
+        glm::max(physicsA.mCoefficientRestitution, physicsB.mCoefficientRestitution)
+    };
+    const float bounceVelocityLimit { glm::min(-coefficientRestitution * mCollisionVelocity, 0.f) };
+
+    // attempt correction only when a bounce has taken place
+    if(bounceVelocity * mCollisionVelocity < 0.f) {
+        const glm::vec3 correctionRestitution {
+            mContactNormal * (bounceVelocityLimit - bounceVelocity)
+        };
+        const glm::vec3 impulseRestitution {
+            correctionRestitution / (generalizedInverseA + generalizedInverseB)
+        };
+
+        // apply the impulse
+        physicsA = impulseApplied(
+            objectA,
+            physicsA,
+            impulseRestitution,
+            contactPositionA
+        );
+        physicsB = impulseApplied(
+            objectB,
+            physicsB,
+            -impulseRestitution,
             contactPositionB
         );
     }

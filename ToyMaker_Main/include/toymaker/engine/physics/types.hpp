@@ -214,6 +214,15 @@ namespace ToyMaker {
         float mCoefficientFrictionDynamic { 0.f };
 
         /**
+         * @brief The fraction of the net kinetic energy prior to a collision retained by a pair of objects after
+         * the collision has taken place.
+         *
+         * Used to limit the separation velocity between the contact points of two objects participating in
+         * a collision.
+         */
+        float mCoefficientRestitution { .8f };
+
+        /**
          * @brief Applies a force `force` at position `atPosition`, updating the torque
          * and central force of an object whose state is represented by `physics`.
          *
@@ -283,6 +292,18 @@ namespace ToyMaker {
                 && "Rotational inertia must be valid positive number for each axis"
             );
             mRotationalInertiaInverse = 1.f / rotationalInertia;
+        }
+
+        /**
+         * @brief Sets the coefficient of restitution for this object.
+         *
+         */
+        inline void setCoefficientRestitution(float newCoefficient) {
+            assert(
+                isNonNegative(newCoefficient) && newCoefficient <= 1.f
+                && "Restitution coefficient must be non negative and cannot exceed 1"
+            );
+            mCoefficientRestitution = newCoefficient;
         }
     };
 
@@ -674,6 +695,9 @@ namespace ToyMaker {
             physics.mCoefficientFrictionDynamic = json.at("coefficient_friction_dynamic");
             assert(physics.mCoefficientFrictionDynamic >= 0.f && "Coefficient friction must be non-negative");
         }
+        if(json.find("coefficient_restitution") != json.end()) {
+            physics.setCoefficientRestitution(json.at("coefficient_restitution"));
+        }
     }
 
     inline void to_json(
@@ -688,6 +712,7 @@ namespace ToyMaker {
                 nlohmann::json::object({ "mass", "infinity" }),
             { "coefficient_friction_static", physics.mCoefficientFrictionStatic },
             { "coefficient_friction_dynamic", physics.mCoefficientFrictionDynamic },
+            { "coefficient_restitution", physics.mCoefficientRestitution },
         };
     }
 
