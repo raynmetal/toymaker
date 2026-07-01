@@ -208,7 +208,7 @@ void CollisionConstraint::applyConstraintPosition(
             generalizedInverseA + generalizedInverseB + alphaDerivative2
         )
     };
-    if(glm::abs(lagrangeFriction + lagrangeDeltaFriction) >= glm::abs(combinedFrictionCoefficient * (lagrangeCollision + lagrangeDeltaCollision))) {
+    if(glm::abs(lagrangeFriction) >= glm::abs(combinedFrictionCoefficient * (lagrangeCollision + lagrangeDeltaCollision))) {
         return;
     }
 

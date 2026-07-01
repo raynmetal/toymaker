@@ -224,8 +224,6 @@ void PhysicsSystem::applyPositionCollisionConstraints(
 }
 
 void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& collisionConstraints, float substepSeconds) {
-    applyPositionCollisionConstraints(collisionConstraints, substepSeconds);
-
     for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
         // skip deleted or inactive constraints
         if(
@@ -262,6 +260,8 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, std::unique
             updateComponent(entity.first, entity.second.second);
         }
     }
+
+    applyPositionCollisionConstraints(collisionConstraints, substepSeconds);
 }
 
 void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& collisionConstraints, float substepSeconds) {

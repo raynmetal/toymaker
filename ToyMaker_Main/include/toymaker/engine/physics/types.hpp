@@ -29,8 +29,6 @@
 namespace ToyMaker {
     struct PhysicsState;
 
-    constexpr float kPhysicsEpsilon { 0.0001 };
-
     /**
      * @ingroup ToyMakerPhysics
      *
