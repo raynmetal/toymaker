@@ -28,7 +28,7 @@ void PhysicsState::applyForceGlobal(const glm::vec3& force, const glm::vec3& atP
     const glm::vec3 toCenter { forceOffset != glm::vec3 { 0.f }?
         -glm::normalize(forceOffset) : glm::normalize(force)
     };
-    const glm::vec3 centerForce { glm::dot(force, toCenter) * force };
+    const glm::vec3 centerForce { glm::dot(force, toCenter) * glm::normalize(force) };
 
     // calculate torque being applied tangentially
     const glm::vec3 axialTorque { forceOffset != glm::vec3 { 0.f }?
