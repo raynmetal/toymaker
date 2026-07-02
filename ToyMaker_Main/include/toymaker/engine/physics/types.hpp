@@ -45,8 +45,7 @@ namespace ToyMaker {
      */
     float computeGeneralizedInverseMassPositional(
         const ObjectBounds& object,
-        float inverseMass,
-        const glm::vec3& inverseRotationalInertia,
+        const PhysicsState& physics,
         const glm::vec3& correctionPoint,
         const glm::vec3& correctionGradient
     );
@@ -66,7 +65,7 @@ namespace ToyMaker {
      */
     float computeGeneralizedInverseMassRotational(
         const ObjectBounds& object,
-        const glm::vec3& inverseRotationalInertia,
+        const PhysicsState& physics,
         const glm::vec3& correctionRotational
     );
 
@@ -86,10 +85,9 @@ namespace ToyMaker {
      * a positional impulse.
      *
      */
-    ObjectBounds impulseApplied(
+    ObjectBounds applyImpulseObject(
         ObjectBounds object,
-        float massInverse,
-        const glm::vec3& rotationalInertiaInverse,
+        const PhysicsState& physics,
         const glm::vec3& impulsePositional,
         const glm::vec3& impulsePoint
     );
@@ -101,9 +99,9 @@ namespace ToyMaker {
      * a rotational impulse.
      *
      */
-    ObjectBounds impulseApplied(
+    ObjectBounds applyImpulseObject(
         ObjectBounds object,
-        const glm::vec3& rotationalInertiaInverse,
+        const PhysicsState& physics,
         const glm::vec3& impulseRotational
     );
 
@@ -113,7 +111,7 @@ namespace ToyMaker {
      * @brief Returns new physics state after application of global impulse
      *
      */
-    PhysicsState impulseApplied(
+    PhysicsState applyImpulsePhysics(
         const ObjectBounds& object,
         PhysicsState physics,
         const glm::vec3& impulsePositional,
@@ -125,7 +123,7 @@ namespace ToyMaker {
      *
      * @brief Returns new physics state after application of global angular impulse
      */
-    PhysicsState impulseApplied(
+    PhysicsState applyImpulsePhysics(
         const ObjectBounds& object,
         PhysicsState physics,
         const glm::vec3& impulseRotational
@@ -181,7 +179,7 @@ namespace ToyMaker {
          * mode.
          *
          */
-        static Traits MaskMode;
+        static const Traits MaskMode;
 
         /**
          * @brief Fetches the component type string associated with this class.
@@ -339,7 +337,11 @@ namespace ToyMaker {
                 isNumber(rotationalInertia) && isPositiveStrict(rotationalInertia)
                 && "Rotational inertia must be valid positive number for each axis"
             );
-            mRotationalInertiaInverse = 1.f / rotationalInertia;
+            mRotationalInertiaInverse = glm::vec3 {
+                rotationalInertia.x == std::numeric_limits<float>::max()? 0.f: 1.f / rotationalInertia.x,
+                rotationalInertia.y == std::numeric_limits<float>::max()? 0.f: 1.f / rotationalInertia.y,
+                rotationalInertia.z == std::numeric_limits<float>::max()? 0.f: 1.f / rotationalInertia.z,
+            };
         }
 
         /**
@@ -388,7 +390,7 @@ namespace ToyMaker {
         }
     };
 
-    inline PhysicsState::Traits PhysicsState::MaskMode { 0x3 };
+    inline const PhysicsState::Traits PhysicsState::MaskMode { 0x3 };
 
     /**
      * @ingroup ToyMakerPhysics
@@ -582,27 +584,6 @@ namespace ToyMaker {
         const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& getParameters() const;
     };
 
-
-    /**
-     * @ingroup ToyMakerPhysics
-     *
-     * @brief Constraint data used for the computation of a fixed constraint corrections.
-     *
-     */
-    struct PinConstraintData {
-        /**
-         * @brief The desired origin for the object affected by this constraint.
-         *
-         */
-        glm::vec3 mOrigin;
-
-        /**
-         * @brief The desired orientation for the object affected by this constraint.
-         *
-         */
-        glm::quat mOrientation;
-    };
-
     /**
      * @brief Constraint requiring exactly two parameters representing colliding rigid
      * bodies.
@@ -697,25 +678,6 @@ namespace ToyMaker {
          *
          */
         void applyConstraintVelocity(
-            const ParticipantTable& states,
-            float substepSeconds
-        ) override;
-    };
-
-    class PinConstraint: public ParametrizedConstraint<PinConstraintData, 2> {
-    public:
-        PinConstraint(const std::vector<PinConstraintData>& data, float compliance) :
-        ParametrizedConstraint<PinConstraintData, 2> { compliance }
-        {
-            assert(data.size() == 1 && "Pin constraint takes exactly one participant");
-            setParameter(0, data[0]);
-        }
-
-        /**
-         * @brief Moves object to pin location and orientation
-         *
-         */
-        void applyConstraintPosition(
             const ParticipantTable& states,
             float substepSeconds
         ) override;

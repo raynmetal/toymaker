@@ -87,29 +87,35 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
         previousStates[entity] = physicsState;
 
         // update object state per positional derivatives
-        physics.mVelocity += substepSeconds * physics.mForce * physics.mMassInverse;
-        assert(isNumber(physics.mVelocity) && "Velocity computation failed");
-        bounds.setPositionWorld(
-            physicsState.mPosition + substepSeconds * physics.mVelocity
-        );
+        if(physics.getMode() == PhysicsState::MODE_DYNAMIC) {
+            physics.mVelocity += substepSeconds * physics.mForce * physics.mMassInverse;
+            assert(isNumber(physics.mVelocity) && "Velocity computation failed");
+        }
+        if(physics.getMode() != PhysicsState::MODE_STATIC && squareDistance(physics.mVelocity) != 0.f) {
+            bounds.setPositionWorld(
+                physicsState.mPosition + substepSeconds * physics.mVelocity
+            );
+        }
 
-        // update object state per rotational derivatives, see [Brian Mirtich's
-        // paper Appendix A.3](https://people.eecs.berkeley.edu/~jfc/mirtich/impulse.html)
-        const glm::quat toLocal { glm::inverse(physicsState.mOrientation) };
-        const glm::vec3 rotationalInertiaLocal { physics.getRotationalInertia() };
-        const glm::vec3 angularVelocityLocal { toLocal * physics.mAngularVelocity };
-        const glm::vec3 torqueLocal { toLocal * physics.mTorque };
-        const glm::vec3 deltaAngularVLocal { substepSeconds
-            * physics.mRotationalInertiaInverse * (
-                torqueLocal - glm::cross(
-                    angularVelocityLocal,
-                    rotationalInertiaLocal * angularVelocityLocal
-                )
-        ) };
-        physics.mAngularVelocity += physicsState.mOrientation * deltaAngularVLocal;
+        // update object state per rotational derivatives, see paper [Impulse based dynamic simulation
+        // Appendix A.3.](https://people.eecs.berkeley.edu/~jfc/mirtich/impulse.html)
+        if(physics.getMode() == PhysicsState::MODE_DYNAMIC) {
+            const glm::quat toLocal { glm::inverse(physicsState.mOrientation) };
+            const glm::vec3 rotationalInertiaLocal { physics.getRotationalInertia() };
+            const glm::vec3 angularVelocityLocal { toLocal * physics.mAngularVelocity };
+            const glm::vec3 torqueLocal { toLocal * physics.mTorque };
+            const glm::vec3 deltaAngularVLocal { substepSeconds
+                * physics.mRotationalInertiaInverse * (
+                    torqueLocal - glm::cross(
+                        angularVelocityLocal,
+                        rotationalInertiaLocal * angularVelocityLocal
+                    )
+            ) };
+            physics.mAngularVelocity += physicsState.mOrientation * deltaAngularVLocal;
+        }
 
-        // only for sensible angular velocities, update orientation
-        if(squareDistance(physics.mAngularVelocity) != 0.f) {
+        // For sensible angular velocities, update orientation
+        if(physics.getMode() != PhysicsState::MODE_STATIC && squareDistance(physics.mAngularVelocity) != 0.f) {
             const float deltaAngle {
                 substepSeconds * glm::length(physics.mAngularVelocity)
             };

@@ -85,7 +85,7 @@ std::shared_ptr<BaseSimObjectAspect> SimSystem::constructAspect(const nlohmann::
     return mAspectConstructors.at(jsonAspectProperties.at("type").get<std::string>())(jsonAspectProperties);
 }
 
-void SimSystem::onSimulationStep(uint32_t simulationStepMillis) {
+void SimSystem::onSimulationPreStep(uint32_t simulationStepMillis) {
     for(EntityID entity: getEnabledEntities()) {
         getComponent<SimCore>(entity).mSimObject->simulationUpdate(simulationStepMillis);
     }

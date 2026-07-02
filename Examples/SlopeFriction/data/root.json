@@ -129,10 +129,7 @@
         {
             "name": "slope",
             "parent": "/",
-            "type": "SimObject",
-            "aspects": [
-                { "type": "Pin" }
-            ],
+            "type": "SceneNode",
             "components": [
                 {
                     "type": "Placement",

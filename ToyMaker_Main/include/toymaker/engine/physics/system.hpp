@@ -93,7 +93,9 @@ namespace ToyMaker {
      * and collisions.  Collision events are generated when an object with a certain interaction mask
      * overlaps with objects belonging to one of the layers indicated by that mask.
      *
-     * The physics system implemented here is based on XPBD (Extended Position Based Dynamics).
+     * The physics system implemented here is based on XPBD (Extended Position Based Dynamics).  See paper
+     * [Detailed Rigid Body Simulation using Extended Position Based Dynamics](https://matthias-research.github.io/pages/publications/PBDBodies.pdf).
+     *
      *
      * @see ToyMakerSpatialQuerySystem
      *
@@ -210,6 +212,9 @@ namespace ToyMaker {
         /**
          * @brief Derives position and rotation updates for physics objects based on
          * their current state and forces acting on them.
+         *
+         * See [Impulse Based Dynamics](https://people.eecs.berkeley.edu/~jfc/mirtich/impulse.html) for derivations
+         * of integration steps.
          *
          */
         void integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStatePartial>& previousState);

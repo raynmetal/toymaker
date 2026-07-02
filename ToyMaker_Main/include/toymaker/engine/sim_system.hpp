@@ -137,7 +137,7 @@ namespace ToyMaker{
          * 
          * @param simulationStepMillis The time by which the simulation should be advanced, in milliseconds.
          */
-        void onSimulationStep(uint32_t simulationStepMillis) override;
+        void onSimulationPreStep(uint32_t simulationStepMillis) override;
 
         /**
          * @brief The method responsible for forwarding engine variable step events to SimObjects and their SimObjectAspects.
