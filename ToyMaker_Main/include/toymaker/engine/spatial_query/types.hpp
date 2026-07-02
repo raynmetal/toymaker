@@ -1075,7 +1075,7 @@ namespace ToyMaker {
          * component, indicating that user facing Transform should be updated accordingly
          *
          */
-        bool requiresTransformUpdate { false };
+        bool mTransformUpdateRequired { false };
 
         /**
          * @brief Flag set when these object bounds were set by the engine, through light
@@ -1088,7 +1088,7 @@ namespace ToyMaker {
          * @see SpatialQuerySystem::LightBoundsComputeSystem
          *
          */
-        bool isSystemComputed { true };
+        bool mIsSystemComputed { true };
 
         /**
          * @brief Flag set when this object's bounds must be recomputed by a related
@@ -1097,7 +1097,7 @@ namespace ToyMaker {
          * @see SpatialQuerySystem::StaticModelBoundsComputeSystem
          * @see SpatialQuerySystem::LightBoundsComputeSystem
          */
-        bool requiresVolumeUpdate { true };
+        bool mVolumeUpdateRequired { true };
 
         /**
          * @brief Computes new mPosition and mOrientation offsets based on (presumably) the model transform of the underlying scene object.
@@ -1563,7 +1563,7 @@ namespace ToyMaker {
                 );
                 break;
         }
-        objectBounds.isSystemComputed = false;
+        objectBounds.mIsSystemComputed = false;
     }
 
     /** @ingroup ToyMakerSerialization ToyMakerSpatialQuerySystem */

@@ -143,6 +143,7 @@
                 {
                     "type": "PhysicsState",
                     "mass": "infinity",
+                    "mode": "static",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
                     "velocity": [0.0, 0.0, 0.0]
@@ -177,6 +178,7 @@
                 },
                 {
                     "type": "PhysicsState",
+                    "mode": "dynamic",
                     "mass": 1.0,
                     "coefficient_friction_static": 0.3,
                     "coefficient_friction_dynamic": 0.2,

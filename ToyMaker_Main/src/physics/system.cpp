@@ -35,7 +35,7 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
         }
     }
 
-    // do physics update for all eligible entities
+    // do physics update for all eligible 
     std::unordered_map<EntityID, PhysicsStatePartial> previousStates {};
     const float substepInterval { (static_cast<float>(timestepMillis) / static_cast<float>(mSubsteps)) / static_cast<float>(1e3) };
 

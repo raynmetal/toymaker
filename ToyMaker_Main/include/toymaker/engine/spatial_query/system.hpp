@@ -259,7 +259,7 @@ namespace ToyMaker {
          * @param timestepMillis The time by which the simulation will be advanced this
          * simulation frame.
          */
-        void onSimulationStep(uint32_t timestepMillis) override;
+        void onSimulationPostStep(uint32_t timestepMillis) override;
 
         /**
          * @brief Uses latest transforms to update object bounds if required.

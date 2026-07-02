@@ -46,10 +46,7 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEnti
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityEnabled(EntityID entityID) {
     const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
-    if(
-        !bounds.isSystemComputed
-        || bounds.requiresVolumeUpdate
-    ) {
+    if(!bounds.mIsSystemComputed || !bounds.mVolumeUpdateRequired) {
         return;
     }
     recomputeObjectBounds(entityID);
@@ -57,13 +54,8 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityEnabled(EntityI
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
     const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
-    if(
-        !bounds.isSystemComputed
-        || (
-            updatedComponent == mWorld.lock()->getComponentType<ObjectBounds>()
-            && !bounds.requiresVolumeUpdate
-        )
-    ) {
+    // TODO: Logic for object bound recomputation is scattered, find a way to simplify
+    if(!bounds.mIsSystemComputed || !bounds.mVolumeUpdateRequired) {
         return;
     }
     recomputeObjectBounds(entityID);
@@ -71,9 +63,11 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityUpdated(EntityI
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(EntityID entityID) {
     ObjectBounds objectBounds { getComponent<ObjectBounds>(entityID) };
+
     const glm::mat3 objectScale { getComponent<Transform>(entityID).getMatrixScale() };
 
     const std::shared_ptr<StaticModel> model { getComponent<std::shared_ptr<StaticModel>>(entityID) };
+    objectBounds.mVolumeUpdateRequired = false;
 
     // Only the transform has been updated -- simply resize OOBB accordingly
     if(!model->boundsNeedRecompute()) {
@@ -135,19 +129,23 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
         minCorner + .5f * box.mDimensions,
         glm::vec3{0.f, 0.f, 0.f}
     );
+    objectBounds.mIsSystemComputed = true;
+    objectBounds.mTransformUpdateRequired = false;
+    objectBounds.mVolumeUpdateRequired = false;
     model->setBounds(objectBounds);
 
     // apply the object's current scale to the model before setting the bounds on the entity
     objectBounds.mTrueVolume.mBox.mDimensions = objectScale * objectBounds.mTrueVolume.mBox.mDimensions;
     objectBounds.mPositionOffset = objectScale * objectBounds.mPositionOffset;
+
     updateComponent<ObjectBounds>(entityID, objectBounds);
 }
 
 void SpatialQuerySystem::LightBoundsComputeSystem::onEntityEnabled(EntityID entityID) {
     const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
     if(
-        !bounds.isSystemComputed
-        || !bounds.requiresVolumeUpdate
+        !bounds.mIsSystemComputed
+        || !bounds.mVolumeUpdateRequired
     ) {
         return;
     }
@@ -157,11 +155,8 @@ void SpatialQuerySystem::LightBoundsComputeSystem::onEntityEnabled(EntityID enti
 void SpatialQuerySystem::LightBoundsComputeSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
     const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
     if(
-        !bounds.isSystemComputed
-        || (
-            updatedComponent == mWorld.lock()->getComponentType<ObjectBounds>()
-            && !bounds.requiresVolumeUpdate
-        )
+        !bounds.mIsSystemComputed
+        || !bounds.mVolumeUpdateRequired
     ) {
         return;
     }
@@ -177,6 +172,7 @@ void SpatialQuerySystem::LightBoundsComputeSystem::recomputeObjectBounds(EntityI
     objectBounds.mType = ObjectBounds::TrueVolumeType::SPHERE;
     objectBounds.mOrientationOffset = glm::vec3{0.f};
     objectBounds.mPositionOffset = glm::vec3{0.f};
+    objectBounds.mVolumeUpdateRequired = false;
     updateComponent(entityID, objectBounds);
 }
 
@@ -196,10 +192,10 @@ void SpatialQuerySystem::updateBounds(EntityID entity) {
 
 void SpatialQuerySystem::updateTransform(EntityID entity) {
     ObjectBounds updatedBounds { getComponent<ObjectBounds>(entity) };
-    if(!updatedBounds.requiresTransformUpdate) {
+    if(!updatedBounds.mTransformUpdateRequired) {
         return;
     }
-    updatedBounds.requiresTransformUpdate = false;
+    updatedBounds.mTransformUpdateRequired = false;
 
     Transform newTransform { getComponent<Transform>(entity) };
     // entities whose transforms are set by their object bounds should
@@ -250,11 +246,6 @@ void SpatialQuerySystem::onEntityUpdated(EntityID entityID, ComponentType update
 
     if(updatedComponent == mWorld.lock()->getComponentType<ObjectBounds>()) {
         mUpdateQueueTransform.insert(entityID);
-
-    // Prioritize transform updates (coming from user and scene system) over bounds
-    // updates (likely coming from physics system)
-    } else if(updatedComponent == mWorld.lock()->getComponentType<Transform>()) {
-        mUpdateQueueTransform.erase(entityID);
     }
 }
 
@@ -262,7 +253,7 @@ void SpatialQuerySystem::onSimulationActivated() {
     mRequiresInitialization = true;
 }
 
-void SpatialQuerySystem::onSimulationStep(uint32_t timestepMillis) {
+void SpatialQuerySystem::onSimulationPostStep(uint32_t timestepMillis) {
     (void)timestepMillis; // prevent unused parameter warning
     if(mRequiresInitialization)  {
         mUpdateQueueAABB.clear();
@@ -339,8 +330,8 @@ void SpatialQuerySystem::updateBoundingVolume(
     bounds.mType = volumeType;
     bounds.mPositionOffset = positionOffset;
     bounds.mOrientationOffset = glm::normalize(orientationOffset);
-    bounds.requiresTransformUpdate = true;
-    bounds.isSystemComputed = false;
+    bounds.mTransformUpdateRequired = true;
+    bounds.mIsSystemComputed = false;
 
     updateComponent<ObjectBounds>(entity, bounds);
 }
@@ -350,12 +341,12 @@ void SpatialQuerySystem::resetBoundsOverride(EntityID entity) {
     assert(enabledEntities.find(entity) != enabledEntities.end() && "This entity is not managed by this system");
 
     ObjectBounds bounds { getComponent<ObjectBounds>(entity) };
-    if(bounds.isSystemComputed) {
+    if(bounds.mIsSystemComputed) {
         return;
     }
 
-    bounds.isSystemComputed = true;
-    bounds.requiresVolumeUpdate = true;
+    bounds.mIsSystemComputed = true;
+    bounds.mVolumeUpdateRequired = true;
     updateComponent(entity, bounds);
 }
 

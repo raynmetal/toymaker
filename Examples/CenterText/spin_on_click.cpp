@@ -12,9 +12,9 @@ bool SpinOnClick::onPointerLeftClick(glm::vec4 clickLocation) {
     const auto currentBounds { getComponent<ToyMaker::ObjectBounds>() };
     auto currentState { getComponent<ToyMaker::PhysicsState>() };
 
-    currentState.applyForceGlobal(glm::vec3 { 0.f, 0.f, -1000.f }, glm::vec3 { clickLocation }, currentBounds);
+    currentState.applyForceGlobal(glm::vec3 { 0.f, 0.f, -1.f }, glm::vec3 { clickLocation }, currentBounds);
 
-    // keep only the rotational component
+    // keep only the rotational component ...
     currentState.mForce = glm::vec3 { 0.f };
 
     // ... around the y axis

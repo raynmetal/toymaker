@@ -988,6 +988,7 @@ std::vector<std::weak_ptr<ECSWorld>> ViewportNode::getActiveDescendantWorlds() {
 }
 
 void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<ActionDefinition, ActionData>> triggeredActions) {
+    // pre simulation step
     std::queue<std::shared_ptr<ViewportNode>> viewportsToVisit { {mRootNode} };
     while(!viewportsToVisit.empty()) {
         std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
@@ -1007,6 +1008,7 @@ void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<A
         mRootNode->handleAction(pendingAction);
     }
 
+    // simulation step
     viewportsToVisit.push(mRootNode);
     while(!viewportsToVisit.empty()) {
         std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
@@ -1022,6 +1024,24 @@ void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<A
         }
     }
 
+    // post simulation step
+    viewportsToVisit.push(mRootNode);
+    while(!viewportsToVisit.empty()) {
+        std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
+        viewportsToVisit.pop();
+
+        if(!viewport->isActive()) continue;
+
+        if(viewport->mOwnWorld) {
+            viewport->mOwnWorld->simulationPostStep(simStepMillis);
+        }
+
+        for(auto& childViewport: viewport->mChildViewports) {
+            viewportsToVisit.push(childViewport);
+        }
+    }
+
+    // transform updates
     updateTransformsPlacements();
     viewportsToVisit.push(mRootNode);
     while(!viewportsToVisit.empty()) {
@@ -1032,14 +1052,12 @@ void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<A
 
         if(viewport->mOwnWorld) {
             viewport->mOwnWorld->postTransformUpdate(simStepMillis);
-            viewport->mOwnWorld->simulationPostStep(simStepMillis);
         }
 
         for(auto& childViewport: viewport->mChildViewports) {
             viewportsToVisit.push(childViewport);
         }
     }
-    updateTransformsPlacements();
 }
 
 void SceneSystem::variableStep(float simulationProgress, uint32_t simulationLagMillis, uint32_t variableStepMillis, std::vector<std::pair<ActionDefinition, ActionData>> triggeredActions) {

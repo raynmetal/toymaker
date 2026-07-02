@@ -91,6 +91,7 @@
                 {
                     "type": "PhysicsState",
                     "mass": 1.0,
+                    "mode": "dynamic",
                     "angular_velocity": [ 0.0, 0.0, 0.0 ]
                 }
             ],
