@@ -397,7 +397,12 @@ void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
     // senseless bounds usually mean that spatial query system has not
     // initialized bounds for this entity, wait for next timestep
     auto bounds { getComponent<ObjectBounds>(entityID) };
-    if(!bounds.isSensible()) {
+    if(
+        !bounds.isSensible() || (
+            bounds.mVolumeSystemComputed
+            && bounds.mVolumeUpdateRequired
+        )
+    ) {
         mEntitiesUninitialized.insert(entityID);
         return;
     }

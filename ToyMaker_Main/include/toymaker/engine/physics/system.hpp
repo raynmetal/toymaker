@@ -22,6 +22,7 @@
 #include <nlohmann/json.hpp>
 #include "../core/ecs_world.hpp"
 #include "../spatial_query/types.hpp"
+
 #include "types.hpp"
 
 namespace ToyMaker {
@@ -193,6 +194,10 @@ namespace ToyMaker {
          */
         void onEntityDisabled(EntityID entityID) override;
 
+        /**
+         * @brief Whether or not a particular constraint is active.
+         *
+         */
         bool isConstraintActive(ConstraintID constraint) const;
 
         /**

@@ -175,11 +175,38 @@ namespace ToyMaker {
         };
 
         /**
-         * @brief Mask used to retrieve the section of this objects traits that indicate its update
+         * @brief Mask used to retrieve the section of an object's physics traits that indicate its update
          * mode.
          *
          */
         static const Traits MaskMode;
+
+        /**
+         * @ingroup ToyMakerPhysics
+         *
+         * @brief Defines how the object this component is attached to responds to collisions.
+         *
+         */
+        enum CollisionResponse: Traits {
+            /**
+             * @brief Whether this object should be separated from the object it collides with.
+             *
+             */
+            COLLISION_SEPARATE=0x4,
+
+            /**
+             * @brief Whether this object's collision events should be reported (via signal).
+             *
+             */
+            COLLISION_SIGNAL=0x8
+        };
+
+        /**
+         * @brief Mask used to retrieve the section of an object's physics traits that indicate its collision
+         * response mode.
+         *
+         */
+        static const Traits MaskCollisionResponse;
 
         /**
          * @brief Fetches the component type string associated with this class.
@@ -266,7 +293,7 @@ namespace ToyMaker {
          *
          *
          */
-        Traits mTraits { MODE_DYNAMIC };
+        Traits mTraits { static_cast<Traits>(COLLISION_SEPARATE) | static_cast<Traits>(MODE_DYNAMIC) };
 
         /**
          * @brief Applies a force `force` at position `atPosition`, updating the torque
@@ -388,9 +415,52 @@ namespace ToyMaker {
                     assert(false && "Unrecognized physics type specified");
             }
         }
+
+        /**
+         * @brief Whether this object is configured to separate from another object it collides with.
+         *
+         * Can be changed through setCollisionResponse().
+         *
+         * @see setCollisionResponse()
+         * @see CollisionResponse
+         *
+         */
+        inline bool separatesOnCollision() const {
+            return mTraits&static_cast<Traits>(COLLISION_SEPARATE);
+        }
+
+        /**
+         * @brief Whether this object is configured to report when it makes contact with another object.
+         *
+         * Can be changed through setCollisionResponse().
+         *
+         * @see CollisionResponse
+         * @see setCollisionResponse()
+         *
+         */
+        inline bool signalsOnCollision() const {
+            return mTraits&static_cast<Traits>(COLLISION_SIGNAL);
+        }
+
+        /**
+         * @brief Sets a flag related to this object's collision response behaviour.
+         *
+         */
+        inline void setCollisionResponse(CollisionResponse response) {
+            mTraits |= response;
+        }
+
+        /**
+         * @brief Unsets a flag related to this object's collision response behaviour.
+         *
+         */
+        inline void unsetCollisionResponse(CollisionResponse response) {
+            mTraits &= ~response;
+        }
     };
 
     inline const PhysicsState::Traits PhysicsState::MaskMode { 0x3 };
+    inline const PhysicsState::Traits PhysicsState::MaskCollisionResponse { 0xC };
 
     /**
      * @ingroup ToyMakerPhysics
@@ -689,6 +759,11 @@ namespace ToyMaker {
         { PhysicsState::MODE_STATIC, "static" },
     });
 
+    NLOHMANN_JSON_SERIALIZE_ENUM(PhysicsState::CollisionResponse, {
+        { PhysicsState::COLLISION_SEPARATE, "separate" },
+        { PhysicsState::COLLISION_SIGNAL, "signal" },
+    });
+
     inline void from_json(
         const nlohmann::json& json,
         PhysicsState& physics
@@ -705,6 +780,13 @@ namespace ToyMaker {
 
         physics.setMass(mass);
         physics.setMode(json.at("mode"));
+
+        if(json.find("collision_response") != json.end()) {
+            physics.mTraits &= ~PhysicsState::MaskCollisionResponse;
+            for(const PhysicsState::CollisionResponse response: json.at("collision_response")) {
+                physics.setCollisionResponse(response);
+            }
+        }
 
         if(json.find("velocity") != json.end()) {
             physics.mVelocity = glm::vec3 {
@@ -762,12 +844,20 @@ namespace ToyMaker {
         const PhysicsState& physics
     ) {
         const float mass { physics.getMass() };
+        std::vector<PhysicsState::CollisionResponse> collisionResponse {};
+        if(physics.mTraits&PhysicsState::COLLISION_SEPARATE) {
+            collisionResponse.push_back(PhysicsState::COLLISION_SEPARATE);
+        }
+        if(physics.mTraits&PhysicsState::COLLISION_SIGNAL) {
+            collisionResponse.push_back(PhysicsState::COLLISION_SIGNAL);
+        }
         json = {
             { "type", PhysicsState::getComponentTypeName() },
             mass != std::numeric_limits<float>::max()?
                 nlohmann::json::object({ "mass", mass }):
                 nlohmann::json::object({ "mass", "infinity" }),
             { "mode", physics.getMode() },
+            { "collision_response", collisionResponse },
             { "coefficient_friction_static", physics.mCoefficientFrictionStatic },
             { "coefficient_friction_dynamic", physics.mCoefficientFrictionDynamic },
             { "coefficient_restitution", physics.mCoefficientRestitution },
@@ -809,7 +899,6 @@ namespace ToyMaker {
     inline const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& ParametrizedConstraint<TParameter, LagrangeCount>::getParameters() const {
         return mParameters;
     }
-
 }
 
 #endif
