@@ -1071,8 +1071,14 @@ namespace ToyMaker {
         InteractionLayerMask mInteractionMask { std::numeric_limits<InteractionLayerMask>::max() };
 
         /**
+         * @brief Whether an update on the object's transform is allowed to modify object bounds properties.
+         *
+         */
+        bool mUpdatedFromTransform { true };
+
+        /**
          * @brief Flag set when object position or orientation has been set through this
-         * component, indicating that user facing Transform should be updated accordingly
+         * component, indicating that the user facing Transform should be updated accordingly
          *
          */
         bool mTransformUpdateRequired { false };
@@ -1088,7 +1094,7 @@ namespace ToyMaker {
          * @see SpatialQuerySystem::LightBoundsComputeSystem
          *
          */
-        bool mIsSystemComputed { true };
+        bool mVolumeSystemComputed { true };
 
         /**
          * @brief Flag set when this object's bounds must be recomputed by a related
@@ -1563,7 +1569,7 @@ namespace ToyMaker {
                 );
                 break;
         }
-        objectBounds.mIsSystemComputed = false;
+        objectBounds.mVolumeSystemComputed = false;
     }
 
     /** @ingroup ToyMakerSerialization ToyMakerSpatialQuerySystem */

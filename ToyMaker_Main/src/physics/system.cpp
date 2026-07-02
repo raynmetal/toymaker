@@ -78,6 +78,10 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
         // snapshot current object state
         PhysicsState physics { getComponent<PhysicsState>(entity) };
         ObjectBounds bounds { getComponent<ObjectBounds>(entity) };
+        assert(
+            bounds.mUpdatedFromTransform == false
+            && "Object bounds controlled by the physics system cannot be updated through their transforms"
+        );
         const PhysicsStatePartial physicsState {
             .mVelocity { physics.mVelocity },
             .mAngularVelocity { physics.mAngularVelocity },
@@ -392,22 +396,23 @@ void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
 
     // senseless bounds usually mean that spatial query system has not
     // initialized bounds for this entity, wait for next timestep
-    const auto bounds { getComponent<ObjectBounds>(entityID) };
+    auto bounds { getComponent<ObjectBounds>(entityID) };
     if(!bounds.isSensible()) {
         mEntitiesUninitialized.insert(entityID);
         return;
     }
+    bounds.mUpdatedFromTransform = false;
+    updateComponent(entityID, bounds);
     mEntitiesUninitialized.erase(entityID);
 
     // enable any constraints that depend on this entity if possible
     if(mConstraintsInitialized) {
         const auto foundEntityConstraint { mEntityConstraintMap.find(entityID) };
-        if(foundEntityConstraint == mEntityConstraintMap.end()) {
-            return;
-        }
-        for(const ConstraintID constraint: foundEntityConstraint->second) {
-            if(isConstraintActive(constraint)) {
-                mInactiveConstraints.erase(constraint);
+        if(foundEntityConstraint != mEntityConstraintMap.end()) {
+            for(const ConstraintID constraint: foundEntityConstraint->second) {
+                if(isConstraintActive(constraint)) {
+                    mInactiveConstraints.erase(constraint);
+                }
             }
         }
     }

@@ -100,12 +100,12 @@ namespace ToyMaker {
          * Do we want to allow entities to have both?  If not, should we do something to explicitly prevent it?
          *
          */
-        class LightBoundsComputeSystem: public System<LightBoundsComputeSystem, std::tuple<LightEmissionData>, std::tuple<ObjectBounds>> {
+        class LightBoundsComputeSystem: public System<LightBoundsComputeSystem, std::tuple<LightEmissionData, ObjectBounds>, std::tuple<>> {
 
         public:
 
             explicit LightBoundsComputeSystem(std::weak_ptr<ECSWorld> world):
-            System<SpatialQuerySystem::LightBoundsComputeSystem, std::tuple<LightEmissionData>, std::tuple<ObjectBounds>>{world}
+            System<SpatialQuerySystem::LightBoundsComputeSystem, std::tuple<LightEmissionData, ObjectBounds>, std::tuple<>>{world}
             {}
 
             /**
@@ -223,9 +223,12 @@ namespace ToyMaker {
         /**
          * @brief Updates the axis aligned bounds of an entity based on its ObjectBounds.
          *
+         * Transform-based updates are forced during spatial query system initialization.
+         *
          * @param entity The entity whose axis aligned bounds are being updated.
+         * @param forceUpdateFromTransform Whether transform should influence bounds location regardless of bounds settings
          */
-        void updateBounds(EntityID entity);
+        void updateBounds(EntityID entity, bool forceUpdateFromTransform=false);
 
         /**
          * @brief Updates the world transform of an entity based on its objects bounds.
