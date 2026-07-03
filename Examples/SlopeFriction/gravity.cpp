@@ -1,11 +1,11 @@
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
+#include <toymaker/engine/signals.hpp>
 #include <toymaker/engine/sim_system.hpp>
-#include <toymaker/engine/physics/types.hpp>
+#include <toymaker/engine/physics/system.hpp>
 
 #include <toymaker/builtins/interface_pointer_callback.hpp>
-
 
 /**
  * @ingroup Examples
@@ -53,7 +53,18 @@ private:
      */
     Gravity(): ToyMaker::SimObjectAspect<Gravity>{0} {}
 
+    void printCollision(ToyMaker::PhysicsSystem::SignalCollidedData collisionData);
+
+    ToyMaker::SignalObserver<ToyMaker::PhysicsSystem::SignalCollidedData> mObserveCollided {
+        *this, "CollisionObserved",
+        [this](ToyMaker::PhysicsSystem::SignalCollidedData signalData) {
+            printCollision(signalData);
+        }
+    };
+
     void simulationUpdate(uint32_t timestep) override;
+
+    void onActivated() override;
 };
 
 
@@ -75,6 +86,20 @@ void Gravity::simulationUpdate(uint32_t timestep) {
         bounds
     );
     updateComponent(physics);
-    // std::cout << "angular velocity: " << glm::to_string(physics.mAngularVelocity) << "\n";
-    // std::cout << "orientation: " << glm::to_string(bounds.getOrientationWorld()) << "\n";
+}
+
+void Gravity::onActivated() {
+    connect(
+        ToyMaker::PhysicsSystem::SignalCollidedPrefix + std::to_string(getEntityID()),
+        "CollisionObserved",
+        *getWorld().lock()->getSystem<ToyMaker::PhysicsSystem>()
+    );
+}
+
+void Gravity::printCollision(ToyMaker::PhysicsSystem::SignalCollidedData collisionData) {
+    std::cout << "Colliding entities: (" 
+        << std::to_string(collisionData.first.first()) << ", " 
+        << std::to_string(collisionData.first.second()) << ")\n";
+    std::cout << "Penetration depth: "
+        << std::to_string(collisionData.second.mContactA.mPenetrationDepth) << "\n";
 }
