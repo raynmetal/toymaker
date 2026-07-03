@@ -123,6 +123,10 @@ void CollisionConstraint::applyConstraintPosition(
         || (
             physicsA.getMode() != PhysicsState::MODE_DYNAMIC
             && physicsB.getMode() != PhysicsState::MODE_DYNAMIC
+        // both objects must be configured to separate on collision
+        ) || !(
+            physicsA.separatesOnCollision()
+            && physicsB.separatesOnCollision()
         )
     ) {
         return;

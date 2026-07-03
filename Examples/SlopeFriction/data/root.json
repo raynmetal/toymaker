@@ -176,6 +176,7 @@
                 {
                     "type": "PhysicsState",
                     "mode": "dynamic",
+                    "collision_response": [ "separate", "signal" ],
                     "mass": 1.0,
                     "coefficient_friction_static": 0.3,
                     "coefficient_friction_dynamic": 0.2,

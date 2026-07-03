@@ -20,7 +20,9 @@
 #include <unordered_set>
 
 #include <nlohmann/json.hpp>
+
 #include "../core/ecs_world.hpp"
+#include "../signals.hpp"
 #include "../spatial_query/types.hpp"
 
 #include "types.hpp"
@@ -101,9 +103,42 @@ namespace ToyMaker {
      * @see ToyMakerSpatialQuerySystem
      *
      */
-    class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>> {
+    class PhysicsSystem: public System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>>, public SignalTracker {
     public:
+        /**
+         * @brief ID naming a unique constraint registered with the physics system.
+         *
+         * @see registerConstraint()
+         * @see unregisterConstraint()
+         */
         using ConstraintID = std::size_t;
+
+        /**
+         * @brief Struct containing data about a collision event.
+         *
+         */
+        using SignalCollidedData = std::pair<CollisionPair, Collision>;
+        /**
+         * @brief Struct containing data about a separation event.
+         *
+         */
+        using SignalSeparatedData = CollisionPair;
+
+        /**
+         * @brief Signal for reporting collision start events.
+         *
+         */
+        using SignalCollided = std::shared_ptr<Signal<SignalCollidedData>>;
+
+        /**
+         * @brief Signal for reporting the separation of two colliding bodies.
+         *
+         */
+        using SignalSeparated = std::shared_ptr<Signal<SignalSeparatedData>>;
+
+
+        static const std::string SignalCollidedPrefix;
+        static const std::string SignalSeparatedPrefix;
 
         explicit PhysicsSystem(std::weak_ptr<ECSWorld> world):
         System<PhysicsSystem, std::tuple<PhysicsState, ObjectBounds>, std::tuple<>>{ world }
@@ -159,6 +194,20 @@ namespace ToyMaker {
             glm::quat mOrientation;
         };
 
+        union CollisionEvent {
+            SignalCollidedData mCollided;
+            SignalSeparatedData mSeparated;
+        };
+
+        struct CollisionReport {
+            /**
+             * @brief Whether this report corresponds to a collided or separated event.
+             *
+             */
+            bool mCollided { false };
+            CollisionEvent mEvent;
+        };
+
         /**
          * @brief Marks this system as requiring initialization on the nearest update.
          *
@@ -168,8 +217,8 @@ namespace ToyMaker {
         /**
          * @brief Updates physics simulation
          *
-         * @param timestepMillis number of milliseconds by which to advance the
-         * simulation
+         * @param timestepMillis Number of milliseconds by which to advance the simulation
+         *
          */
         void onSimulationStep(uint32_t timestepMillis) override;
 
@@ -177,6 +226,7 @@ namespace ToyMaker {
          * @brief Updates this entity's physics properties
          *
          * @param entityID The updated entity
+         *
          */
         void onEntityEnabled(EntityID entityID) override;
 
@@ -185,6 +235,7 @@ namespace ToyMaker {
          *
          * @param entityID The updated entity
          * @param updatedComponent The updated component belonging to the entity
+         *
          */
         void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
 
@@ -205,7 +256,7 @@ namespace ToyMaker {
          *
          * @param entityID The entity in need of an update
          */
-        void updatePhysicsProperties(EntityID entityID);
+        void updateProperties(EntityID entityID);
 
         /**
          * @brief Determines which constraints are inactive (by virtue of all of their entities
@@ -231,12 +282,15 @@ namespace ToyMaker {
         void deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStatePartial>& previousState);
 
         /**
-         * @brief Correctly applies collision constraint for each potential collision
-         * detected
+         * @brief Correctly applies collision position constraint for each potential collision detected.
          *
          */
         void applyPositionCollisionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
 
+        /**
+         * @brief Correctly applies collision velocity constraint for each potential collision detected.
+         *
+         */
         void applyVelocityCollisionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
 
         /**
@@ -250,6 +304,59 @@ namespace ToyMaker {
          *
          */
         void applyVelocityConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
+
+        /**
+         * @brief Tests each pair of potential colliders for intersection, adds collision report to the queue if
+         * configured.
+         *
+         * @param potentialCollisions Map of all collisions that _might_ take place this frame
+         * @param queuedReports All reports due to be signalled this frame.
+         */
+        void updateCollisionEventQueue(
+            const std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& potentialCollisions,
+            std::queue<CollisionReport>& queuedReports
+        );
+
+        /**
+         * @brief Registers a pair of entities as intersecting, signalling to collision signal observers if required.
+         *
+         */
+        void onCollided(const CollisionPair& pair, const Collision& collision, std::queue<CollisionReport>& queuedReports);
+
+        /**
+         * @brief Removes pair of entities from signal list, signalling to observers if required.
+         *
+         */
+        void onSeparated(const CollisionPair& pair, std::queue<CollisionReport>& queuedReports);
+
+        /**
+         * @brief Registers collision signals for this entity.
+         *
+         */
+        void registerCollisionSignal(EntityID entity);
+
+        /**
+         * @brief Unregisters collision signals for this entity.
+         *
+         */
+        void unregisterCollisionSignal(EntityID entity);
+
+        /**
+         * @brief Signals all collisions and separations collected over the course of the simulation
+         * step, in the order those events occurred.
+         *
+         */
+        void reportCollisions(
+            std::queue<CollisionReport>& reports,
+            std::unordered_map<EntityID, std::pair<SignalCollided, SignalSeparated>> signallers
+        ) const;
+
+        /**
+         * @brief Whether or not a particular pair of entities have their collision tracked
+         * by the physics system
+         *
+         */
+        bool wasColliding(const CollisionPair& pair) const;
 
         /**
          * @brief Collects potential collisions and builds constraints from them
@@ -283,13 +390,25 @@ namespace ToyMaker {
          * @brief IDs of constraints that were deleted and which may be reused to define a new constraint
          *
          */
-        std::unordered_set<ConstraintID> mDeletedConstraints {};
+        std::unordered_set<ConstraintID> mConstraintsDeleted {};
 
         /**
          * @brief Constraints whose entities are not active, causing the constraint itself to become inactive.
          *
          */
-        std::unordered_set<ConstraintID> mInactiveConstraints {};
+        std::unordered_set<ConstraintID> mConstraintsInactive {};
+
+        /**
+         * @brief All currently intersecting entities.
+         *
+         */
+        std::unordered_map<EntityID, std::set<CollisionPair>> mColliding {};
+
+        /**
+         * @brief Entities whose collision events are signalled by this system.
+         *
+         */
+        std::unordered_map<EntityID, std::pair<SignalCollided, SignalSeparated>> mCollisionSignallers {};
 
         /**
          * @brief The number of substeps used in the physics system's XPBD implementation.
@@ -315,13 +434,16 @@ namespace ToyMaker {
         bool mConstraintsInitialized { true };
     };
 
+    inline const std::string PhysicsSystem::SignalCollidedPrefix { "collided_" };
+    inline const std::string PhysicsSystem::SignalSeparatedPrefix { "separated_" };
+
     template<typename TConstraint, typename TConstraintData>
     PhysicsSystem::ConstraintID PhysicsSystem::registerConstraint(const std::vector<std::pair<EntityID, TConstraintData>>& participants, float compliance) {
         // reclaim a deleted constraint id if possible
         ConstraintID newConstraint { mConstraints.size() };
-        if(!mDeletedConstraints.empty()) {
-            newConstraint = *mDeletedConstraints.begin();
-            mDeletedConstraints.erase(newConstraint);
+        if(!mConstraintsDeleted.empty()) {
+            newConstraint = *mConstraintsDeleted.begin();
+            mConstraintsDeleted.erase(newConstraint);
         }
 
         // get separate constraint parameter and participating entity lists

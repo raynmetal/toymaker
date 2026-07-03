@@ -22,7 +22,7 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
     // undergo initialization
     if(mRequiresInitialization) {
         for(EntityID entity: getEnabledEntities()) {
-            updatePhysicsProperties(entity);
+            updateProperties(entity);
         }
         mRequiresInitialization = false;
 
@@ -31,7 +31,7 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
     } else if(!mEntitiesUninitialized.empty()) {
         const std::set<EntityID> entitiesCopy { mEntitiesUninitialized };
         for(EntityID entity: entitiesCopy) {
-            updatePhysicsProperties(entity);
+            updateProperties(entity);
         }
     }
 
@@ -47,10 +47,12 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
     std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> potentialCollisions {
         collectPotentialCollisions(substepInterval)
     };
-
+    std::queue<CollisionReport> collisionReports {};
 
     for(auto substep { 0 }; substep < mSubsteps; ++substep) {
         integrateForces(substepInterval, previousStates);
+
+        updateCollisionEventQueue(potentialCollisions, collisionReports);
 
         applyPositionConstraints(potentialCollisions, substepInterval);
 
@@ -66,10 +68,13 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
         physicsState.mTorque = glm::vec3 { 0.f };
         updateComponent(entity, physicsState);
     }
+
+    reportCollisions(collisionReports, mCollisionSignallers);
 }
 
 void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStatePartial>& previousStates) {
     for(const EntityID entity: getEnabledEntities()) {
+
         // filter out uninitialized entities
         if(mEntitiesUninitialized.find(entity) != mEntitiesUninitialized.end()) {
             continue;
@@ -216,9 +221,7 @@ void PhysicsSystem::applyPositionCollisionConstraints(
         auto objectTwo { getComponent<ObjectBounds>(linkConstraint.first.second()) };
         auto physicsOne { getComponent<PhysicsState>(linkConstraint.first.first()) };
         auto physicsTwo { getComponent<PhysicsState>(linkConstraint.first.second()) };
-        const auto collisionData { checkCollision(
-            objectOne, objectTwo
-        ) };
+
         const BaseConstraint::ParticipantTable participantTable {
             { 0, { objectOne, physicsOne }},
             { 1, { objectTwo, physicsTwo }}
@@ -237,8 +240,8 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, std::unique
     for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
         // skip deleted or inactive constraints
         if(
-            mDeletedConstraints.find(constraint) != mDeletedConstraints.end()
-            || mInactiveConstraints.find(constraint) != mDeletedConstraints.end()
+            mConstraintsDeleted.find(constraint) != mConstraintsDeleted.end()
+            || mConstraintsInactive.find(constraint) != mConstraintsInactive.end()
         ) {
             continue;
         }
@@ -337,8 +340,36 @@ void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_
     }
 }
 
+void PhysicsSystem::updateCollisionEventQueue(
+    const std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& potentialCollisions,
+    std::queue<CollisionReport>& queuedReports
+) {
+    for(const auto& linkConstraint: potentialCollisions) {
+        // skip objects that aren't configured to report collisions
+        auto physicsOne { getComponent<PhysicsState>(linkConstraint.first.first()) };
+        auto physicsTwo { getComponent<PhysicsState>(linkConstraint.first.second()) };
+        if(!(physicsOne.signalsOnCollision() || physicsTwo.signalsOnCollision())) {
+            continue;
+        }
+
+        // at least one of these objects does report collisions
+        auto objectOne { getComponent<ObjectBounds>(linkConstraint.first.first()) };
+        auto objectTwo { getComponent<ObjectBounds>(linkConstraint.first.second()) };
+        const auto collisionData { checkCollision(
+            objectOne, objectTwo
+        ) };
+
+        // update report queue based on whether a collision or separation has taken place
+        if(collisionData.mCollided) {
+            onCollided(linkConstraint.first, collisionData, queuedReports);
+        } else {
+            onSeparated(linkConstraint.first, queuedReports);
+        }
+    }
+}
+
 void PhysicsSystem::onEntityEnabled(EntityID entityID) {
-    updatePhysicsProperties(entityID);
+    updateProperties(entityID);
 }
 
 void PhysicsSystem::onEntityDisabled(EntityID entityID) {
@@ -348,12 +379,12 @@ void PhysicsSystem::onEntityDisabled(EntityID entityID) {
         return;
     }
     for(const ConstraintID constraint: foundEntity->second) {
-        mInactiveConstraints.insert(constraint);
+        mConstraintsInactive.insert(constraint);
     }
 }
 
 void PhysicsSystem::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
-    updatePhysicsProperties(entityID);
+    updateProperties(entityID);
 }
 
 void PhysicsSystem::unregisterConstraint(ConstraintID constraint) {
@@ -361,14 +392,14 @@ void PhysicsSystem::unregisterConstraint(ConstraintID constraint) {
     for(const auto& entity: mConstraints.at(constraint).second) {
         mEntityConstraintMap.at(entity).erase(constraint);
     }
-    mDeletedConstraints.insert(constraint);
+    mConstraintsDeleted.insert(constraint);
 }
 
 void PhysicsSystem::refreshActiveConstraints() {
-    mInactiveConstraints.clear();
+    mConstraintsInactive.clear();
     for(ConstraintID constraintID { 0 }; constraintID < mConstraints.size(); ++constraintID) {
         if(!isConstraintActive(constraintID)) {
-            mInactiveConstraints.insert(constraintID);
+            mConstraintsInactive.insert(constraintID);
         }
     }
 }
@@ -387,7 +418,7 @@ bool PhysicsSystem::isConstraintActive(ConstraintID constraintID) const {
     return true;
 }
 
-void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
+void PhysicsSystem::updateProperties(EntityID entityID) {
     auto physicsProps { getComponent<PhysicsState>(entityID) };
     assert((
         isNonNegative(physicsProps.mMassInverse)
@@ -403,11 +434,14 @@ void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
             && bounds.mVolumeUpdateRequired
         )
     ) {
+        unregisterCollisionSignal(entityID);
         mEntitiesUninitialized.insert(entityID);
         return;
     }
+    // the physics system is the One True Source for updates
     bounds.mUpdatedFromTransform = false;
     updateComponent(entityID, bounds);
+
     mEntitiesUninitialized.erase(entityID);
 
     // enable any constraints that depend on this entity if possible
@@ -416,12 +450,20 @@ void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
         if(foundEntityConstraint != mEntityConstraintMap.end()) {
             for(const ConstraintID constraint: foundEntityConstraint->second) {
                 if(isConstraintActive(constraint)) {
-                    mInactiveConstraints.erase(constraint);
+                    mConstraintsInactive.erase(constraint);
                 }
             }
         }
     }
 
+    // register collision signals for this entity if required
+    if(physicsProps.signalsOnCollision()) {
+        registerCollisionSignal(entityID);
+    } else {
+        unregisterCollisionSignal(entityID);
+    }
+
+    // compute rotational inertia based on shape and mass
     switch(bounds.mType) {
         case ToyMaker::ObjectBounds::TrueVolumeType::BOX:
             physicsProps.setRotationalInertia(
@@ -448,6 +490,123 @@ void PhysicsSystem::updatePhysicsProperties(EntityID entityID) {
     }
 
     updateComponent(entityID, physicsProps);
+}
+
+void PhysicsSystem::unregisterCollisionSignal(EntityID entity) {
+    mColliding.erase(entity);
+    mCollisionSignallers.erase(entity);
+}
+
+void PhysicsSystem::registerCollisionSignal(EntityID entity) {
+    // already registered, nothing to do
+    if(mCollisionSignallers.find(entity) != mCollisionSignallers.end()) {
+        return;
+    }
+
+    SignalCollided sigCollided { std::make_shared<Signal<SignalCollidedData>>(
+        *this, SignalCollidedPrefix + std::to_string(entity)
+    ) };
+    SignalSeparated sigSeparated { std::make_shared<Signal<SignalSeparatedData>>(
+        *this, SignalSeparatedPrefix + std::to_string(entity)
+    ) };
+
+    mCollisionSignallers.insert({entity, { sigCollided, sigSeparated } });
+}
+
+bool PhysicsSystem::wasColliding(const CollisionPair& pair) const {
+    const auto& collidingA { mColliding.find(pair.first()) };
+    const auto& collidingB { mColliding.find(pair.second()) };
+
+    if(collidingA != mColliding.cend()) {
+        return collidingA->second.find(pair) != collidingA->second.cend();
+    }
+    if(collidingB != mColliding.cend()) {
+        return collidingB->second.find(pair) != collidingB->second.cend();
+    }
+
+    return false;
+}
+
+
+void PhysicsSystem::onCollided(
+    const CollisionPair& pair,
+    const Collision& collision,
+    std::queue<CollisionReport>& queuedReports
+) {
+    // skip collision reports for pairs that already were colliding
+    if(wasColliding(pair)) {
+        return;
+    }
+
+    // Update list of collisions known to the system
+    if(mCollisionSignallers.find(pair.first()) != mCollisionSignallers.end()) {
+        mColliding[pair.first()].insert(pair);
+    }
+    if(mCollisionSignallers.find(pair.second()) != mCollisionSignallers.end()) {
+        mColliding[pair.second()].insert(pair);
+    }
+
+    // Add the collision report to the queue
+    const CollisionReport newReport {
+        .mCollided { true },
+        .mEvent { .mCollided { pair, collision } }
+    };
+    queuedReports.push(newReport);
+}
+
+void PhysicsSystem::onSeparated(
+    const CollisionPair& pair,
+    std::queue<CollisionReport>& queuedReports
+) {
+    // skip collision reports for pairs that weren't colliding to begin with
+    if(!wasColliding(pair)) {
+        return;
+    }
+
+    // remove this pair from lists of known collisions
+    if(mCollisionSignallers.find(pair.first()) != mCollisionSignallers.end()) {
+        mColliding[pair.first()].erase(pair);
+    }
+    if(mCollisionSignallers.find(pair.second()) != mCollisionSignallers.end()) {
+        mColliding[pair.second()].erase(pair);
+    }
+
+    // Add the collision report to the queue
+    const CollisionReport newReport {
+        .mCollided { false },
+        .mEvent { .mSeparated { pair } }
+    };
+    queuedReports.push(newReport);
+}
+
+void PhysicsSystem::reportCollisions(
+    std::queue<CollisionReport>& reports,
+    std::unordered_map<EntityID, std::pair<SignalCollided, SignalSeparated>>
+) const {
+    while(!reports.empty()) {
+        const CollisionReport report { reports.front() };
+        reports.pop();
+        // TODO: The first-second-first-second nonsense is terribly confusing, make simpler
+        if(report.mCollided) {
+            auto signalA { mCollisionSignallers.find(report.mEvent.mCollided.first.first()) };
+            auto signalB { mCollisionSignallers.find(report.mEvent.mCollided.first.second()) };
+            if(signalA != mCollisionSignallers.end()) {
+                signalA->second.first->emit(report.mEvent.mCollided);
+            }
+            if(signalB != mCollisionSignallers.end()) {
+                signalB->second.first->emit(report.mEvent.mCollided);
+            }
+        } else {
+            auto signalA { mCollisionSignallers.find(report.mEvent.mSeparated.first()) };
+            auto signalB { mCollisionSignallers.find(report.mEvent.mSeparated.second()) };
+            if(signalA != mCollisionSignallers.end()) {
+                signalA->second.second->emit(report.mEvent.mSeparated);
+            }
+            if(signalB != mCollisionSignallers.end()) {
+                signalB->second.second->emit(report.mEvent.mSeparated);
+            }
+        }
+    }
 }
 
 glm::vec3 computeRotationalInertiaBox(float mass, const ObjectBounds& cuboid) {
