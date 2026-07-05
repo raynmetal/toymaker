@@ -2388,8 +2388,9 @@ namespace ToyMaker {
 
         std::size_t newComponentID { mComponentsNext.size() };
 
-        mComponentsNext.push_back(component);
-        mComponentsPrevious.push_back(component);
+        const TComponent componentCopy { component };
+        mComponentsNext.push_back(componentCopy);
+        mComponentsPrevious.push_back(componentCopy);
         mEntityToComponentIndex[entityID] = newComponentID;
         mComponentToEntity[newComponentID] = entityID;
     }
@@ -2474,8 +2475,8 @@ namespace ToyMaker {
         ComponentArray<TComponent>& downcastOther { static_cast<ComponentArray<TComponent>&>(other) };
         if(downcastOther.mEntityToComponentIndex.find(from) == downcastOther.mEntityToComponentIndex.end()) return;
 
-        const TComponent& componentValueNext { downcastOther.mComponentsNext[downcastOther.mEntityToComponentIndex[from]] };
-        const TComponent& componentValuePrevious { downcastOther.mComponentsPrevious[downcastOther.mEntityToComponentIndex[from]] };
+        const TComponent componentValueNext { downcastOther.mComponentsNext[downcastOther.mEntityToComponentIndex[from]] };
+        const TComponent componentValuePrevious { downcastOther.mComponentsPrevious[downcastOther.mEntityToComponentIndex[from]] };
 
         if(mEntityToComponentIndex.find(to) == mEntityToComponentIndex.end()) {
             addComponent(to, componentValueNext);

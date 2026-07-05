@@ -9,7 +9,8 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Release",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "TOYMAKER_USE_INSTALLED": "OFF"
+                "TOYMAKER_USE_INSTALLED": "OFF",
+                "ZO_DUMB_DELAY": "OFF"
             }
         },
         {
@@ -20,7 +21,8 @@
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
-                "TOYMAKER_USE_INSTALLED": "OFF"
+                "TOYMAKER_USE_INSTALLED": "OFF",
+                "ZO_DUMB_DELAY": "OFF"
             }
         },
         {
@@ -32,7 +34,8 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "TOYMAKER_BUILD_EXAMPLES": "ON",
-                "TOYMAKER_USE_INSTALLED": "OFF"
+                "TOYMAKER_USE_INSTALLED": "OFF",
+                "ZO_DUMB_DELAY": "OFF"
             }
         },
 
@@ -45,7 +48,8 @@
                 "CMAKE_BUILD_TYPE": "Debug",
                 "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
                 "TOYMAKER_BUILD_EXAMPLES": "ON",
-                "TOYMAKER_USE_INSTALLED": "ON"
+                "TOYMAKER_USE_INSTALLED": "ON",
+                "ZO_DUMB_DELAY": "OFF"
             }
         }
     ]

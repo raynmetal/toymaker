@@ -13,6 +13,7 @@ add_executable(Example_FillContainer)
 target_sources(Example_FillContainer
     PRIVATE
         gravity.cpp
+        spawner.cpp
 )
 
 toymaker_configure_executable(Example_FillContainer)

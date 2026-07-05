@@ -1106,6 +1106,13 @@ namespace ToyMaker {
         bool mVolumeUpdateRequired { true };
 
         /**
+         * @brief Flag set when this object's physics properties must be recomputed according
+         * to its new volume.
+         *
+         */
+        bool mPhysicsRecomputeRequired { true };
+
+        /**
          * @brief Computes new mPosition and mOrientation offsets based on (presumably) the model transform of the underlying scene object.
          *
          * @param modelMatrix The transform specifying the new origin of the underlying scene object.
@@ -1210,6 +1217,70 @@ namespace ToyMaker {
          *
          */
         std::array<AreaTriangle, 12> getWorldOrientedBoxFaceTriangles() const { return computeBoxFaceTriangles(getWorldOrientedBoxCorners()); };
+
+        /**
+         * @brief Returns the volume and its type associated with these bounds.
+         *
+         */
+        std::pair<TrueVolumeType, TrueVolume> getVolume() const {
+            return { mType, mTrueVolume };
+        }
+
+        /**
+         * @brief Sets the volume for these bounds
+         *
+         */
+        inline void setVolume(TrueVolumeType type, const TrueVolume& volume) {
+            mType = type;
+            mTrueVolume = volume;
+            mPhysicsRecomputeRequired = true;
+        }
+
+        /**
+         * @brief Sets a box volume for this object.
+         *
+         */
+        inline void setVolumeBox(const glm::vec3& boxDimensions) {
+            assert(
+                isNonNegative(boxDimensions) && isFinite(boxDimensions)
+                && "Invalid box parameters provided"
+            );
+            setVolume(TrueVolumeType::BOX,
+                TrueVolume { .mBox { .mDimensions { boxDimensions } } }
+            );
+        }
+
+        /**
+         * @brief Sets a capsule volume for this object
+         *
+         */
+        inline void setVolumeCapsule(float radius, float height) {
+            assert(
+                isNonNegative(radius) && isNonNegative(height) && isFinite(radius) && isFinite(height)
+                && "Invalid capsule parameters provided"
+            );
+            setVolume(TrueVolumeType::CAPSULE,
+                TrueVolume {
+                    .mCapsule { .mHeight { height }, .mRadius { radius } }
+                }
+            );
+        }
+
+        /**
+         * @brief Sets a sphere volume for this object
+         *
+         */
+        inline void setVolumeSphere(float radius) {
+            assert(
+                isNonNegative(radius) && isFinite(radius)
+                && "Invalid sphere parameters provided"
+            );
+            setVolume(TrueVolumeType::SPHERE,
+                TrueVolume {
+                    .mSphere { .mRadius { radius } }
+                }
+            );
+        }
 
         /**
          * @brief Returns the point on this object's surface furthest along a given axis from the origin of

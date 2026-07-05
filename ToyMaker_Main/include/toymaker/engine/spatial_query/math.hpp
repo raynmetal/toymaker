@@ -410,6 +410,13 @@ namespace ToyMaker {
 
     template <typename T, typename U>
     inline Collision checkCollision(const T& one, const U& two) {
+        // perform inexpensive AABB test first
+        if(!overlaps(AxisAlignedBounds(one), AxisAlignedBounds(two))) {
+            return {
+                .mCollided { false }
+            };
+        }
+
         // check via GJK whether there's any overlap at all
         const std::pair<bool, Simplex> overlapResult { gjkOverlaps(one, two) };
         if(!overlapResult.first) {

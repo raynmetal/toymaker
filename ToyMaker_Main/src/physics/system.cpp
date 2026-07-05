@@ -437,10 +437,43 @@ void PhysicsSystem::updateProperties(EntityID entityID) {
         mEntitiesUninitialized.insert(entityID);
         return;
     }
-    // the physics system is the One True Source for updates
-    bounds.mUpdatedFromTransform = false;
-    updateComponent(entityID, bounds);
-    mEntitiesUninitialized.erase(entityID);
+
+    // if there's been no change in volume, then there need be no change in physics properties either
+    if(bounds.mPhysicsRecomputeRequired) {
+        // the physics system is the One True Source for updates
+        bounds.mPhysicsRecomputeRequired = false;
+        bounds.mUpdatedFromTransform = false;
+        updateComponent(entityID, bounds);
+        mEntitiesUninitialized.erase(entityID);
+
+        // compute rotational inertia based on shape and mass
+        switch(bounds.mType) {
+            case ToyMaker::ObjectBounds::TrueVolumeType::BOX:
+                physicsProps.setRotationalInertia(
+                    computeRotationalInertiaBox(physicsProps.getMass(), bounds)
+                );
+                break;
+            case ToyMaker::ObjectBounds::TrueVolumeType::CAPSULE:
+                physicsProps.setRotationalInertia(
+                    computeRotationalInertiaCapsule(
+                        physicsProps.getMass(), bounds
+                    )
+                );
+                break;
+            case ToyMaker::ObjectBounds::TrueVolumeType::SPHERE:
+                physicsProps.setRotationalInertia(
+                    computeRotationalInertiaSphere(
+                        physicsProps.getMass(), bounds
+                    )
+                );
+                break;
+            default:
+                assert(false && "Unrecognized bounds type");
+                break;
+        }
+
+        updateComponent(entityID, physicsProps);
+    }
 
     // enable any constraints that depend on this entity if possible
     if(mConstraintsInitialized) {
@@ -460,34 +493,6 @@ void PhysicsSystem::updateProperties(EntityID entityID) {
     } else {
         unregisterCollisionSignal(entityID);
     }
-
-    // compute rotational inertia based on shape and mass
-    switch(bounds.mType) {
-        case ToyMaker::ObjectBounds::TrueVolumeType::BOX:
-            physicsProps.setRotationalInertia(
-                computeRotationalInertiaBox(physicsProps.getMass(), bounds)
-            );
-            break;
-        case ToyMaker::ObjectBounds::TrueVolumeType::CAPSULE:
-            physicsProps.setRotationalInertia(
-                computeRotationalInertiaCapsule(
-                    physicsProps.getMass(), bounds
-                )
-            );
-            break;
-        case ToyMaker::ObjectBounds::TrueVolumeType::SPHERE:
-            physicsProps.setRotationalInertia(
-                computeRotationalInertiaSphere(
-                    physicsProps.getMass(), bounds
-                )
-            );
-            break;
-        default:
-            assert(false && "Unrecognized bounds type");
-            break;
-    }
-
-    updateComponent(entityID, physicsProps);
 }
 
 void PhysicsSystem::unregisterCollisionSignal(EntityID entity) {

@@ -1,0 +1,41 @@
+{
+    "resources": [],
+
+    "nodes": [
+        {
+            "name": "ball",
+            "parent": "",
+            "type": "SimObject",
+            "aspects": [ { "type": "Gravity" } ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [1.0, 0.0, 0.0, 0.0],
+                    "position": [0.0, 0.0, 0.0, 1.0],
+                    "scale": [0.25, 0.25, 0.25]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "dynamic",
+                    "mass": 1.0,
+                    "coefficient_friction_static": 0.2,
+                    "coefficient_friction_dynamic": 0.1,
+                    "velocity": [2.0, 0.0, -2.0],
+                    "angular_velocity": [0.0, 0.0, 0.0]
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "sphere",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": { "radius": 1.0 },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BallModel", "type": "StaticModel" }
+            ]
+        }
+    ],
+
+    "connections": []
+}

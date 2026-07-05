@@ -74,6 +74,8 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
     const std::shared_ptr<StaticModel> model { getComponent<std::shared_ptr<StaticModel>>(entityID) };
 
     objectBounds.mVolumeUpdateRequired = false;
+    objectBounds.mInteractionLayers = 1 << (sizeof(InteractionLayerMask) * 4 - 1);
+    objectBounds.mInteractionMask = 0;
 
     // Only the transform has been updated -- simply resize OOBB accordingly
     if(!model->boundsNeedRecompute() && objectBounds.mUpdatedFromTransform) {
@@ -178,6 +180,8 @@ void SpatialQuerySystem::LightBoundsComputeSystem::recomputeObjectBounds(EntityI
     objectBounds.mType = ObjectBounds::TrueVolumeType::SPHERE;
     objectBounds.mOrientationOffset = glm::vec3{0.f};
     objectBounds.mPositionOffset = glm::vec3{0.f};
+    objectBounds.mInteractionLayers = 1 << (sizeof(InteractionLayerMask) * 4 - 1);
+    objectBounds.mInteractionMask = 0;
     updateComponent(entityID, objectBounds);
 }
 
