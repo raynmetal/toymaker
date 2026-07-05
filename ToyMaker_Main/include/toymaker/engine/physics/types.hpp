@@ -708,6 +708,13 @@ namespace ToyMaker {
          */
         float mCollisionVelocity { 0.f };
 
+        /**
+         * @brief The shortest distance an object must move along the contact normal in order to be separated
+         * from the object it is intersecting with.
+         *
+         */
+        float mPenetrationDepth { 0.f };
+
     public:
 
         /**

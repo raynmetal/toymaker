@@ -1,7 +1,5 @@
 #include <glm/gtc/quaternion.hpp>
 
-#include "toymaker/engine/spatial_query/math.hpp"
-
 #include "toymaker/engine/physics/types.hpp"
 
 using namespace ToyMaker;
@@ -83,6 +81,7 @@ void CollisionConstraint::updateCollisionData(
         )
     );
     mContactNormal = collision.mContactB.mNormal;
+    mPenetrationDepth = collision.mContactB.mPenetrationDepth;
 
     // determine the speed at which the contact points were moving when the collision
     // took place
@@ -98,6 +97,7 @@ void CollisionConstraint::updateCollisionData(
         pointVelocityA - pointVelocityB
     };
     mCollisionVelocity = glm::dot(pointVelocityAB, mContactNormal);
+
 }
 
 void CollisionConstraint::applyConstraintPosition(
@@ -112,8 +112,6 @@ void CollisionConstraint::applyConstraintPosition(
 
     ObjectBounds& objectA { states.at(0).first.get() };
     ObjectBounds& objectB { states.at(1).first.get() };
-    const Collision collision { checkCollision(objectA, objectB) };
-    updateCollisionData(collision, physicsA, objectA, physicsB, objectB);
 
     // guards:
     if(
@@ -140,13 +138,13 @@ void CollisionConstraint::applyConstraintPosition(
     const float generalizedInverseA { computeGeneralizedInverseMassPositional(
         objectA,
         physicsA,
-        collision.mContactA.mPoint,
+        mLastPointContactA,
         mContactNormal
     ) };
     const float generalizedInverseB { computeGeneralizedInverseMassPositional(
         objectB,
         physicsB,
-        collision.mContactB.mPoint,
+        mLastPointContactB,
         mContactNormal
     ) };
 
@@ -157,7 +155,7 @@ void CollisionConstraint::applyConstraintPosition(
     const float lagrangeCollision { getLagrange().at(0) };
     const float lagrangeDeltaCollision {
         -(
-            collision.mContactA.mPenetrationDepth + alphaDerivative2 * lagrangeCollision
+            mPenetrationDepth + alphaDerivative2 * lagrangeCollision
         ) / (
             generalizedInverseA + generalizedInverseB + alphaDerivative2
         )
@@ -177,13 +175,13 @@ void CollisionConstraint::applyConstraintPosition(
         objectA,
         physicsA,
         positionalImpulse,
-        collision.mContactA.mPoint
+        mLastPointContactA
     );
     objectB = applyImpulseObject(
         objectB,
         physicsB,
         -positionalImpulse,
-        collision.mContactB.mPoint
+        mLastPointContactB
     );
 
     // retrieve new placement data
@@ -203,9 +201,6 @@ void CollisionConstraint::applyConstraintPosition(
     };
 
     // determine whether a static friction correction need be applied
-    // NOTE: collision and friction lagrange multipliers are directly proportional to forces in
-    // the normal and tangential directions respectively, so we can use them quite conventiently
-    // in this inequality
     const float combinedFrictionCoefficient {
         glm::min(physicsA.mCoefficientFrictionStatic, physicsB.mCoefficientFrictionStatic)
     };
@@ -217,7 +212,18 @@ void CollisionConstraint::applyConstraintPosition(
             generalizedInverseA + generalizedInverseB + alphaDerivative2
         )
     };
-    if(glm::abs(lagrangeFriction) >= glm::abs(combinedFrictionCoefficient * (lagrangeCollision + lagrangeDeltaCollision))) {
+
+    // NOTE: collision and friction lagrange multipliers are directly proportional to forces in
+    // the normal and tangential directions respectively, so we can use them quite conventiently
+    // in this inequality
+    // guard: friction correction required, and friction force must be less than static
+    // friction threshold per normal force
+    if(
+        !lagrangeDeltaFriction || (
+            glm::abs(lagrangeFriction)
+            >= glm::abs(combinedFrictionCoefficient * (lagrangeCollision + lagrangeDeltaCollision))
+        )
+    ) {
         return;
     }
 

@@ -35,8 +35,12 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
         }
     }
 
-    // do physics update for all eligible 
-    std::unordered_map<EntityID, PhysicsStatePartial> previousStates {};
+    assert(mCollisionReports.empty() && "There should be no pending collision reports at the start of a simulation update");
+    assert(mPotentialCollisions.empty() && "There should be no potential collisions listed at the start of a simulation update");
+
+    // do physics update for all eligible
+    std::unordered_map<EntityID, PhysicsStateFull> previousStates {};
+    std::unordered_map<EntityID, PhysicsStateFull> currentStates {};
     const float substepInterval { (static_cast<float>(timestepMillis) / static_cast<float>(mSubsteps)) / static_cast<float>(1e3) };
 
     // clear lagrange multipliers in preparation for this physics update
@@ -44,72 +48,71 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
         constraint.first->resetLagrange();
     }
 
-    std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> potentialCollisions {
-        collectPotentialCollisions(substepInterval)
-    };
-    std::queue<CollisionReport> collisionReports {};
-
+    mPotentialCollisions = collectPotentialCollisions(substepInterval);
     for(auto substep { 0 }; substep < mSubsteps; ++substep) {
-        integrateForces(substepInterval, previousStates);
+        integrateForces(substepInterval, previousStates, currentStates);
 
-        updateCollisionEventQueue(potentialCollisions, collisionReports);
+        updateCollisionEventQueue(mPotentialCollisions, mCollisionReports, currentStates);
 
-        applyPositionConstraints(potentialCollisions, substepInterval);
+        applyPositionConstraints(mPotentialCollisions, substepInterval, currentStates);
 
-        deriveVelocities(substepInterval, previousStates);
+        deriveVelocities(substepInterval, previousStates, currentStates);
 
-        applyVelocityConstraints(potentialCollisions, substepInterval);
+        applyVelocityConstraints(mPotentialCollisions, substepInterval, currentStates);
     }
 
-    // clear forces (which are expected to be applied per frame)
-    for(const auto entity: getEnabledEntities()) {
-        auto physicsState { getComponent<PhysicsState>(entity) };
-        physicsState.mForce = glm::vec3 { 0.f };
-        physicsState.mTorque = glm::vec3 { 0.f };
-        updateComponent(entity, physicsState);
+    // clear forces (since they only apply for a single simulation frame) and upload new object states
+    for(auto& entityState: currentStates) {
+        entityState.second.mPhysics.mForce = glm::vec3 { 0.f };
+        entityState.second.mPhysics.mTorque = glm::vec3 { 0.f };
+        updateComponent(entityState.first, entityState.second.mPhysics);
+        updateComponent(entityState.first, entityState.second.mBounds);
     }
 
-    reportCollisions(collisionReports, mCollisionSignallers);
+    reportCollisions(mCollisionReports, mCollisionSignallers);
+    mPotentialCollisions.clear();
 }
 
-void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStatePartial>& previousStates) {
+void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& previousStates, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     for(const EntityID entity: getEnabledEntities()) {
-
         // filter out uninitialized entities
         if(mEntitiesUninitialized.find(entity) != mEntitiesUninitialized.end()) {
             continue;
         }
 
         // snapshot current object state
-        PhysicsState physics { getComponent<PhysicsState>(entity) };
-        ObjectBounds bounds { getComponent<ObjectBounds>(entity) };
+        PhysicsState physics;
+        ObjectBounds bounds;
+        if(currentStates.find(entity) == currentStates.end()) {
+            physics = getComponent<PhysicsState>(entity);
+            bounds = getComponent<ObjectBounds>(entity);
+        } else {
+            physics = currentStates[entity].mPhysics;
+            bounds = currentStates[entity].mBounds;
+        }
         assert(
             bounds.mUpdatedFromTransform == false
             && "Object bounds controlled by the physics system cannot be updated through their transforms"
         );
-        const PhysicsStatePartial physicsState {
-            .mVelocity { physics.mVelocity },
-            .mAngularVelocity { physics.mAngularVelocity },
-            .mPosition { bounds.getPositionWorld() },
-            .mOrientation  { bounds.getOrientationWorld() },
+        const PhysicsStateFull physicsState {
+            .mBounds { bounds },
+            .mPhysics { physics }
         };
         previousStates[entity] = physicsState;
+        currentStates[entity] = physicsState;
 
-        // update object state per positional derivatives
+        // skip predictions for static bodies
+        if(physics.getMode() == PhysicsState::MODE_STATIC) {
+            continue;
+        }
+
+        // only integrate forces into velocities if this object is dynamic
         if(physics.getMode() == PhysicsState::MODE_DYNAMIC) {
             physics.mVelocity += substepSeconds * physics.mForce * physics.mMassInverse;
             assert(isNumber(physics.mVelocity) && "Velocity computation failed");
-        }
-        if(physics.getMode() != PhysicsState::MODE_STATIC && squareDistance(physics.mVelocity) != 0.f) {
-            bounds.setPositionWorld(
-                physicsState.mPosition + substepSeconds * physics.mVelocity
-            );
-        }
 
-        // update object state per rotational derivatives, see paper [Impulse based dynamic simulation
-        // Appendix A.3.](https://people.eecs.berkeley.edu/~jfc/mirtich/impulse.html)
-        if(physics.getMode() == PhysicsState::MODE_DYNAMIC) {
-            const glm::quat toLocal { glm::inverse(physicsState.mOrientation) };
+            const glm::quat orientation { physicsState.mBounds.getOrientationWorld() };
+            const glm::quat toLocal { glm::inverse(physicsState.mBounds.getOrientationWorld()) };
             const glm::vec3 rotationalInertiaLocal { physics.getRotationalInertia() };
             const glm::vec3 angularVelocityLocal { toLocal * physics.mAngularVelocity };
             const glm::vec3 torqueLocal { toLocal * physics.mTorque };
@@ -120,28 +123,31 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
                         rotationalInertiaLocal * angularVelocityLocal
                     )
             ) };
-            physics.mAngularVelocity += physicsState.mOrientation * deltaAngularVLocal;
+            physics.mAngularVelocity += orientation * deltaAngularVLocal;
+            assert(isNumber(physics.mAngularVelocity) && "Velocity computation failed");
         }
 
-        // For sensible angular velocities, update orientation
-        if(physics.getMode() != PhysicsState::MODE_STATIC && squareDistance(physics.mAngularVelocity) != 0.f) {
+        // update position and orientation
+        if(squareDistance(physics.mAngularVelocity)) {
             const float deltaAngle {
                 substepSeconds * glm::length(physics.mAngularVelocity)
             };
             const glm::vec3 axisAngularVelocity { glm::normalize(physics.mAngularVelocity) };
             const glm::quat orientationUpdate { glm::angleAxis(deltaAngle, axisAngularVelocity) };
-            const auto newOrientation { glm::normalize(orientationUpdate * physicsState.mOrientation) };
+            const auto newOrientation { glm::normalize(orientationUpdate * physicsState.mBounds.getOrientationWorld()) };
             bounds.setOrientationWorld(newOrientation);
         }
+        bounds.setPositionWorld(
+            physicsState.mBounds.getPositionWorld() + substepSeconds * physics.mVelocity
+        );
 
-        // push updates to component table
-        updateComponent(entity, physics);
-        updateComponent(entity, bounds);
+        // update current state
+        currentStates[entity] = { .mBounds { bounds }, .mPhysics { physics } };
     }
 }
 
-std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> PhysicsSystem::collectPotentialCollisions(float substepSeconds) {
-    std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> potentialCollisions {};
+std::map<CollisionPair, CollisionConstraint> PhysicsSystem::collectPotentialCollisions(float substepSeconds) {
+    std::map<CollisionPair, CollisionConstraint> potentialCollisions {};
     const std::set<EntityID>& enabledEntities { getEnabledEntities() };
     for(const EntityID entity: enabledEntities) {
         // find an AABB that can contain the object regardless of orientation, with some
@@ -193,18 +199,25 @@ std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> PhysicsSystem::col
                 continue;
             }
 
+            // skip static-static object collisions
+            const PhysicsState physicsCandidate { getComponent<PhysicsState>(candidate.first) };
+            if(
+                physicsCandidate.getMode() == PhysicsState::MODE_STATIC
+                && physicsCandidate.getMode() == PhysicsState::MODE_STATIC
+            ) {
+                continue;
+            }
+
+            const ObjectBounds boundsCandidate { getComponent<ObjectBounds>(candidate.first) };
             potentialCollisions.emplace(
                 link,
-                std::make_unique<CollisionConstraint> (
-                    checkCollision(
-                        objectBounds,
-                        getComponent<ObjectBounds>(candidate.first)
-                    ),
-                    getComponent<PhysicsState>(entity),
+                CollisionConstraint {
+                    checkCollision(objectBounds, boundsCandidate),
+                    physics,
                     objectBounds,
-                    getComponent<PhysicsState>(candidate.first),
-                    getComponent<ObjectBounds>(candidate.first)
-                )
+                    physicsCandidate,
+                    boundsCandidate
+                }
             );
         }
     }
@@ -212,31 +225,28 @@ std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> PhysicsSystem::col
 }
 
 void PhysicsSystem::applyPositionCollisionConstraints(
-    std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints,
-    float substepSeconds
+    std::map<CollisionPair, CollisionConstraint>& constraints,
+    float substepSeconds,
+    std::unordered_map<EntityID, PhysicsStateFull>& currentStates
 ) {
     for(auto& linkConstraint: constraints) {
         // retrieve data
-        auto objectOne { getComponent<ObjectBounds>(linkConstraint.first.first()) };
-        auto objectTwo { getComponent<ObjectBounds>(linkConstraint.first.second()) };
-        auto physicsOne { getComponent<PhysicsState>(linkConstraint.first.first()) };
-        auto physicsTwo { getComponent<PhysicsState>(linkConstraint.first.second()) };
+        auto& objectOne { currentStates[linkConstraint.first.first()].mBounds };
+        auto& objectTwo { currentStates[linkConstraint.first.second()].mBounds };
+        auto& physicsOne { currentStates[linkConstraint.first.first()].mPhysics };
+        auto& physicsTwo { currentStates[linkConstraint.first.second()].mPhysics };
 
         const BaseConstraint::ParticipantTable participantTable {
             { 0, { objectOne, physicsOne }},
-            { 1, { objectTwo, physicsTwo }}
+            { 1, { objectTwo, physicsTwo }},
         };
 
         // apply constraint
-        linkConstraint.second->applyConstraintPosition(participantTable, substepSeconds);
-
-        // push data to component arrays
-        updateComponent<ObjectBounds>(linkConstraint.first.first(), objectOne);
-        updateComponent<ObjectBounds>(linkConstraint.first.second(), objectTwo);
+        linkConstraint.second.applyConstraintPosition(participantTable, substepSeconds);
     }
 }
 
-void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& collisionConstraints, float substepSeconds) {
+void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, CollisionConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
         // skip deleted or inactive constraints
         if(
@@ -248,116 +258,105 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, std::unique
 
         // gather current entity states and prepare them for consumption by
         // constraint
-        std::map<EntityID, std::pair<ObjectBounds, PhysicsState>> entities {};
         BaseConstraint::ParticipantTable participants {};
         std::unique_ptr<BaseConstraint>& solver { mConstraints[constraint].first };
         BaseConstraint::ParticipantID participantID {0};
         for(const EntityID entity: mConstraints[constraint].second) {
-            entities.insert({
-                entity,
-                { getComponent<ObjectBounds>(entity), getComponent<PhysicsState>(entity) }
-            });
             participants.insert({
                 participantID++,
                 {
-                    entities[entity].first,
-                    entities[entity].second
+                    currentStates[entity].mBounds,
+                    currentStates[entity].mPhysics,
                 }
             });
         }
 
         // apply constraints and update relevant entity component tables
         solver->applyConstraintPosition(participants, substepSeconds);
-        for(const auto& entity: entities) {
-            updateComponent(entity.first, entity.second.first);
-            updateComponent(entity.first, entity.second.second);
-        }
     }
 
-    applyPositionCollisionConstraints(collisionConstraints, substepSeconds);
+    applyPositionCollisionConstraints(collisionConstraints, substepSeconds, currentStates);
 }
 
-void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& collisionConstraints, float substepSeconds) {
-    applyVelocityCollisionConstraints(collisionConstraints, substepSeconds);
+void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, CollisionConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+    applyVelocityCollisionConstraints(collisionConstraints, substepSeconds, currentStates);
 }
 
-void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds) {
+void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     for(auto& linkConstraint: constraints) {
         // retrieve data
-        auto objectOne { getComponent<ObjectBounds>(linkConstraint.first.first()) };
-        auto objectTwo { getComponent<ObjectBounds>(linkConstraint.first.second()) };
-        auto physicsOne { getComponent<PhysicsState>(linkConstraint.first.first()) };
-        auto physicsTwo { getComponent<PhysicsState>(linkConstraint.first.second()) };
-        const auto collisionData { checkCollision(
-            objectOne, objectTwo
-        ) };
+        auto& objectOne { currentStates[linkConstraint.first.first()].mBounds };
+        auto& objectTwo { currentStates[linkConstraint.first.second()].mBounds };
+        auto& physicsOne { currentStates[linkConstraint.first.first()].mPhysics };
+        auto& physicsTwo { currentStates[linkConstraint.first.second()].mPhysics};
         const BaseConstraint::ParticipantTable participantTable {
             { 0, { objectOne, physicsOne }},
             { 1, { objectTwo, physicsTwo }}
         };
 
         // apply constraint
-        linkConstraint.second->applyConstraintVelocity(participantTable, substepSeconds);
-
-        // push data to component arrays
-        updateComponent<PhysicsState>(linkConstraint.first.first(), physicsOne);
-        updateComponent<PhysicsState>(linkConstraint.first.second(), physicsTwo);
+        linkConstraint.second.applyConstraintVelocity(participantTable, substepSeconds);
     }
 }
 
-void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStatePartial>& previousStates) {
+void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStateFull>& previousStates, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     // derive actual physics properties post constraint solve
     for(const auto entity: getEnabledEntities()) {
-
         // filter out uninitialized entities
         if(mEntitiesUninitialized.find(entity) != mEntitiesUninitialized.end()) {
             continue;
         }
 
+        // skip velocity derivations for static objects
+        auto& physicsProps { currentStates[entity].mPhysics };
+        if(physicsProps.getMode() == PhysicsState::MODE_STATIC) {
+            continue;
+        }
+
         // retrieve current and previous states
-        const PhysicsStatePartial previousState { previousStates.at(entity) };
-        auto physicsProps { getComponent<PhysicsState>(entity) };
-        const auto bounds { getComponent<ObjectBounds>(entity) };
+        const PhysicsStateFull previousState { previousStates.at(entity) };
+        const auto& bounds { currentStates[entity].mBounds };
         const auto orientationInverse { glm::inverse(bounds.getOrientationWorld()) };
 
         // update linear terms
         physicsProps.mVelocity = (
-            (bounds.getPositionWorld() - previousState.mPosition)
+            (bounds.getPositionWorld() - previousState.mBounds.getPositionWorld())
             / substepSeconds
         );
 
         // update angular terms
         const glm::quat deltaOrientation {
-            (bounds.getOrientationWorld() * glm::inverse(previousState.mOrientation))
+            (bounds.getOrientationWorld() * glm::inverse(previousState.mBounds.getOrientationWorld()))
         };
         physicsProps.mAngularVelocity = (2.f * glm::vec3 {
             deltaOrientation.x, deltaOrientation.y, deltaOrientation.z
         } / substepSeconds);
         physicsProps.mAngularVelocity *= deltaOrientation.w >= 0.f ? 1.f : -1.f;
-
-        // push updates to component table
-        updateComponent(entity, physicsProps);
     }
 }
 
 void PhysicsSystem::updateCollisionEventQueue(
-    const std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& potentialCollisions,
-    std::queue<CollisionReport>& queuedReports
+    std::map<CollisionPair, CollisionConstraint>& potentialCollisions,
+    std::queue<CollisionReport>& queuedReports,
+    std::unordered_map<EntityID, PhysicsStateFull>& currentStates
 ) {
-    for(const auto& linkConstraint: potentialCollisions) {
+    for(auto& linkConstraint: potentialCollisions) {
         // skip objects that aren't configured to report collisions
-        auto physicsOne { getComponent<PhysicsState>(linkConstraint.first.first()) };
-        auto physicsTwo { getComponent<PhysicsState>(linkConstraint.first.second()) };
-        if(!(physicsOne.signalsOnCollision() || physicsTwo.signalsOnCollision())) {
-            continue;
-        }
+        const auto& physicsOne { currentStates[linkConstraint.first.first()].mPhysics };
+        const auto& physicsTwo { currentStates[linkConstraint.first.second()].mPhysics };
 
-        // at least one of these objects does report collisions
-        auto objectOne { getComponent<ObjectBounds>(linkConstraint.first.first()) };
-        auto objectTwo { getComponent<ObjectBounds>(linkConstraint.first.second()) };
+        // check for a collision happening in this frame
+        const auto& objectOne { currentStates[linkConstraint.first.first()].mBounds };
+        const auto& objectTwo { currentStates[linkConstraint.first.second()].mBounds };
         const auto collisionData { checkCollision(
             objectOne, objectTwo
         ) };
+        linkConstraint.second.updateCollisionData(collisionData, physicsOne, objectOne, physicsTwo, objectTwo);
+
+        // skip signalling if neither object signals
+        if(!(physicsOne.signalsOnCollision() || physicsTwo.signalsOnCollision())) {
+            continue;
+        }
 
         // update report queue based on whether a collision or separation has taken place
         if(collisionData.mCollided) {
@@ -441,7 +440,6 @@ void PhysicsSystem::updateProperties(EntityID entityID) {
     // the physics system is the One True Source for updates
     bounds.mUpdatedFromTransform = false;
     updateComponent(entityID, bounds);
-
     mEntitiesUninitialized.erase(entityID);
 
     // enable any constraints that depend on this entity if possible

@@ -8,9 +8,8 @@
 /**
  * @ingroup Examples
  *
- * @brief Aspect which applies a downward gravitational force every simulation frame to the object it's
- * attached to.
- *
+ * @brief Aspect responsible for applying downward gravitational force to object's center
+ * of mass.
  */
 class Gravity: public ToyMaker::SimObjectAspect<Gravity> {
 public:
@@ -53,35 +52,10 @@ private:
     Gravity(): ToyMaker::SimObjectAspect<Gravity>{0} {}
 
     /**
-     * @brief Prints details about the collision that was just observed.
-     *
-     */
-    void printCollision(const ToyMaker::PhysicsSystem::SignalCollidedData& collisionData);
-
-    /**
-     * @brief Listens for collision events that this object participates in, reports them to 
-     * printCollision().
-     *
-     */
-    ToyMaker::SignalObserver<ToyMaker::PhysicsSystem::SignalCollidedData> mObserveCollided {
-        *this, "CollisionObserved",
-        [this](ToyMaker::PhysicsSystem::SignalCollidedData signalData) {
-            printCollision(signalData);
-        }
-    };
-
-    /**
-     * @brief Applies a downward gravitational force to this object's center of mass every
-     * simulation frame.
+     * @brief Applies downward gravitational force very simulation step.
      *
      */
     void simulationUpdate(uint32_t timestep) override;
-
-    /**
-     * @brief Connects to collision signal for this entity advertised by the physics system.
-     *
-     */
-    void onActivated() override;
 };
 
 
@@ -105,18 +79,3 @@ void Gravity::simulationUpdate(uint32_t timestep) {
     updateComponent(physics);
 }
 
-void Gravity::onActivated() {
-    connect(
-        ToyMaker::PhysicsSystem::SignalCollidedPrefix + std::to_string(getEntityID()),
-        "CollisionObserved",
-        *getWorld().lock()->getSystem<ToyMaker::PhysicsSystem>()
-    );
-}
-
-void Gravity::printCollision(const ToyMaker::PhysicsSystem::SignalCollidedData& collisionData) {
-    std::cout << "Colliding entities: (" 
-        << std::to_string(collisionData.first.first()) << ", " 
-        << std::to_string(collisionData.first.second()) << ")\n";
-    std::cout << "Penetration depth: "
-        << std::to_string(collisionData.second.mContactA.mPenetrationDepth) << "\n";
-}

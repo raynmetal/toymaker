@@ -118,6 +118,7 @@ namespace ToyMaker {
          *
          */
         using SignalCollidedData = std::pair<CollisionPair, Collision>;
+
         /**
          * @brief Struct containing data about a separation event.
          *
@@ -137,7 +138,16 @@ namespace ToyMaker {
         using SignalSeparated = std::shared_ptr<Signal<SignalSeparatedData>>;
 
 
+        /**
+         * @brief Prefix for the name under which collided Signals are advertised.
+         *
+         */
         static const std::string SignalCollidedPrefix;
+
+        /**
+         * @brief Prefix for the name under which separated Signals are advertised.
+         *
+         */
         static const std::string SignalSeparatedPrefix;
 
         explicit PhysicsSystem(std::weak_ptr<ECSWorld> world):
@@ -187,13 +197,12 @@ namespace ToyMaker {
     private:
 
         // storage for intermediate physics state
-        struct PhysicsStatePartial {
-            glm::vec3 mVelocity;
-            glm::vec3 mAngularVelocity;
-            glm::vec3 mPosition;
-            glm::quat mOrientation;
+        struct PhysicsStateFull {
+            ObjectBounds mBounds;
+            PhysicsState mPhysics;
         };
 
+        // storage for intermediate collision events
         union CollisionEvent {
             SignalCollidedData mCollided;
             SignalSeparatedData mSeparated;
@@ -273,37 +282,37 @@ namespace ToyMaker {
          * of integration steps.
          *
          */
-        void integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStatePartial>& previousState);
+        void integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& previousState, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Derives actual object velocities after integration and constraint solve.
          *
          */
-        void deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStatePartial>& previousState);
+        void deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStateFull>& previousState, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Correctly applies collision position constraint for each potential collision detected.
          *
          */
-        void applyPositionCollisionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
+        void applyPositionCollisionConstraints(std::map<CollisionPair, CollisionConstraint>& potentialCollisions, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Correctly applies collision velocity constraint for each potential collision detected.
          *
          */
-        void applyVelocityCollisionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
+        void applyVelocityCollisionConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Applies all active position constraints
          *
          */
-        void applyPositionConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
+        void applyPositionConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Applies all active velocity constraints
          *
          */
-        void applyVelocityConstraints(std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& constraints, float substepSeconds);
+        void applyVelocityConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Tests each pair of potential colliders for intersection, adds collision report to the queue if
@@ -313,8 +322,9 @@ namespace ToyMaker {
          * @param queuedReports All reports due to be signalled this frame.
          */
         void updateCollisionEventQueue(
-            const std::map<CollisionPair, std::unique_ptr<CollisionConstraint>>& potentialCollisions,
-            std::queue<CollisionReport>& queuedReports
+            std::map<CollisionPair, CollisionConstraint>& potentialCollisions,
+            std::queue<CollisionReport>& queuedReports,
+            std::unordered_map<EntityID, PhysicsStateFull>& currentStates
         );
 
         /**
@@ -362,7 +372,7 @@ namespace ToyMaker {
          * @brief Collects potential collisions and builds constraints from them
          *
          */
-        std::map<CollisionPair, std::unique_ptr<CollisionConstraint>> collectPotentialCollisions(float substepSeconds);
+        std::map<CollisionPair, CollisionConstraint> collectPotentialCollisions(float substepSeconds);
 
         /**
          * @brief Holds entities that haven't undergone proper initialization, and therefore
@@ -377,6 +387,18 @@ namespace ToyMaker {
          *
          */
         std::unordered_map<EntityID, std::set<ConstraintID>> mEntityConstraintMap {};
+
+        /**
+         * @brief Storage for pairs of entities that are likely to collide this simulation frame.
+         *
+         */
+        std::map<CollisionPair, CollisionConstraint> mPotentialCollisions {};
+
+        /**
+         * @brief Storage for collision reports that should be signalled this simulation frame.
+         *
+         */
+        std::queue<CollisionReport> mCollisionReports {};
 
         /**
          * @brief A list of all constraints known to the physics system, evaluated every frame.

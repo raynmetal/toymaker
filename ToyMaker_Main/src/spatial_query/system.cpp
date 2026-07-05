@@ -187,13 +187,13 @@ void SpatialQuerySystem::updateBounds(EntityID entity, bool forceTransformUpdate
     if(objectBounds.mUpdatedFromTransform || forceTransformUpdate) {
         const glm::mat4 modelMatrix { getComponent<Transform>(entity).mModelMatrix };
         objectBounds.applyModelMatrix(modelMatrix);
+        updateComponent<ObjectBounds>(entity, objectBounds);
     }
 
     // Compute axis aligned bounds based on object bounds
     const AxisAlignedBounds axisAlignedBounds { objectBounds };
 
     // Apply updates
-    updateComponent<ObjectBounds>(entity, objectBounds);
     updateComponent<AxisAlignedBounds>(entity, axisAlignedBounds);
 }
 
