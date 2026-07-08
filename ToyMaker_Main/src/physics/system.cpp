@@ -1,4 +1,8 @@
+#include <iostream>
+#include <chrono>
+
 #include <map>
+#include <algorithm>
 #include <unordered_map>
 
 #include "toymaker/engine/spatial_query/system.hpp"
@@ -18,6 +22,8 @@ void PhysicsSystem::onSimulationActivated() {
 }
 
 void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
+    std::cout << "--PHYSICS UPDATE TIMES---------------------------\n";
+    const auto timeInitStart { std::chrono::high_resolution_clock::now() };
     // if the physics system has just been woken up, all entities must
     // undergo initialization
     if(mRequiresInitialization) {
@@ -34,43 +40,80 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
             updateProperties(entity);
         }
     }
+    const auto timeInitEnd { std::chrono::high_resolution_clock::now() };
+    const auto initTime { std::chrono::duration_cast<std::chrono::milliseconds>(timeInitEnd - timeInitEnd) };
+    std::cout << "Init: " << initTime.count() << "ms\n";
 
-    assert(mCollisionReports.empty() && "There should be no pending collision reports at the start of a simulation update");
-    assert(mPotentialCollisions.empty() && "There should be no potential collisions listed at the start of a simulation update");
-
-    // do physics update for all eligible
+    // collect all potential collisions
     std::unordered_map<EntityID, PhysicsStateFull> previousStates {};
     std::unordered_map<EntityID, PhysicsStateFull> currentStates {};
     const float substepInterval { (static_cast<float>(timestepMillis) / static_cast<float>(mSubsteps)) / static_cast<float>(1e3) };
+    const auto timeCollectCollisionsStart { std::chrono::high_resolution_clock::now() };
+    collectPotentialCollisions(substepInterval, mCollisionReports);
+    const auto timeCollectCollisionsEnd { std::chrono::high_resolution_clock::now() };
+    const auto collisionTime { std::chrono::duration_cast<std::chrono::milliseconds>(timeCollectCollisionsEnd - timeCollectCollisionsStart) };
+    std::cout << "Collision: " << collisionTime.count() << "ms\n";
 
     // clear lagrange multipliers in preparation for this physics update
     for(auto& constraint: mConstraints) {
         constraint.first->resetLagrange();
     }
-
-    mPotentialCollisions = collectPotentialCollisions(substepInterval);
-    for(auto substep { 0 }; substep < mSubsteps; ++substep) {
-        integrateForces(substepInterval, previousStates, currentStates);
-
-        updateCollisionEventQueue(mPotentialCollisions, mCollisionReports, currentStates);
-
-        applyPositionConstraints(mPotentialCollisions, substepInterval, currentStates);
-
-        deriveVelocities(substepInterval, previousStates, currentStates);
-
-        applyVelocityConstraints(mPotentialCollisions, substepInterval, currentStates);
+    for(auto& collisionConstraint: mCollisionConstraints) {
+        collisionConstraint.second.resetLagrange();
     }
 
+    const auto timePhysicsSubstepsStart { std::chrono::high_resolution_clock::now() };
+    for(auto substep { 0 }; substep < mSubsteps; ++substep) {
+        const auto timeIntegrateForcesStart { std::chrono::high_resolution_clock::now() };
+        integrateForces(substepInterval, previousStates, currentStates);
+        const auto timeIntegrateForcesEnd { std::chrono::high_resolution_clock::now() };
+        const auto integrateForcesTime { std::chrono::duration<double, std::milli>(timeIntegrateForcesEnd - timeIntegrateForcesStart) };
+
+        const auto timeCollisionQueueStart { std::chrono::high_resolution_clock::now() };
+        updateCollisionEventQueue(mCollisionConstraints, mCollisionReports, currentStates);
+        const auto timeCollisionQueueEnd { std::chrono::high_resolution_clock::now() };
+        const auto collisionQueueTime { std::chrono::duration<double, std::milli>(timeCollisionQueueEnd - timeCollisionQueueStart) };
+
+        const auto timePositionConstraintsStart { std::chrono::high_resolution_clock::now() };
+        applyPositionConstraints(mCollisionConstraints, substepInterval, currentStates);
+        const auto timePositionConstraintsEnd { std::chrono::high_resolution_clock::now() };
+        const auto positionConstraintsTime { std::chrono::duration<double, std::milli>(timePositionConstraintsEnd - timePositionConstraintsStart) };
+
+        const auto timeDeriveVelocityStart { std::chrono::high_resolution_clock::now() };
+        deriveVelocities(substepInterval, previousStates, currentStates);
+        const auto timeDeriveVelocityEnd { std::chrono::high_resolution_clock::now() };
+        const auto deriveVelocityTime { std::chrono::duration<double, std::milli>(timeDeriveVelocityEnd - timeDeriveVelocityStart) };
+
+        const auto timeVelocityConstraintStart { std::chrono::high_resolution_clock::now() };
+        applyVelocityConstraints(mCollisionConstraints, substepInterval, currentStates);
+        const auto timeVelocityConstraintEnd { std::chrono::high_resolution_clock::now() };
+        const auto velocityConstraintsTime { std::chrono::duration<double, std::milli>(timeVelocityConstraintEnd - timeVelocityConstraintEnd) };
+
+        std::cout << "--- substep " << substep << "\n"
+            << "\tintegrate forces: " << integrateForcesTime.count() << "ms\n"
+            << "\tcollision queue: " << collisionQueueTime.count() << "ms\n"
+            << "\tposition constraints: " << positionConstraintsTime.count() << "ms\n"
+            << "\tderive velocity: " << deriveVelocityTime.count() << "ms\n"
+            << "\tvelocity constraint: " << velocityConstraintsTime.count() << "ms\n"
+        ;
+    }
+    const auto timePhysicsSubstepsEnd { std::chrono::high_resolution_clock::now() };
+    const auto substepsTime { std::chrono::duration_cast<std::chrono::milliseconds>(timePhysicsSubstepsEnd - timePhysicsSubstepsStart) };
+    std::cout << "Substeps: " << substepsTime.count() << "ms\n";
+
     // clear forces (since they only apply for a single simulation frame) and upload new object states
+    const auto timePushUpdateStart { std::chrono::high_resolution_clock::now() };
     for(auto& entityState: currentStates) {
         entityState.second.mPhysics.mForce = glm::vec3 { 0.f };
         entityState.second.mPhysics.mTorque = glm::vec3 { 0.f };
         updateComponent(entityState.first, entityState.second.mPhysics);
         updateComponent(entityState.first, entityState.second.mBounds);
     }
+    const auto timePushUpdateEnd { std::chrono::high_resolution_clock::now() };
+    const auto pushUpdatesTime { std::chrono::duration_cast<std::chrono::milliseconds>(timePushUpdateEnd - timePushUpdateStart) };
+    std::cout << "Push updates: " << pushUpdatesTime.count() << "ms\n";
 
     reportCollisions(mCollisionReports, mCollisionSignallers);
-    mPotentialCollisions.clear();
 }
 
 void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& previousStates, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
@@ -146,9 +189,10 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
     }
 }
 
-std::map<CollisionPair, CollisionConstraint> PhysicsSystem::collectPotentialCollisions(float substepSeconds) {
-    std::map<CollisionPair, CollisionConstraint> potentialCollisions {};
+void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<CollisionReport>& queuedReports) {
     const std::set<EntityID>& enabledEntities { getEnabledEntities() };
+    std::set<CollisionPair> potentialCollisions {};
+    std::unordered_set<EntityID> potentialColliders {};
     for(const EntityID entity: enabledEntities) {
         // find an AABB that can contain the object regardless of orientation, with some
         // margin
@@ -186,7 +230,7 @@ std::map<CollisionPair, CollisionConstraint> PhysicsSystem::collectPotentialColl
             // self-collisions, collisions with non-physical objects are invalid
             if(
                 candidate.first == entity
-                || enabledEntities.find(candidate.first) == enabledEntities.end()
+                || enabledEntities.find(candidate.first) == enabledEntities.cend()
             ) {
                 continue;
             }
@@ -194,7 +238,7 @@ std::map<CollisionPair, CollisionConstraint> PhysicsSystem::collectPotentialColl
             // skip already discovered collision constraints
             const CollisionPair link { entity, candidate.first };
             if(
-                potentialCollisions.find(link) != potentialCollisions.end()
+                potentialCollisions.find(link) != potentialCollisions.cend()
             ) {
                 continue;
             }
@@ -208,20 +252,70 @@ std::map<CollisionPair, CollisionConstraint> PhysicsSystem::collectPotentialColl
                 continue;
             }
 
-            const ObjectBounds boundsCandidate { getComponent<ObjectBounds>(candidate.first) };
-            potentialCollisions.emplace(
-                link,
-                CollisionConstraint {
-                    checkCollision(objectBounds, boundsCandidate),
-                    physics,
-                    objectBounds,
-                    physicsCandidate,
-                    boundsCandidate
-                }
-            );
+            potentialColliders.insert(candidate.first);
+            potentialColliders.insert(entity);
+            potentialCollisions.emplace(link);
         }
     }
-    return potentialCollisions;
+
+    // update collision constraints tracked by this system
+    std::set<CollisionPair> removedConstraints {};
+    for(const auto& previousConstraint: mCollisionConstraints) {
+        if(potentialCollisions.find(previousConstraint.first) == potentialCollisions.cend()) {
+            removedConstraints.insert(previousConstraint.first);
+        }
+    }
+    for(const auto& collision: removedConstraints) {
+        mCollisionConstraints.erase(collision);
+    }
+    for(const auto& collision: potentialCollisions) {
+        const PhysicsState physicsA { getComponent<PhysicsState>(collision.first()) };
+        const PhysicsState physicsB { getComponent<PhysicsState>(collision.second()) };
+        const ObjectBounds boundsA { getComponent<ObjectBounds>(collision.first()) };
+        const ObjectBounds boundsB { getComponent<ObjectBounds>(collision.second()) };
+        mCollisionConstraints.insert({ collision, CollisionConstraint {
+            { .mCollided { false } },
+            physicsA, boundsA,
+            physicsB, boundsB,
+        } });
+    }
+
+    // update potential colliders tracked by physics broad phase
+    std::vector<EntityID> removedEntities {};
+    std::set_difference(
+        mPotentialColliders.begin(), mPotentialColliders.end(),
+        potentialColliders.begin(), potentialColliders.end(),
+        std::back_inserter(removedEntities)
+    );
+    std::vector<EntityID> addedEntities {};
+    std::set_difference(
+        potentialColliders.begin(), potentialColliders.end(),
+        mPotentialColliders.begin(), mPotentialColliders.end(),
+        std::back_inserter(addedEntities)
+    );
+    std::vector<EntityID> previousEntities {};
+    std::set_intersection(
+        mPotentialColliders.begin(), mPotentialColliders.end(),
+        potentialColliders.begin(), potentialColliders.end(),
+        std::back_inserter(previousEntities)
+    );
+    for(auto entity: removedEntities) {
+        mBroadPhase.removeObject(entity);
+        if(mEntityCollision.find(entity) == mEntityCollision.end()) {
+            continue;
+        }
+        std::unordered_set<EntityID> collidingWith { mEntityCollision.at(entity) };
+        for(const auto& other: collidingWith) {
+            onSeparated({ entity, other }, queuedReports);
+        }
+    }
+    for(auto entity: addedEntities) {
+        mBroadPhase.addObject(entity, getComponent<ObjectBounds>(entity));
+    }
+    for(auto entity: previousEntities) {
+        mBroadPhase.updateObject(entity, getComponent<ObjectBounds>(entity));
+    }
+    mPotentialColliders = potentialColliders;
 }
 
 void PhysicsSystem::applyPositionCollisionConstraints(
@@ -249,10 +343,7 @@ void PhysicsSystem::applyPositionCollisionConstraints(
 void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, CollisionConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
         // skip deleted or inactive constraints
-        if(
-            mConstraintsDeleted.find(constraint) != mConstraintsDeleted.end()
-            || mConstraintsInactive.find(constraint) != mConstraintsInactive.end()
-        ) {
+        if(mConstraintsDeleted.find(constraint) != mConstraintsDeleted.end()) {
             continue;
         }
 
@@ -340,30 +431,50 @@ void PhysicsSystem::updateCollisionEventQueue(
     std::queue<CollisionReport>& queuedReports,
     std::unordered_map<EntityID, PhysicsStateFull>& currentStates
 ) {
-    for(auto& linkConstraint: potentialCollisions) {
-        // skip objects that aren't configured to report collisions
-        const auto& physicsOne { currentStates[linkConstraint.first.first()].mPhysics };
-        const auto& physicsTwo { currentStates[linkConstraint.first.second()].mPhysics };
+    // update broad phase data
+    for(const auto& entity: mPotentialColliders) {
+        const auto& bounds { currentStates[entity].mBounds };
+        mBroadPhase.updateObject(entity, bounds);
+    }
 
-        // check for a collision happening in this frame
-        const auto& objectOne { currentStates[linkConstraint.first.first()].mBounds };
-        const auto& objectTwo { currentStates[linkConstraint.first.second()].mBounds };
-        const auto collisionData { checkCollision(
-            objectOne, objectTwo
-        ) };
-        linkConstraint.second.updateCollisionData(collisionData, physicsOne, objectOne, physicsTwo, objectTwo);
+    // update event queue and collision constraints
+    std::size_t collisionsChecked { 0 };
+    const std::set<CollisionPair> prunedCollisions { mBroadPhase.getCollisionPairs() };
 
-        // skip signalling if neither object signals
-        if(!(physicsOne.signalsOnCollision() || physicsTwo.signalsOnCollision())) {
+    for(auto& constraint: mCollisionConstraints) {
+        const auto& physicsOne { currentStates[constraint.first.first()].mPhysics };
+        const auto& physicsTwo { currentStates[constraint.first.second()].mPhysics };
+        const auto& objectOne { currentStates[constraint.first.first()].mBounds };
+        const auto& objectTwo { currentStates[constraint.first.second()].mBounds };
+
+        // guard: pruning shows no collision, so inform constraint and move to next step
+        if(prunedCollisions.find(constraint.first) == prunedCollisions.end()) {
+            constraint.second.updateCollisionData({ .mCollided { false } },
+                physicsOne, objectOne,
+                physicsTwo, objectTwo
+            );
             continue;
         }
 
+        // check for a collision happening in this frame
+        ++collisionsChecked;
+        const auto timeCollisionCheckStart { std::chrono::high_resolution_clock::now() };
+        const auto collisionData { checkCollision(objectOne, objectTwo) };
+        constraint.second.updateCollisionData(collisionData, physicsOne, objectOne, physicsTwo, objectTwo);
+        const auto timeCollisionCheckEnd { std::chrono::high_resolution_clock::now() };
+        const auto collisionCheckTime { std::chrono::duration<double, std::milli>(timeCollisionCheckEnd - timeCollisionCheckStart) };
+        std::cout << "\t\tcollision check " << collisionsChecked << ": " << collisionCheckTime.count() << "\n";
+
         // update report queue based on whether a collision or separation has taken place
+        const auto timeCollisionSignalStart { std::chrono::high_resolution_clock::now() };
         if(collisionData.mCollided) {
-            onCollided(linkConstraint.first, collisionData, queuedReports);
+            onCollided(constraint.first, collisionData, queuedReports);
         } else {
-            onSeparated(linkConstraint.first, queuedReports);
+            onSeparated(constraint.first, queuedReports);
         }
+        const auto timeCollisionSignalEnd { std::chrono::high_resolution_clock::now() };
+        const auto collisionSignalTime { std::chrono::duration<double, std::milli>(timeCollisionSignalEnd - timeCollisionSignalStart) };
+        std::cout << "\t\tcollision signal " << collisionsChecked << ": " << collisionSignalTime.count() << "\n";
     }
 }
 
@@ -374,11 +485,28 @@ void PhysicsSystem::onEntityEnabled(EntityID entityID) {
 void PhysicsSystem::onEntityDisabled(EntityID entityID) {
     mEntitiesUninitialized.erase(entityID);
     const auto foundEntity { mEntityConstraintMap.find(entityID) };
-    if(foundEntity == mEntityConstraintMap.end()) {
-        return;
+    if(foundEntity != mEntityConstraintMap.end()) {
+        const auto constraints { foundEntity->second };
+        for(const ConstraintID constraint: constraints) {
+            unregisterConstraint(constraint);
+        }
     }
-    for(const ConstraintID constraint: foundEntity->second) {
-        mConstraintsInactive.insert(constraint);
+
+    // if this entity was colliding with another, report it
+    mCollisionSignallers.erase(entityID);
+    const auto collidingWith { mEntityCollision.find(entityID) };
+    if(collidingWith != mEntityCollision.cend()) {
+        for(const auto& other: collidingWith->second) {
+            onSeparated({entityID, other}, mCollisionReports);
+            mEntityCollision[other].erase(entityID);
+        }
+        mEntityCollision.erase(entityID);
+    }
+
+    // remove this entity from the broad phase collision check
+    if(mPotentialColliders.find(entityID) != mPotentialColliders.cend()) {
+        mBroadPhase.removeObject(entityID);
+        mPotentialColliders.erase(entityID);
     }
 }
 
@@ -392,15 +520,6 @@ void PhysicsSystem::unregisterConstraint(ConstraintID constraint) {
         mEntityConstraintMap.at(entity).erase(constraint);
     }
     mConstraintsDeleted.insert(constraint);
-}
-
-void PhysicsSystem::refreshActiveConstraints() {
-    mConstraintsInactive.clear();
-    for(ConstraintID constraintID { 0 }; constraintID < mConstraints.size(); ++constraintID) {
-        if(!isConstraintActive(constraintID)) {
-            mConstraintsInactive.insert(constraintID);
-        }
-    }
 }
 
 bool PhysicsSystem::isConstraintActive(ConstraintID constraintID) const {
@@ -475,18 +594,6 @@ void PhysicsSystem::updateProperties(EntityID entityID) {
         updateComponent(entityID, physicsProps);
     }
 
-    // enable any constraints that depend on this entity if possible
-    if(mConstraintsInitialized) {
-        const auto foundEntityConstraint { mEntityConstraintMap.find(entityID) };
-        if(foundEntityConstraint != mEntityConstraintMap.end()) {
-            for(const ConstraintID constraint: foundEntityConstraint->second) {
-                if(isConstraintActive(constraint)) {
-                    mConstraintsInactive.erase(constraint);
-                }
-            }
-        }
-    }
-
     // register collision signals for this entity if required
     if(physicsProps.signalsOnCollision()) {
         registerCollisionSignal(entityID);
@@ -496,7 +603,6 @@ void PhysicsSystem::updateProperties(EntityID entityID) {
 }
 
 void PhysicsSystem::unregisterCollisionSignal(EntityID entity) {
-    mColliding.erase(entity);
     mCollisionSignallers.erase(entity);
 }
 
@@ -517,14 +623,14 @@ void PhysicsSystem::registerCollisionSignal(EntityID entity) {
 }
 
 bool PhysicsSystem::wasColliding(const CollisionPair& pair) const {
-    const auto& collidingA { mColliding.find(pair.first()) };
-    const auto& collidingB { mColliding.find(pair.second()) };
+    const auto& collidingA { mEntityCollision.find(pair.first()) };
+    const auto& collidingB { mEntityCollision.find(pair.second()) };
 
-    if(collidingA != mColliding.cend()) {
-        return collidingA->second.find(pair) != collidingA->second.cend();
+    if(collidingA != mEntityCollision.cend()) {
+        return collidingA->second.find(pair.second()) != collidingA->second.cend();
     }
-    if(collidingB != mColliding.cend()) {
-        return collidingB->second.find(pair) != collidingB->second.cend();
+    if(collidingB != mEntityCollision.cend()) {
+        return collidingB->second.find(pair.first()) != collidingB->second.cend();
     }
 
     return false;
@@ -541,20 +647,20 @@ void PhysicsSystem::onCollided(
         return;
     }
 
-    // Update list of collisions known to the system
-    if(mCollisionSignallers.find(pair.first()) != mCollisionSignallers.end()) {
-        mColliding[pair.first()].insert(pair);
-    }
-    if(mCollisionSignallers.find(pair.second()) != mCollisionSignallers.end()) {
-        mColliding[pair.second()].insert(pair);
-    }
+    // update list of collisions known to the system
+    mEntityCollision[pair.first()].insert(pair.second());
+    mEntityCollision[pair.second()].insert(pair.first());
 
-    // Add the collision report to the queue
-    const CollisionReport newReport {
-        .mCollided { true },
-        .mEvent { .mCollided { pair, collision } }
-    };
-    queuedReports.push(newReport);
+    // add the collision report to the queue
+    const bool firstSignals { mCollisionSignallers.find(pair.first()) != mCollisionSignallers.cend() };
+    const bool secondSignals { mCollisionSignallers.find(pair.second()) != mCollisionSignallers.cend() };
+    if(firstSignals || secondSignals) {
+        const CollisionReport newReport {
+            .mCollided { true },
+            .mEvent { .mCollided { pair, collision } }
+        };
+        queuedReports.push(newReport);
+    }
 }
 
 void PhysicsSystem::onSeparated(
@@ -567,19 +673,25 @@ void PhysicsSystem::onSeparated(
     }
 
     // remove this pair from lists of known collisions
-    if(mCollisionSignallers.find(pair.first()) != mCollisionSignallers.end()) {
-        mColliding[pair.first()].erase(pair);
+    mEntityCollision[pair.first()].erase(pair.second());
+    if(mEntityCollision[pair.first()].empty()) {
+        mEntityCollision.erase(pair.first());
     }
-    if(mCollisionSignallers.find(pair.second()) != mCollisionSignallers.end()) {
-        mColliding[pair.second()].erase(pair);
+    mEntityCollision[pair.second()].erase(pair.first());
+    if(mEntityCollision[pair.second()].empty()) {
+        mEntityCollision.erase(pair.second());
     }
 
     // Add the collision report to the queue
-    const CollisionReport newReport {
-        .mCollided { false },
-        .mEvent { .mSeparated { pair } }
-    };
-    queuedReports.push(newReport);
+    const bool firstSignals { mCollisionSignallers.find(pair.first()) != mCollisionSignallers.cend() };
+    const bool secondSignals { mCollisionSignallers.find(pair.second()) != mCollisionSignallers.cend() };
+    if(firstSignals || secondSignals) {
+        const CollisionReport newReport {
+            .mCollided { false },
+            .mEvent { .mSeparated { pair } }
+        };
+        queuedReports.push(newReport);
+    }
 }
 
 void PhysicsSystem::reportCollisions(
@@ -587,8 +699,7 @@ void PhysicsSystem::reportCollisions(
     std::unordered_map<EntityID, std::pair<SignalCollided, SignalSeparated>>
 ) const {
     while(!reports.empty()) {
-        const CollisionReport report { reports.front() };
-        reports.pop();
+        const CollisionReport& report { reports.front() };
         // TODO: The first-second-first-second nonsense is terribly confusing, make simpler
         if(report.mCollided) {
             auto signalA { mCollisionSignallers.find(report.mEvent.mCollided.first.first()) };
@@ -609,6 +720,7 @@ void PhysicsSystem::reportCollisions(
                 signalB->second.second->emit(report.mEvent.mSeparated);
             }
         }
+        reports.pop();
     }
 }
 

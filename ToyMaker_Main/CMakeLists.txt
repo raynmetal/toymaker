@@ -19,7 +19,7 @@ if(TARGET ToyMaker::ToyMakerMain)
 else()
     message("WARNING: ToyMaker::ToyMakerMain does not exist!")
 endif()
-option(ZO_DUMB_DELAY "Relinquish CPU for 10 milliseconds between frames" ON)
+option(ZO_DUMB_DELAY "Relinquish CPU for 10 milliseconds between frames" OFF)
 
 target_sources(ToyMaker
     PRIVATE
@@ -33,6 +33,7 @@ target_sources(ToyMaker
         src/spatial_query/types.cpp
         src/spatial_query/math.cpp
         src/spatial_query/octree.cpp
+        src/spatial_query/sweep_prune.cpp
         src/spatial_query/system.cpp
     # Physics sources
         src/physics/system.cpp
@@ -74,6 +75,7 @@ target_sources(ToyMaker
             include/toymaker/engine/spatial_query/types.hpp
             include/toymaker/engine/spatial_query/math.hpp
             include/toymaker/engine/spatial_query/octree.hpp
+            include/toymaker/engine/spatial_query/sweep_prune.hpp
             include/toymaker/engine/spatial_query/system.hpp
             # Physics sources
             include/toymaker/engine/physics/types.hpp

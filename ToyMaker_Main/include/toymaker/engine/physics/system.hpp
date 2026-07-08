@@ -24,68 +24,12 @@
 #include "../core/ecs_world.hpp"
 #include "../signals.hpp"
 #include "../spatial_query/types.hpp"
+#include "../spatial_query/sweep_prune.hpp"
 
 #include "types.hpp"
 
 namespace ToyMaker {
 
-    /**
-     * @ingroup ToyMakerPhysics
-     *
-     * @brief Names two distinct entities participating in a collision, with their entity
-     * IDs sorted in ascending order.
-     *
-     * Built to be used in an std::set
-     *
-     */
-    class CollisionPair {
-    private:
-        /**
-         * @brief The first entity in a constraint link.
-         *
-         */
-        EntityID mFirst;
-
-        /**
-         * @brief The second entity in a constraint link.
-         *
-         */
-        EntityID mSecond;
-
-    public:
-        /**
-         * @brief Creates a constraint link out of two distinct entities.
-         *
-         */
-        CollisionPair(EntityID first, EntityID second): mFirst { first }, mSecond { second } {
-            assert(first != second && "Entities in constraint must be distinct");
-            if (second < first) {
-                std::swap(mFirst, mSecond);
-            }
-        }
-
-        /**
-         * @brief Returns the first entity in the link
-         *
-         */
-        inline EntityID first() const { return mFirst; }
-
-        /**
-         * @brief Returns the second entity in the link
-         *
-         */
-        inline EntityID second() const { return mSecond; }
-
-        inline bool operator < (const CollisionPair& other) const {
-            return (
-                mFirst < other.mFirst
-                || (
-                    mFirst == other.mFirst
-                    && mSecond < other.mSecond
-               )
-            );
-        }
-    };
 
     /**
      * @ingroup ToyMakerPhysics ToyMakerECSSystem
@@ -334,7 +278,7 @@ namespace ToyMaker {
         void onCollided(const CollisionPair& pair, const Collision& collision, std::queue<CollisionReport>& queuedReports);
 
         /**
-         * @brief Removes pair of entities from signal list, signalling to observers if required.
+         * @brief Removes pair of entities from collision list, appending collision event to queue if required.
          *
          */
         void onSeparated(const CollisionPair& pair, std::queue<CollisionReport>& queuedReports);
@@ -372,7 +316,7 @@ namespace ToyMaker {
          * @brief Collects potential collisions and builds constraints from them
          *
          */
-        std::map<CollisionPair, CollisionConstraint> collectPotentialCollisions(float substepSeconds);
+        void collectPotentialCollisions(float substepSeconds, std::queue<CollisionReport>& queuedReports);
 
         /**
          * @brief Holds entities that haven't undergone proper initialization, and therefore
@@ -389,16 +333,42 @@ namespace ToyMaker {
         std::unordered_map<EntityID, std::set<ConstraintID>> mEntityConstraintMap {};
 
         /**
-         * @brief Storage for pairs of entities that are likely to collide this simulation frame.
+         * @brief Representation of the structure/technique being used to detect likely collisions.
+         *
+         * For the time being, this is just sweep and prune.
          *
          */
-        std::map<CollisionPair, CollisionConstraint> mPotentialCollisions {};
+        SweepPrune mBroadPhase {};
+
+        /**
+         * @brief All currently intersecting entities.
+         *
+         */
+        std::unordered_map<EntityID, std::unordered_set<EntityID>> mEntityCollision {};
+
+        /**
+         * @brief A list of entities that may collide this frame.
+         *
+         */
+        std::unordered_set<EntityID> mPotentialColliders {};
 
         /**
          * @brief Storage for collision reports that should be signalled this simulation frame.
          *
          */
         std::queue<CollisionReport> mCollisionReports {};
+
+        /**
+         * @brief Entities whose collision events are signalled by this system.
+         *
+         */
+        std::unordered_map<EntityID, std::pair<SignalCollided, SignalSeparated>> mCollisionSignallers {};
+
+        /**
+         * @brief Storage for pairs of entities that are likely to collide (or are colliding) this simulation frame.
+         *
+         */
+        std::map<CollisionPair, CollisionConstraint> mCollisionConstraints {};
 
         /**
          * @brief A list of all constraints known to the physics system, evaluated every frame.
@@ -413,24 +383,6 @@ namespace ToyMaker {
          *
          */
         std::unordered_set<ConstraintID> mConstraintsDeleted {};
-
-        /**
-         * @brief Constraints whose entities are not active, causing the constraint itself to become inactive.
-         *
-         */
-        std::unordered_set<ConstraintID> mConstraintsInactive {};
-
-        /**
-         * @brief All currently intersecting entities.
-         *
-         */
-        std::unordered_map<EntityID, std::set<CollisionPair>> mColliding {};
-
-        /**
-         * @brief Entities whose collision events are signalled by this system.
-         *
-         */
-        std::unordered_map<EntityID, std::pair<SignalCollided, SignalSeparated>> mCollisionSignallers {};
 
         /**
          * @brief The number of substeps used in the physics system's XPBD implementation.

@@ -661,7 +661,7 @@ namespace ToyMaker {
      * Repositions objects such that they no longer intersect along the axis of collision.
      *
      */
-    class CollisionConstraint: protected Constraint<2> {
+    class CollisionConstraint: public Constraint<2> {
     private:
         /**
          * @brief Whether or not two objects are currently intersecting (and therefore whether

@@ -19,7 +19,7 @@
 
 namespace ToyMaker {
 
-    static constexpr uint8_t kMaxIterations { 64 };
+    static constexpr uint8_t kMaxIterations { 32 };
     static constexpr float kSimplexEpsilon { 0.001 };
 
 

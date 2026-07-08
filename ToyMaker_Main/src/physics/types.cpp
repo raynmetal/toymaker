@@ -110,9 +110,6 @@ void CollisionConstraint::applyConstraintPosition(
     const PhysicsState& physicsA { states.at(0).second.get() };
     const PhysicsState& physicsB { states.at(1).second.get() };
 
-    ObjectBounds& objectA { states.at(0).first.get() };
-    ObjectBounds& objectB { states.at(1).first.get() };
-
     // guards:
     if(
         // no collision, so nothing to do
@@ -130,6 +127,8 @@ void CollisionConstraint::applyConstraintPosition(
         return;
     }
 
+    ObjectBounds& objectA { states.at(0).first.get() };
+    ObjectBounds& objectB { states.at(1).first.get() };
     const glm::vec3 positionA { objectA.getPositionWorld() };
     const glm::vec3 positionB { objectB.getPositionWorld() };
 
