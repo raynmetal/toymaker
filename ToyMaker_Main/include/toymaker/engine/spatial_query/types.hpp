@@ -663,14 +663,6 @@ namespace ToyMaker {
             assert(mNPoints < 4 && "We already have 4 (or more) points, there's no more needed");
             assert(supportA - supportB == candidatePoint && "The difference in supports should yield the candidate point");
 
-            // Hackery to ensure that we don't add the same point twice (which is a possibility
-            // since the hackery to force 3-simplex might cause us to look in the same direction
-            // twice)
-            for(uint8_t index { 0 }; index < mNPoints; ++index) {
-                if(mPoints[index] == candidatePoint) {
-                    return false;
-                }
-            }
             mPoints[mNPoints] = candidatePoint;
             mPointsSupportA[mNPoints] = supportA;
             mPointsSupportB[mNPoints] = supportB;

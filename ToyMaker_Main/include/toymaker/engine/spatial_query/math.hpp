@@ -20,7 +20,7 @@
 namespace ToyMaker {
 
     static constexpr uint8_t kMaxIterations { 32 };
-    static constexpr float kSimplexEpsilon { 0.001 };
+    static constexpr float kSimplexEpsilon { 0.0001 };
 
 
     /**
@@ -315,43 +315,15 @@ namespace ToyMaker {
 
         Simplex simplex {};
         auto fullDifference { minkowskiDifferenceFull(one, two, searchDirection) };
-        const auto& candidatePoint { std::get<0>(fullDifference) };
-        const auto& supportA { std::get<1>(fullDifference) };
-        const auto& supportB { std::get<2>(fullDifference) };
+        const auto& candidatePoint { std::get<0>(fullDifference) }; // updated with fullDifference
+        const auto& supportA { std::get<1>(fullDifference) }; // updated with fullDifference
+        const auto& supportB { std::get<2>(fullDifference) }; // updated with fullDifference
         simplex.append(candidatePoint, supportA, supportB);
 
         // we go towards the origin from the first point we found
         searchDirection = squareDistance(simplex.mPoints[0]) ? -simplex.mPoints[0]: glm::vec3 { 1.f, 0.f, 0.f };
-        bool found { false };
-        for(uint8_t iteration { 0 }; iteration < kMaxIterations; ++iteration) {
-
-            // We force a tetrahedron to form by picking arbitrary search directions
-            // in the event our degenerate simplex contains (0, 0, 0)
-            if(!squareDistance(searchDirection)) {
-                const float signMult { (iteration & 1)? -1.f: 1.f };
-
-                // Pick a new search direction to expand 1-simplex (line) to 2-simplex (triangle)
-                if(simplex.mNPoints == 2) {
-                    const float signMult2 { (iteration & 2)? -1.f: 1.f };
-                    const glm::vec3 dirAB { glm::normalize(simplex.mPoints[1] - simplex.mPoints[0]) };
-                    assert(squareDistance(dirAB) > 0 && "A and B should never be the same point");
-
-                    const glm::vec3 dirOffset { (dirAB.x != 0.f || dirAB.z != 0.f)? 
-                        glm::vec3{ 0.f, signMult * 1.f, 0.f } : glm::vec3{ signMult2 * 1.f, 0.f, signMult * 1.f }
-                    };
-
-                    searchDirection = -dirAB + dirOffset;
-
-                // Pick a new search direction to expand 2-simplex (triangle) to 3-simplex (tetrahedron)
-                } else if(simplex.mNPoints == 3) {
-                    const glm::vec3 normABC { glm::normalize(glm::cross(simplex.mPoints[1] - simplex.mPoints[0], simplex.mPoints[2] - simplex.mPoints[0])) };
-                    searchDirection = signMult * normABC;
-
-                } else {
-                    assert(false && "A simplex with 4 points is not degenerate, and there's no solving necessary here");
-                }
-            }
-
+        for(uint8_t iteration { 0 }; squareDistance(searchDirection) && iteration < kMaxIterations; ++iteration) {
+            // find a new candidate point
             fullDifference = minkowskiDifferenceFull(one, two, searchDirection);
 
             // We couldn't find a point past the origin in this direction, so obviously there is no intersection
@@ -359,14 +331,7 @@ namespace ToyMaker {
                 return { false, simplex };
             }
 
-            // This will return false generally when we're trying to fabricate
-            // a search direction.  In that case we just fabricate another one at
-            // the start of the loop.
-            if(!simplex.append(candidatePoint, supportA, supportB)) {
-                searchDirection = glm::vec3 { 0.f, 0.f, 0.f };
-                continue;
-            }
-
+            simplex.append(candidatePoint, supportA, supportB);
             const auto result { simplex.evaluate() };
             if(result.first) {
                 return { true, simplex };

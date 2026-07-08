@@ -5,7 +5,7 @@
 
 using namespace ToyMaker;
 
-constexpr float kEPAEpsilon { 0.0001 };
+constexpr float kEPAEpsilon { 0.001 };
 
 
 // Gets the minimum and maximum points of a 3D box projected on an axis

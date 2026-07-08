@@ -1,6 +1,3 @@
-#include <iostream>
-#include <chrono>
-
 #include <map>
 #include <algorithm>
 #include <unordered_map>
@@ -22,8 +19,6 @@ void PhysicsSystem::onSimulationActivated() {
 }
 
 void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
-    std::cout << "--PHYSICS UPDATE TIMES---------------------------\n";
-    const auto timeInitStart { std::chrono::high_resolution_clock::now() };
     // if the physics system has just been woken up, all entities must
     // undergo initialization
     if(mRequiresInitialization) {
@@ -40,19 +35,12 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
             updateProperties(entity);
         }
     }
-    const auto timeInitEnd { std::chrono::high_resolution_clock::now() };
-    const auto initTime { std::chrono::duration_cast<std::chrono::milliseconds>(timeInitEnd - timeInitEnd) };
-    std::cout << "Init: " << initTime.count() << "ms\n";
 
     // collect all potential collisions
     std::unordered_map<EntityID, PhysicsStateFull> previousStates {};
     std::unordered_map<EntityID, PhysicsStateFull> currentStates {};
     const float substepInterval { (static_cast<float>(timestepMillis) / static_cast<float>(mSubsteps)) / static_cast<float>(1e3) };
-    const auto timeCollectCollisionsStart { std::chrono::high_resolution_clock::now() };
     collectPotentialCollisions(substepInterval, mCollisionReports);
-    const auto timeCollectCollisionsEnd { std::chrono::high_resolution_clock::now() };
-    const auto collisionTime { std::chrono::duration_cast<std::chrono::milliseconds>(timeCollectCollisionsEnd - timeCollectCollisionsStart) };
-    std::cout << "Collision: " << collisionTime.count() << "ms\n";
 
     // clear lagrange multipliers in preparation for this physics update
     for(auto& constraint: mConstraints) {
@@ -62,56 +50,25 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
         collisionConstraint.second.resetLagrange();
     }
 
-    const auto timePhysicsSubstepsStart { std::chrono::high_resolution_clock::now() };
     for(auto substep { 0 }; substep < mSubsteps; ++substep) {
-        const auto timeIntegrateForcesStart { std::chrono::high_resolution_clock::now() };
         integrateForces(substepInterval, previousStates, currentStates);
-        const auto timeIntegrateForcesEnd { std::chrono::high_resolution_clock::now() };
-        const auto integrateForcesTime { std::chrono::duration<double, std::milli>(timeIntegrateForcesEnd - timeIntegrateForcesStart) };
 
-        const auto timeCollisionQueueStart { std::chrono::high_resolution_clock::now() };
         updateCollisionEventQueue(mCollisionConstraints, mCollisionReports, currentStates);
-        const auto timeCollisionQueueEnd { std::chrono::high_resolution_clock::now() };
-        const auto collisionQueueTime { std::chrono::duration<double, std::milli>(timeCollisionQueueEnd - timeCollisionQueueStart) };
 
-        const auto timePositionConstraintsStart { std::chrono::high_resolution_clock::now() };
         applyPositionConstraints(mCollisionConstraints, substepInterval, currentStates);
-        const auto timePositionConstraintsEnd { std::chrono::high_resolution_clock::now() };
-        const auto positionConstraintsTime { std::chrono::duration<double, std::milli>(timePositionConstraintsEnd - timePositionConstraintsStart) };
 
-        const auto timeDeriveVelocityStart { std::chrono::high_resolution_clock::now() };
         deriveVelocities(substepInterval, previousStates, currentStates);
-        const auto timeDeriveVelocityEnd { std::chrono::high_resolution_clock::now() };
-        const auto deriveVelocityTime { std::chrono::duration<double, std::milli>(timeDeriveVelocityEnd - timeDeriveVelocityStart) };
 
-        const auto timeVelocityConstraintStart { std::chrono::high_resolution_clock::now() };
         applyVelocityConstraints(mCollisionConstraints, substepInterval, currentStates);
-        const auto timeVelocityConstraintEnd { std::chrono::high_resolution_clock::now() };
-        const auto velocityConstraintsTime { std::chrono::duration<double, std::milli>(timeVelocityConstraintEnd - timeVelocityConstraintEnd) };
-
-        std::cout << "--- substep " << substep << "\n"
-            << "\tintegrate forces: " << integrateForcesTime.count() << "ms\n"
-            << "\tcollision queue: " << collisionQueueTime.count() << "ms\n"
-            << "\tposition constraints: " << positionConstraintsTime.count() << "ms\n"
-            << "\tderive velocity: " << deriveVelocityTime.count() << "ms\n"
-            << "\tvelocity constraint: " << velocityConstraintsTime.count() << "ms\n"
-        ;
     }
-    const auto timePhysicsSubstepsEnd { std::chrono::high_resolution_clock::now() };
-    const auto substepsTime { std::chrono::duration_cast<std::chrono::milliseconds>(timePhysicsSubstepsEnd - timePhysicsSubstepsStart) };
-    std::cout << "Substeps: " << substepsTime.count() << "ms\n";
 
     // clear forces (since they only apply for a single simulation frame) and upload new object states
-    const auto timePushUpdateStart { std::chrono::high_resolution_clock::now() };
     for(auto& entityState: currentStates) {
         entityState.second.mPhysics.mForce = glm::vec3 { 0.f };
         entityState.second.mPhysics.mTorque = glm::vec3 { 0.f };
         updateComponent(entityState.first, entityState.second.mPhysics);
         updateComponent(entityState.first, entityState.second.mBounds);
     }
-    const auto timePushUpdateEnd { std::chrono::high_resolution_clock::now() };
-    const auto pushUpdatesTime { std::chrono::duration_cast<std::chrono::milliseconds>(timePushUpdateEnd - timePushUpdateStart) };
-    std::cout << "Push updates: " << pushUpdatesTime.count() << "ms\n";
 
     reportCollisions(mCollisionReports, mCollisionSignallers);
 }
@@ -458,23 +415,15 @@ void PhysicsSystem::updateCollisionEventQueue(
 
         // check for a collision happening in this frame
         ++collisionsChecked;
-        const auto timeCollisionCheckStart { std::chrono::high_resolution_clock::now() };
         const auto collisionData { checkCollision(objectOne, objectTwo) };
         constraint.second.updateCollisionData(collisionData, physicsOne, objectOne, physicsTwo, objectTwo);
-        const auto timeCollisionCheckEnd { std::chrono::high_resolution_clock::now() };
-        const auto collisionCheckTime { std::chrono::duration<double, std::milli>(timeCollisionCheckEnd - timeCollisionCheckStart) };
-        std::cout << "\t\tcollision check " << collisionsChecked << ": " << collisionCheckTime.count() << "\n";
 
         // update report queue based on whether a collision or separation has taken place
-        const auto timeCollisionSignalStart { std::chrono::high_resolution_clock::now() };
         if(collisionData.mCollided) {
             onCollided(constraint.first, collisionData, queuedReports);
         } else {
             onSeparated(constraint.first, queuedReports);
         }
-        const auto timeCollisionSignalEnd { std::chrono::high_resolution_clock::now() };
-        const auto collisionSignalTime { std::chrono::duration<double, std::milli>(timeCollisionSignalEnd - timeCollisionSignalStart) };
-        std::cout << "\t\tcollision signal " << collisionsChecked << ": " << collisionSignalTime.count() << "\n";
     }
 }
 
