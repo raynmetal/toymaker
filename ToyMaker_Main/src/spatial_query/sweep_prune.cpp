@@ -132,7 +132,7 @@ std::set<CollisionPair> SweepPrune::findCollisionPairs() const {
     for(const auto& pair: overlapping[X]) {
         if(
             overlapping[Z].find(pair) != overlapping[Z].cend()
-            && overlapping[Y].find(pair) != overlapping[Z].cend()
+            && overlapping[Y].find(pair) != overlapping[Y].cend()
         ) {
             collisionPairs.insert(pair);
         }
