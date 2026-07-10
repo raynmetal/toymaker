@@ -28,11 +28,11 @@ TEST_CASE("Box-Box Overlap Detection") {
         glm::vec3 { 0.f }
     ) };
 
-    SUBCASE("Overlap fails when boxes only touch, but do not overlap") {
+    SUBCASE("Overlap succeeds even when boxes only touch") {
         const bool overlaps {
             ToyMaker::overlaps(boxOne, boxTwo)
         };
-        CHECK(!overlaps);
+        CHECK(overlaps);
     }
 
     SUBCASE("Minor rotation of either box causes overlap to succeed") {

@@ -393,7 +393,7 @@ namespace ToyMaker {
          * See [Detailed Rigid Body Simulation with Extended Position Based Dynamics - Matthias
          * Muller et al](https://matthias-research.github.io/pages/publications/PBDBodies.pdf)
          */
-        uint8_t mSubsteps { 4 };
+        uint8_t mSubsteps { 2 };
 
         /**
          * @brief Whether physics properties for all eligible entities should be recomputed

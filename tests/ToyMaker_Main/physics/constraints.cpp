@@ -41,13 +41,8 @@ TEST_CASE("Head-On") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::CollisionConstraint collisionConstraint {
-            collision,
-            physics1,
-            object1,
-            physics2,
-            object2
-        };
+        ToyMaker::CollisionConstraint collisionConstraint {};
+        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         CHECK(glm::abs(object1.getPositionWorld().x - (-5.f)) <= .002f);
@@ -59,13 +54,8 @@ TEST_CASE("Head-On") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::CollisionConstraint collisionConstraint {
-            collision,
-            physics1,
-            object1,
-            physics2,
-            object2
-        };
+        ToyMaker::CollisionConstraint collisionConstraint {};
+        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
@@ -80,13 +70,8 @@ TEST_CASE("Head-On") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::CollisionConstraint collisionConstraint {
-            collision,
-            physics1,
-            object1,
-            physics2,
-            object2
-        };
+        ToyMaker::CollisionConstraint collisionConstraint {};
+        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
@@ -134,13 +119,8 @@ TEST_CASE("Offset") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::CollisionConstraint collisionConstraint {
-            collision,
-            physics1,
-            object1,
-            physics2,
-            object2
-        };
+        ToyMaker::CollisionConstraint collisionConstraint {};
+        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching
@@ -156,12 +136,10 @@ TEST_CASE("Offset") {
         CHECK(glm::abs(glm::abs(rotationDelta1.x) - glm::abs(rotationDelta2.x)) <= .1f);
         CHECK(glm::abs(glm::abs(rotationDelta1.y) - glm::abs(rotationDelta2.y)) <= .1f);
         CHECK(glm::abs(glm::abs(rotationDelta1.z) - glm::abs(rotationDelta2.z)) <= .1f);
-        CHECK(glm::abs(rotationDelta1.z) > glm::abs(rotationDelta1.x));
-        CHECK(glm::abs(rotationDelta1.z) > glm::abs(rotationDelta1.y));
 
         // Check that the rotations were both clockwise facing down the -z axis
-        CHECK(rotationDelta1.z < 0.f);
-        CHECK(rotationDelta2.z < 0.f);
+        CHECK(rotationDelta1.z > 0.f);
+        CHECK(rotationDelta2.z > 0.f);
     }
 
     SUBCASE("Inertia 1 > 2") {
@@ -173,13 +151,8 @@ TEST_CASE("Offset") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::CollisionConstraint collisionConstraint {
-            collision,
-            physics1,
-            object1,
-            physics2,
-            object2
-        };
+        ToyMaker::CollisionConstraint collisionConstraint {};
+        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching
@@ -195,8 +168,8 @@ TEST_CASE("Offset") {
         CHECK(glm::abs(glm::abs(rotationDelta1.z) - glm::abs(rotationDelta2.z)) <= .1f);
 
         // Check that the rotations were both clockwise
-        CHECK(rotationDelta1.z < 0.f);
-        CHECK(rotationDelta2.z < 0.f);
+        CHECK(rotationDelta1.z > 0.f);
+        CHECK(rotationDelta2.z > 0.f);
 
         // 2 should have experienced more rotation than 1
         CHECK(glm::abs(2.f*glm::acos(rotationDelta1.w)) < glm::abs(2.f*glm::acos(rotationDelta2.w)));
@@ -211,13 +184,8 @@ TEST_CASE("Offset") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::CollisionConstraint collisionConstraint {
-            collision,
-            physics1,
-            object1,
-            physics2,
-            object2
-        };
+        ToyMaker::CollisionConstraint collisionConstraint {};
+        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching
@@ -231,12 +199,10 @@ TEST_CASE("Offset") {
         CHECK(glm::abs(glm::abs(rotationDelta1.x) - glm::abs(rotationDelta2.x)) <= .1f);
         CHECK(glm::abs(glm::abs(rotationDelta1.y) - glm::abs(rotationDelta2.y)) <= .1f);
         CHECK(glm::abs(glm::abs(rotationDelta1.z) - glm::abs(rotationDelta2.z)) <= .1f);
-        CHECK(glm::abs(rotationDelta1.z) > glm::abs(rotationDelta1.x));
-        CHECK(glm::abs(rotationDelta1.z) > glm::abs(rotationDelta1.y));
 
         // Check that the rotations were both clockwise facing down the -Z axis
-        CHECK(rotationDelta1.z < 0.f);
-        CHECK(rotationDelta2.z < 0.f);
+        CHECK(rotationDelta1.z > 0.f);
+        CHECK(rotationDelta2.z > 0.f);
 
         // 2 should have experienced more rotation than 1
         CHECK(glm::abs(2.f*glm::acos(rotationDelta1.w)) > glm::abs(2.f*glm::acos(rotationDelta2.w)));

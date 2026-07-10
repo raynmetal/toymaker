@@ -92,18 +92,18 @@ void BallSpawner::variableUpdate(uint32_t timestep) {
     mTimeElapsed = std::min(mTimeElapsed + timestep, mTimeSpawnThreshold);
 
     if(mTimeElapsed == mTimeSpawnThreshold) {
+        mTimeElapsed = 0;
         ToyMaker::ObjectBounds bounds { getComponent<ToyMaker::ObjectBounds>() };
         const auto overlappingEntities {
             getWorld().lock()->getSystem<ToyMaker::SpatialQuerySystem>()->findEntitiesOverlappingCoarse(
-                ToyMaker::AxisAlignedBounds(bounds.getPositionWorld(), glm::vec3 { .25f }),
-                1
+                ToyMaker::AxisAlignedBounds(bounds.getPositionWorld(), glm::vec3 { 4.2f }),
+                0x1
             )
         };
         if(overlappingEntities.size() > 1) {
             return;
         }
 
-        mTimeElapsed = 0;
         std::cout << "New ball! " << std::to_string(mNBalls) << "\n";
         std::shared_ptr<ToyMaker::SimObject> newNode {
             ToyMaker::SimObject::copy(

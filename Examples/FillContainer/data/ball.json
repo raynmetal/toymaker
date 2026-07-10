@@ -17,11 +17,10 @@
                 {
                     "type": "PhysicsState",
                     "mode": "dynamic",
-                    "mass": 1.0,
+                    "mass": 4.0,
                     "coefficient_friction_static": 0.2,
-                    "coefficient_friction_dynamic": 0.1,
-                    "velocity": [2.0, 0.0, -2.0],
-                    "angular_velocity": [0.0, 0.0, 0.0]
+                    "coefficient_friction_dynamic": 0.14,
+                    "velocity": [-1, 0, 1]
                 },
                 {
                     "type": "ObjectBounds",

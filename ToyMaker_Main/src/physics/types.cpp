@@ -46,18 +46,7 @@ float BaseConstraint::getCompliance() const {
     return mCompliance;
 }
 
-CollisionConstraint::CollisionConstraint(
-    const Collision& collision,
-    const PhysicsState& physicsA,
-    const ObjectBounds& boundsA,
-    const PhysicsState& physicsB,
-    const ObjectBounds& boundsB
-): Constraint<2> { 0.f } {
-    updateCollisionData( collision,
-        physicsA, boundsA,
-        physicsB, boundsB
-    );
-}
+CollisionConstraint::CollisionConstraint(): Constraint<2> { 0.f } {}
 
 void CollisionConstraint::updateCollisionData(
     const Collision& collision,
@@ -68,6 +57,7 @@ void CollisionConstraint::updateCollisionData(
 ) {
     // rotations from local to global frame for each body
     mCollided = collision.mCollided;
+    if(!mCollided) return;
     mLastPointContactA = collision.mContactA.mPoint;
     mLastPointContactB = collision.mContactB.mPoint;
     mRelativePointContactA = (
@@ -97,7 +87,6 @@ void CollisionConstraint::updateCollisionData(
         pointVelocityA - pointVelocityB
     };
     mCollisionVelocity = glm::dot(pointVelocityAB, mContactNormal);
-
 }
 
 void CollisionConstraint::applyConstraintPosition(

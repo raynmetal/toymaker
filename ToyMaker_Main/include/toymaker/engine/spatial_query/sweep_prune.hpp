@@ -89,7 +89,7 @@ namespace ToyMaker {
          * @brief Returns all collision pairs that have been detected thus far.
          *
          */
-        std::set<CollisionPair> getCollisionPairs() const;
+        std::set<CollisionPair> getCollisionPairs();
 
         /**
          * @brief Adds an object for sweep and prune to track.
@@ -169,15 +169,37 @@ namespace ToyMaker {
          * @brief Scans edge lists to find likely collision pairs.
          *
          */
-        std::set<CollisionPair> findCollisionPairs() const;
+        void findCollisionPairs();
 
-        std::set<CollisionPair> findOverlaps(Axis axis) const;
-
+        /**
+         * @brief Indices into edge lists for each axis per entity.
+         *
+         */
         std::unordered_map<EntityID, Object> mObjects {};
 
+        /**
+         * @brief Storage for all detected collision pairs.
+         *
+         */
         std::set<CollisionPair> mCollisionPairs {};
 
+        /**
+         * @brief Sorted list of edges along each axis.
+         *
+         */
         std::array<std::vector<Edge>, 3> mEdges {};
+
+        /**
+         * @brief Pairs of entities which are overlapping on each axis.
+         *
+         */
+        std::array<std::set<CollisionPair>, 3> mOverlaps {};
+
+        /**
+         * @brief Whether collision pairs need to be recomputed, as they would after an update
+         *
+         */
+        bool mRecomputeCollisions { true };
     };
 }
 

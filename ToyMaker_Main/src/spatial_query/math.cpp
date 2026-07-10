@@ -821,3 +821,35 @@ glm::mat3 ToyMaker::computeBarycentricSolver(const AreaTriangle& triangle) {
 
     return finalResult;
 }
+
+Collision ToyMaker::checkCollisionSphereSphere(const ObjectBounds& one, const ObjectBounds& two) {
+    assert(
+        one.mType == ObjectBounds::TrueVolumeType::SPHERE
+        && two.mType == ObjectBounds::TrueVolumeType::SPHERE
+        && "Both objects being tested must be spheres for this optimization"
+    );
+    const auto toTwo {
+        two.getPositionWorld() - one.getPositionWorld()
+    };
+    assert(squareDistance(toTwo) && "These objects overlap at their center, and no collision data can be computed for them");
+    const auto sumRadius { one.mTrueVolume.mSphere.mRadius + two.mTrueVolume.mSphere.mRadius };
+    if(squareDistance(toTwo) >= sumRadius * sumRadius) {
+        return { .mCollided { false } };
+    }
+    Collision collisionResult { .mCollided { true } };
+    const auto contactNormal { glm::normalize(toTwo) };
+    const auto penetrationDepth { sumRadius - glm::length(toTwo) };
+    const auto tangentPair { deriveTangents(contactNormal) };
+    collisionResult.mContactB.mPoint = two.getPositionWorld() - contactNormal * two.mTrueVolume.mSphere.mRadius;
+    collisionResult.mContactA.mPoint = one.getPositionWorld() + contactNormal * one.mTrueVolume.mSphere.mRadius;
+    collisionResult.mContactB.mPenetrationDepth
+        = collisionResult.mContactA.mPenetrationDepth
+        = penetrationDepth;
+    collisionResult.mContactB.mNormal = contactNormal;
+    collisionResult.mContactB.mTangent1 = tangentPair.first;
+    collisionResult.mContactB.mTangent2 = tangentPair.second;
+    collisionResult.mContactA.mNormal = -contactNormal;
+    collisionResult.mContactA.mTangent1 = -tangentPair.first;
+    collisionResult.mContactA.mTangent2 = -tangentPair.second;
+    return collisionResult;
+}

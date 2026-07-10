@@ -3,8 +3,11 @@
 
 using namespace ToyMaker;
 
-std::set<CollisionPair> SweepPrune::getCollisionPairs() const {
-    return findCollisionPairs();
+std::set<CollisionPair> SweepPrune::getCollisionPairs() {
+    if(mRecomputeCollisions) {
+        findCollisionPairs();
+    }
+    return mCollisionPairs;
 }
 
 void SweepPrune::addObject(EntityID entity, const AxisAlignedBounds& bounds) {
@@ -104,6 +107,15 @@ void SweepPrune::sortEdges(Axis axis) {
             if(edges[j-1] < edges[j]) {
                 break;
             }
+
+            // apply any necessary overlap updates
+            mRecomputeCollisions = true;
+            if(edges[j].mBegin && !edges[j-1].mBegin) {
+                mOverlaps[axis].insert({ edges[j].mEntity, edges[j-1].mEntity });
+            } else if(!edges[j].mBegin && edges[j-1].mBegin) {
+                mOverlaps[axis].erase({ edges[j].mEntity, edges[j-1].mEntity });
+            }
+
             std::swap(edges[j-1], edges[j]);
 
             // update object table entries as we go
@@ -122,45 +134,16 @@ void SweepPrune::sortEdges(Axis axis) {
     }
 }
 
-std::set<CollisionPair> SweepPrune::findCollisionPairs() const {
-    std::set<CollisionPair> collisionPairs {};
-    const std::array<std::set<CollisionPair>, 3> overlapping {{
-        findOverlaps(X),
-        findOverlaps(Y),
-        findOverlaps(Z),
-    }};
-    for(const auto& pair: overlapping[X]) {
+void SweepPrune::findCollisionPairs() {
+    mRecomputeCollisions = false;
+    mCollisionPairs.clear();
+    for(const auto& pair: mOverlaps[X]) {
         if(
-            overlapping[Z].find(pair) != overlapping[Z].cend()
-            && overlapping[Y].find(pair) != overlapping[Y].cend()
+            mOverlaps[Z].find(pair) != mOverlaps[Z].cend()
+            && mOverlaps[Y].find(pair) != mOverlaps[Y].cend()
         ) {
-            collisionPairs.insert(pair);
+            mCollisionPairs.insert(pair);
         }
     }
-    return collisionPairs;
-}
-
-std::set<CollisionPair> SweepPrune::findOverlaps(Axis axis) const {
-    // list of entity pairs that overlap on this axis
-    std::set<CollisionPair> overlapping {};
-
-    // list of entities that aren't closed in the current iteration
-    std::set<EntityID> connected {};
-
-    for(const auto& edge: mEdges[axis]) {
-        if(!edge.mBegin) {
-            connected.erase(edge.mEntity);
-            continue;
-        }
-
-        for(const auto other: connected) {
-            overlapping.insert({edge.mEntity, other});
-        }
-        connected.insert(edge.mEntity);
-    }
-
-    assert(connected.empty() && "There are projections that haven't been closed");
-
-    return overlapping;
 }
 

@@ -661,8 +661,8 @@ namespace ToyMaker {
      * Repositions objects such that they no longer intersect along the axis of collision.
      *
      */
-    class CollisionConstraint: public Constraint<2> {
-    private:
+    struct CollisionConstraint: public Constraint<2> {
+    public:
         /**
          * @brief Whether or not two objects are currently intersecting (and therefore whether
          * they should be separated)
@@ -715,19 +715,11 @@ namespace ToyMaker {
          */
         float mPenetrationDepth { 0.f };
 
-    public:
-
         /**
          * @brief Initializes constraint with collision data from two potentially intersecting objects
          *
          */
-        CollisionConstraint(
-            const Collision& collision,
-            const PhysicsState& physicsA,
-            const ObjectBounds& boundsA,
-            const PhysicsState& objectB,
-            const ObjectBounds& boundsB
-        );
+        CollisionConstraint();
 
         /**
          * @brief Caches collision related information shared across position and velocity corrections

@@ -1,3 +1,5 @@
+#include <iostream>
+#include <chrono>
 #include <map>
 #include <algorithm>
 #include <unordered_map>
@@ -19,6 +21,7 @@ void PhysicsSystem::onSimulationActivated() {
 }
 
 void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
+    const auto timeStartInit { std::chrono::high_resolution_clock::now() };
     // if the physics system has just been woken up, all entities must
     // undergo initialization
     if(mRequiresInitialization) {
@@ -35,12 +38,17 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
             updateProperties(entity);
         }
     }
+    const auto timeEndInit { std::chrono::high_resolution_clock::now() };
+    std::chrono::duration<float, std::milli> timeInit { timeEndInit - timeStartInit };
+    // std::cout << "init time: " << timeInit.count() << "ms\n";
 
     // collect all potential collisions
-    std::unordered_map<EntityID, PhysicsStateFull> previousStates {};
-    std::unordered_map<EntityID, PhysicsStateFull> currentStates {};
     const float substepInterval { (static_cast<float>(timestepMillis) / static_cast<float>(mSubsteps)) / static_cast<float>(1e3) };
+    const auto timeStartPotentialCollisions { std::chrono::high_resolution_clock::now() };
     collectPotentialCollisions(substepInterval, mCollisionReports);
+    const auto timeEndPotentialCollisions { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timePotentialCollisions { timeEndPotentialCollisions - timeStartPotentialCollisions };
+    // std::cout << "potential collisions time: " << timePotentialCollisions.count() << "ms\n";
 
     // clear lagrange multipliers in preparation for this physics update
     for(auto& constraint: mConstraints) {
@@ -50,27 +58,56 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
         collisionConstraint.second.resetLagrange();
     }
 
+    const auto timeStartSubsteps { std::chrono::high_resolution_clock::now() };
+    std::unordered_map<EntityID, PhysicsStateFull> previousStates {};
+    std::unordered_map<EntityID, PhysicsStateFull> currentStates {};
     for(auto substep { 0 }; substep < mSubsteps; ++substep) {
+        const auto timeStartPredict { std::chrono::high_resolution_clock::now() };
         integrateForces(substepInterval, previousStates, currentStates);
+        const auto timeEndPredict { std::chrono::high_resolution_clock::now() };
+        const std::chrono::duration<float, std::milli> timePredict { timeEndPredict - timeStartPredict };
+        // std::cout << "\tpredict time " << substep << ": " << timePredict.count() << "ms\n";
 
+        const auto timeStartCollision { std::chrono::high_resolution_clock::now() };
         updateCollisionEventQueue(mCollisionConstraints, mCollisionReports, currentStates);
+        const auto timeEndCollision { std::chrono::high_resolution_clock::now() };
+        const std::chrono::duration<float, std::milli> timeCollision { timeEndCollision - timeStartCollision };
+        // std::cout << "\tcollision time " << substep << ": " << timeCollision.count() << "ms\n";
 
+        const auto timeStartConstraintPosition { std::chrono::high_resolution_clock::now() };
         applyPositionConstraints(mCollisionConstraints, substepInterval, currentStates);
+        const auto timeEndConstraintPosition { std::chrono::high_resolution_clock::now() };
+        const std::chrono::duration<float, std::milli> timeConstraintPosition { timeEndConstraintPosition - timeStartConstraintPosition };
+        // std::cout << "\tposition constraint time " << substep << ": " << timeConstraintPosition.count() << "ms\n";
 
+        const auto timeStartVelocity { std::chrono::high_resolution_clock::now() };
         deriveVelocities(substepInterval, previousStates, currentStates);
+        const auto timeEndVelocity { std::chrono::high_resolution_clock::now() };
+        const std::chrono::duration<float, std::milli> timeVelocity { timeEndVelocity - timeStartVelocity };
+        // std::cout << "\tvelocity time " << substep << ": "  << timeVelocity.count() << "ms\n";
 
+        const auto timeStartConstraintVelocity { std::chrono::high_resolution_clock::now() };
         applyVelocityConstraints(mCollisionConstraints, substepInterval, currentStates);
+        const auto timeEndConstraintVelocity { std::chrono::high_resolution_clock::now() };
+        const std::chrono::duration<float, std::milli> timeConstraintVelocity { timeEndConstraintVelocity - timeStartConstraintVelocity };
+        // std::cout << "\tvelocity constraint time " << substep << ": "  << timeConstraintVelocity.count() << "ms\n";
     }
+    const auto timeEndSubsteps { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeSubsteps { timeEndSubsteps - timeStartSubsteps };
+    // std::cout << "substeps time: " << timeSubsteps.count() << "ms\n";
 
     // clear forces (since they only apply for a single simulation frame) and upload new object states
+    const auto timeStartUpdate { std::chrono::high_resolution_clock::now() };
     for(auto& entityState: currentStates) {
         entityState.second.mPhysics.mForce = glm::vec3 { 0.f };
         entityState.second.mPhysics.mTorque = glm::vec3 { 0.f };
         updateComponent(entityState.first, entityState.second.mPhysics);
         updateComponent(entityState.first, entityState.second.mBounds);
     }
-
     reportCollisions(mCollisionReports, mCollisionSignallers);
+    const auto timeEndUpdate { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeUpdate { timeEndUpdate - timeStartUpdate };
+    // std::cout << "push updates time: " << timeUpdate.count() << "ms\n";
 }
 
 void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& previousStates, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
@@ -147,8 +184,10 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
 }
 
 void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<CollisionReport>& queuedReports) {
+    std::cout << "\t-----collect potential collisions time-------\n";
+    const auto timeStartCollect { std::chrono::high_resolution_clock::now() };
     const std::set<EntityID>& enabledEntities { getEnabledEntities() };
-    std::set<CollisionPair> potentialCollisions {};
+    std::map<CollisionPair, CollisionConstraint> potentialCollisions {};
     std::unordered_set<EntityID> potentialColliders {};
     for(const EntityID entity: enabledEntities) {
         // find an AABB that can contain the object regardless of orientation, with some
@@ -211,68 +250,55 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
 
             potentialColliders.insert(candidate.first);
             potentialColliders.insert(entity);
-            potentialCollisions.emplace(link);
+            potentialCollisions.insert({ link,
+                mCollisionConstraints.find(link) != mCollisionConstraints.end()?
+                    mCollisionConstraints.at(link) :
+                    CollisionConstraint {}
+            });
         }
     }
-
-    // update collision constraints tracked by this system
-    std::set<CollisionPair> removedConstraints {};
-    for(const auto& previousConstraint: mCollisionConstraints) {
-        if(potentialCollisions.find(previousConstraint.first) == potentialCollisions.cend()) {
-            removedConstraints.insert(previousConstraint.first);
-        }
-    }
-    for(const auto& collision: removedConstraints) {
-        mCollisionConstraints.erase(collision);
-    }
-    for(const auto& collision: potentialCollisions) {
-        const PhysicsState physicsA { getComponent<PhysicsState>(collision.first()) };
-        const PhysicsState physicsB { getComponent<PhysicsState>(collision.second()) };
-        const ObjectBounds boundsA { getComponent<ObjectBounds>(collision.first()) };
-        const ObjectBounds boundsB { getComponent<ObjectBounds>(collision.second()) };
-        mCollisionConstraints.insert({ collision, CollisionConstraint {
-            { .mCollided { false } },
-            physicsA, boundsA,
-            physicsB, boundsB,
-        } });
-    }
+    mCollisionConstraints = potentialCollisions;
+    const auto timeEndCollect { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeCollect { timeEndCollect - timeStartCollect };
+    std::cout << "\t\tcollection time: " << timeCollect.count() << "ms\n";
 
     // update potential colliders tracked by physics broad phase
+    const auto timeStartCollidersUpdate { std::chrono::high_resolution_clock::now() };
+
+    // see which entities are no longer in danger of colliding with anything and remove them
     std::vector<EntityID> removedEntities {};
-    std::set_difference(
-        mPotentialColliders.begin(), mPotentialColliders.end(),
-        potentialColliders.begin(), potentialColliders.end(),
-        std::back_inserter(removedEntities)
-    );
-    std::vector<EntityID> addedEntities {};
-    std::set_difference(
-        potentialColliders.begin(), potentialColliders.end(),
-        mPotentialColliders.begin(), mPotentialColliders.end(),
-        std::back_inserter(addedEntities)
-    );
-    std::vector<EntityID> previousEntities {};
-    std::set_intersection(
-        mPotentialColliders.begin(), mPotentialColliders.end(),
-        potentialColliders.begin(), potentialColliders.end(),
-        std::back_inserter(previousEntities)
-    );
+    removedEntities.reserve(mPotentialColliders.size());
+    for(auto entity: mPotentialColliders) {
+        if(potentialColliders.find(entity) != potentialColliders.end()) {
+            continue;
+        }
+        removedEntities.push_back(entity);
+    }
     for(auto entity: removedEntities) {
+        mPotentialColliders.erase(entity);
         mBroadPhase.removeObject(entity);
         if(mEntityCollision.find(entity) == mEntityCollision.end()) {
             continue;
         }
         std::unordered_set<EntityID> collidingWith { mEntityCollision.at(entity) };
+        // these separations likely occur when some user code modifies object placement
+        // making this special handling necessary
         for(const auto& other: collidingWith) {
             onSeparated({ entity, other }, queuedReports);
         }
     }
-    for(auto entity: addedEntities) {
+
+    // add all new potential colliders to the ones tracked by the system
+    for(auto entity: potentialColliders) {
+        if(mPotentialColliders.find(entity) != mPotentialColliders.end()) {
+            continue;
+        }
+        mPotentialColliders.insert(entity);
         mBroadPhase.addObject(entity, getComponent<ObjectBounds>(entity));
     }
-    for(auto entity: previousEntities) {
-        mBroadPhase.updateObject(entity, getComponent<ObjectBounds>(entity));
-    }
-    mPotentialColliders = potentialColliders;
+    const auto timeEndCollidersUpdate { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeCollidersUpdate { timeEndCollidersUpdate - timeStartCollidersUpdate };
+    std::cout << "\t\tcolliders update: " << timeCollidersUpdate.count() << "ms\n";
 }
 
 void PhysicsSystem::applyPositionCollisionConstraints(
@@ -388,6 +414,8 @@ void PhysicsSystem::updateCollisionEventQueue(
     std::queue<CollisionReport>& queuedReports,
     std::unordered_map<EntityID, PhysicsStateFull>& currentStates
 ) {
+    std::cout << "---------update collision time-------------\n";
+    const auto timeStartBroadphase { std::chrono::high_resolution_clock::now() };
     // update broad phase data
     for(const auto& entity: mPotentialColliders) {
         const auto& bounds { currentStates[entity].mBounds };
@@ -397,7 +425,11 @@ void PhysicsSystem::updateCollisionEventQueue(
     // update event queue and collision constraints
     std::size_t collisionsChecked { 0 };
     const std::set<CollisionPair> prunedCollisions { mBroadPhase.getCollisionPairs() };
+    const auto timeEndBroadphase { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeBroadphase{ timeEndBroadphase - timeStartBroadphase };
+    std::cout << "\t\tbroadphase time: " << timeBroadphase.count() << "ms\n";
 
+    const auto timeStartNarrowPhase { std::chrono::high_resolution_clock::now() };
     for(auto& constraint: mCollisionConstraints) {
         const auto& physicsOne { currentStates[constraint.first.first()].mPhysics };
         const auto& physicsTwo { currentStates[constraint.first.second()].mPhysics };
@@ -410,21 +442,24 @@ void PhysicsSystem::updateCollisionEventQueue(
                 physicsOne, objectOne,
                 physicsTwo, objectTwo
             );
+            onSeparated(constraint.first, queuedReports);
             continue;
         }
 
-        // check for a collision happening in this frame
+        // narrow phase: check for a collision happening in this frame
         ++collisionsChecked;
         const auto collisionData { checkCollision(objectOne, objectTwo) };
-        constraint.second.updateCollisionData(collisionData, physicsOne, objectOne, physicsTwo, objectTwo);
-
-        // update report queue based on whether a collision or separation has taken place
+        constraint.second.updateCollisionData(checkCollision(objectOne, objectTwo), physicsOne, objectOne, physicsTwo, objectTwo);
         if(collisionData.mCollided) {
             onCollided(constraint.first, collisionData, queuedReports);
         } else {
             onSeparated(constraint.first, queuedReports);
         }
     }
+    const auto timeEndNarrowPhase { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeNarrowPhase { timeEndNarrowPhase - timeStartNarrowPhase };
+    std::cout << "\t\tnarrow phase time: " << timeNarrowPhase.count() << "ms\n";
+    std::cout << "\tcollisions checked: " << collisionsChecked << "\n";
 }
 
 void PhysicsSystem::onEntityEnabled(EntityID entityID) {
