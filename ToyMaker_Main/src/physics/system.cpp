@@ -393,23 +393,13 @@ void PhysicsSystem::updateCollisionEventQueue(
             continue;
         }
 
-        // go for a full contact recomputation in case this is the first substep, or a collision
-        // was detected in a previous substep ...
-        if(!constraint.second.mCollided || nthSubstep == 0) {
-            // narrow phase: check for a collision happening in this frame
-            ++collisionsChecked;
-            const auto collisionData { checkCollision(objectOne, objectTwo) };
-            constraint.second.updateCollisionData(collisionData, physicsOne, objectOne, physicsTwo, objectTwo);
-            if(collisionData.mCollided) {
-                onCollided(constraint.first, collisionData, queuedReports);
-            }
-
-        // ... otherwise do cheaper, less accurate collision contact update
-        } else {
-            constraint.second.updateCollisionDataPartial(physicsOne, objectOne, physicsTwo, objectTwo);
+        ++collisionsChecked;
+        const auto collisionData { checkCollision(objectOne, objectTwo) };
+        constraint.second.updateCollisionData(collisionData, physicsOne, objectOne, physicsTwo, objectTwo);
+        if(collisionData.mCollided) {
+            onCollided(constraint.first, collisionData, queuedReports);
         }
-
-        if(!constraint.second.mCollided) {
+        else {
             onSeparated(constraint.first, queuedReports);
         }
     }
