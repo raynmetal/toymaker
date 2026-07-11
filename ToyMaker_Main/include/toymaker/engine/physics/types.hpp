@@ -575,6 +575,12 @@ namespace ToyMaker {
          */
         std::array<float, LagrangeCount> mLagrangeMultipliers { 0.f };
 
+        /**
+         * @brief The last delta applied to the Lagrange multiplier for this constraint.
+         *
+         */
+        std::array<float, LagrangeCount> mLagrangeDeltas { 0.f };
+
     protected:
         /**
          * @brief Initializes this constraint with some initial compliance value.
@@ -594,6 +600,12 @@ namespace ToyMaker {
          *
          */
         const std::array<float, LagrangeCount>& getLagrange() const;
+
+        /**
+         * @brief Gets the latest lagrange delta applied to a constraint.
+         *
+         */
+        const std::array<float, LagrangeCount>& getLagrangeDelta() const;
 
         /**
          * @brief Sets all lagrange multipliers to 0 in preparation for the next physics update
@@ -869,7 +881,13 @@ namespace ToyMaker {
     }
 
     template <uint8_t LagrangeCount>
+    inline const std::array<float, LagrangeCount>& Constraint<LagrangeCount>::getLagrangeDelta() const {
+        return mLagrangeMultipliers;
+    }
+
+    template <uint8_t LagrangeCount>
     inline void Constraint<LagrangeCount>::applyLagrangeDelta(float delta, uint8_t index) {
+        mLagrangeDeltas[index] = delta;
         mLagrangeMultipliers[index] += delta;
     }
 
@@ -881,7 +899,7 @@ namespace ToyMaker {
     template<uint8_t LagrangeCount>
     template<uint8_t ...indices>
     inline void Constraint<LagrangeCount>::resetLagrange(std::integer_sequence<uint8_t, indices...> sequence) {
-        ((mLagrangeMultipliers[indices] = 0.f), ...);
+        ((mLagrangeMultipliers[indices] = mLagrangeDeltas[indices] = 0.f), ...);
     }
 
     template<typename TParameter, uint8_t LagrangeCount>

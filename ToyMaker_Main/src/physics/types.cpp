@@ -244,9 +244,7 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
     }
     assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
 
-    // fetch minimal data
-    PhysicsState& physicsA { states.at(0).second.get() };
-    PhysicsState& physicsB { states.at(1).second.get() };
+    // cache position related stuff
     const ObjectBounds& objectA { states.at(0).first.get() };
     const ObjectBounds& objectB { states.at(1).first.get() };
     const glm::vec3 positionA { objectA.getPositionWorld() };
@@ -256,8 +254,9 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
     const glm::vec3 contactPositionA { positionA + orientationA * mRelativePointContactA };
     const glm::vec3 contactPositionB { positionB + orientationB * mRelativePointContactB };
 
-    // compute generalized inverse masses for A and B -- these will
-    // be recomputed each substep, so there's no point in storing them
+    // cache physics related stuff
+    PhysicsState& physicsA { states.at(0).second.get() };
+    PhysicsState& physicsB { states.at(1).second.get() };
     const float generalizedInverseA { computeGeneralizedInverseMassPositional(
         objectA,
         physicsA,
@@ -283,44 +282,6 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
     ) };
     const glm::vec3 pointVelocityAB { pointVelocityA - pointVelocityB };
     const float bounceVelocity { glm::dot(pointVelocityAB, mContactNormal) };
-
-    // Apply static friction if required
-    const float coefficientFrictionDynamic { glm::min(
-        physicsA.mCoefficientFrictionDynamic,
-        physicsB.mCoefficientFrictionDynamic
-    ) };
-    if(coefficientFrictionDynamic > 0.f) {
-        const glm::vec3 tangentialVelocity {
-            pointVelocityAB - bounceVelocity * mContactNormal
-        };
-
-        // derive the impulse required to fix our velocities
-        const float lagrangeCollision { getLagrange().at(0) };
-        const float forceNormal { lagrangeCollision / (substepSeconds * substepSeconds) };
-        const glm::vec3 velocityCorrection {
-            -glm::normalize(tangentialVelocity) * glm::min(
-                glm::abs(substepSeconds * coefficientFrictionDynamic * forceNormal),
-                glm::abs(glm::length(tangentialVelocity))
-            )
-        };
-        const glm::vec3 impulseFriction {
-            velocityCorrection / (generalizedInverseA + generalizedInverseB)
-        };
-
-        // apply the impulse
-        physicsA = applyImpulsePhysics(
-            objectA,
-            physicsA,
-            impulseFriction,
-            contactPositionA
-        );
-        physicsB = applyImpulsePhysics(
-            objectB,
-            physicsB,
-            -impulseFriction,
-            contactPositionB
-        );
-    }
 
     // derive the current coefficient of restitution between this pair of objects, set
     // to 0 when small separation velocity detected
@@ -350,6 +311,44 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
             objectB,
             physicsB,
             -impulseRestitution,
+            contactPositionB
+        );
+    }
+
+    // Apply static friction if required
+    const float coefficientFrictionDynamic { glm::min(
+        physicsA.mCoefficientFrictionDynamic,
+        physicsB.mCoefficientFrictionDynamic
+    ) };
+    if(coefficientFrictionDynamic > 0.f) {
+        const glm::vec3 tangentialVelocity {
+            pointVelocityAB - bounceVelocity * mContactNormal
+        };
+
+        // derive the impulse required to fix our velocities
+        const float lagrangeCollision { getLagrangeDelta().at(0) };
+        const float forceNormal { lagrangeCollision / (substepSeconds * substepSeconds) };
+        const glm::vec3 velocityCorrection {
+            -glm::normalize(tangentialVelocity) * glm::min(
+                glm::abs(substepSeconds * coefficientFrictionDynamic * forceNormal),
+                glm::length(tangentialVelocity)
+            )
+        };
+        const glm::vec3 impulseFriction {
+            velocityCorrection / (generalizedInverseA + generalizedInverseB)
+        };
+
+        // apply the impulse
+        physicsA = applyImpulsePhysics(
+            objectA,
+            physicsA,
+            impulseFriction,
+            contactPositionA
+        );
+        physicsB = applyImpulsePhysics(
+            objectB,
+            physicsB,
+            -impulseFriction,
             contactPositionB
         );
     }
@@ -423,13 +422,19 @@ PhysicsState ToyMaker::applyImpulsePhysics(
         return physics;
     }
 
-    const glm::vec3 deltaVelocity { impulsePositional * physics.mMassInverse };
+    const glm::vec3 position { object.getPositionWorld() };
+    const glm::vec3 impulsePointRelative { impulsePoint - object.getPositionWorld() };
+    const glm::vec3 toCenter { glm::normalize(-impulsePointRelative) };
+    const glm::vec3 impulseLinear { glm::dot(impulsePositional, toCenter) * toCenter };
+    const glm::vec3 deltaVelocity { impulseLinear * physics.mMassInverse };
     physics.mVelocity += deltaVelocity;
+
     const glm::vec3 impulseRotational { glm::cross(
-        impulsePoint - object.getPositionWorld(),
+        impulsePointRelative,
         impulsePositional
     ) };
     physics = applyImpulsePhysics(object, physics, impulseRotational);
+
     return physics;
 }
 
@@ -447,7 +452,7 @@ ObjectBounds ToyMaker::applyImpulseObject(
     const glm::vec3 impulseRotationalLocal { glm::inverse(orientation) * impulseRotational };
     const glm::vec3 deltaOrientation { orientation * (physics.mRotationalInertiaInverse * impulseRotationalLocal) };
     const glm::quat orientationNew { glm::normalize(
-        orientation + .5f * glm::quat { 0.f, deltaOrientation.x, deltaOrientation.y, deltaOrientation.z } * orientation
+        orientation + .5f * glm::quat(0.f, deltaOrientation.x, deltaOrientation.y, deltaOrientation.z) * orientation
     ) };
     object.setOrientationWorld(orientationNew);
     return object;

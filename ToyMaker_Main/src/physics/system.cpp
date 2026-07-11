@@ -438,10 +438,7 @@ void PhysicsSystem::updateCollisionEventQueue(
 
         // guard: pruning shows no collision, so inform constraint and move to next step
         if(prunedCollisions.find(constraint.first) == prunedCollisions.end()) {
-            constraint.second.updateCollisionData({ .mCollided { false } },
-                physicsOne, objectOne,
-                physicsTwo, objectTwo
-            );
+            constraint.second.mCollided = false;
             onSeparated(constraint.first, queuedReports);
             continue;
         }

@@ -169,7 +169,7 @@
             "components": [
                 {
                     "type": "Placement",
-                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "orientation": [1, 0, 0, 0],
                     "position": [ -2.0, 1.7, 0.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
@@ -179,8 +179,8 @@
                     "collision_response": [ "separate", "signal" ],
                     "mass": 1.0,
                     "coefficient_friction_static": 0.4,
-                    "coefficient_friction_dynamic": 0.3,
-                    "velocity": [6.0, 0.0, 0.0],
+                    "coefficient_friction_dynamic": 0.35,
+                    "velocity": [5.0, 0.0, 0.0],
                     "angular_velocity": [0.0, 0.0, 0.0]
                 },
                 {
