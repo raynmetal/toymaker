@@ -1,8 +1,6 @@
 #include <fstream>
 #include <string>
-#include <sstream>
-#include <chrono>
-#include <thread>
+#include <iostream>
 #include <filesystem>
 
 #include <SDL3/SDL.h>

@@ -746,6 +746,18 @@ namespace ToyMaker {
         );
 
         /**
+         * @brief Performs a partial collision data update based on result from previous physics
+         * substep.
+         *
+         */
+        void updateCollisionDataPartial(
+            const PhysicsState& physicsA,
+            const ObjectBounds& boundsA,
+            const PhysicsState& physicsB,
+            const ObjectBounds& boundsB
+        );
+
+        /**
          * @brief Separates intersecting/colliding objects and applies static friction.
          *
          */

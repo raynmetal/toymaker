@@ -1,3 +1,4 @@
+#include <iostream>
 #include <algorithm>
 
 #include "toymaker/engine/spatial_query/math.hpp"

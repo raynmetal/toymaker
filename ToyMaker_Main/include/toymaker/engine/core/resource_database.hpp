@@ -25,10 +25,7 @@
 
 #include <memory>
 #include <string>
-#include <vector>
-#include <tuple>
 #include <map>
-#include <iostream>
 #include <type_traits>
 
 #include <nlohmann/json.hpp>
@@ -609,7 +606,6 @@ namespace ToyMaker {
 
     template <typename TResource>
     std::shared_ptr<IResource> ResourceFactory<TResource>::createResource(const nlohmann::json& resourceDescription) {
-        std::cout << "Loading resource (" << TResource::getResourceTypeName() << ") : " << nlohmann::to_string(resourceDescription["parameters"]) << "\n";
         return mFactoryMethods.at(resourceDescription["method"].get<std::string>())->createResource(
             resourceDescription["parameters"].get<nlohmann::json>()
         );

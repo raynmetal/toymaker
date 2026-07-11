@@ -268,7 +268,8 @@ namespace ToyMaker {
         void updateCollisionEventQueue(
             std::map<CollisionPair, CollisionConstraint>& potentialCollisions,
             std::queue<CollisionReport>& queuedReports,
-            std::unordered_map<EntityID, PhysicsStateFull>& currentStates
+            std::unordered_map<EntityID, PhysicsStateFull>& currentStates,
+            uint8_t nthSubstep
         );
 
         /**
@@ -393,7 +394,7 @@ namespace ToyMaker {
          * See [Detailed Rigid Body Simulation with Extended Position Based Dynamics - Matthias
          * Muller et al](https://matthias-research.github.io/pages/publications/PBDBodies.pdf)
          */
-        uint8_t mSubsteps { 4 };
+        uint8_t mSubsteps { 3 };
 
         /**
          * @brief Whether physics properties for all eligible entities should be recomputed

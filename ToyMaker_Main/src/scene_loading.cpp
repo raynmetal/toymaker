@@ -14,8 +14,6 @@ std::shared_ptr<IResource> SceneFromFile::createResource(const nlohmann::json& s
     nlohmann::json sceneDescription { nlohmann::json::parse(jsonFileStream) };
     jsonFileStream.close();
 
-    std::cout << "Loading Resource: " << nlohmann::to_string(sceneDescription) << "\n";
-
     return ResourceDatabase::ConstructAnonymousResource<SceneNode>({
         { "type", SimObject::getResourceTypeName() },
         { "method", SceneFromDescription::getResourceConstructorName() },
@@ -56,8 +54,6 @@ std::shared_ptr<SimObject> SceneFromDescription::loadSceneNodes(const nlohmann::
     const nlohmann::json& localRootDescription { nodeDescriptionIterator.value() };
     std::shared_ptr<SimObject> localRoot { nullptr };
 
-    std::cout << "Loading root node : " << nlohmann::to_string(localRootDescription) << "\n";
-
     assert(localRootDescription.at("parent").get<std::string>() == "" 
         && "Root node must not have a parent"
     );
@@ -71,8 +67,6 @@ std::shared_ptr<SimObject> SceneFromDescription::loadSceneNodes(const nlohmann::
     for(++nodeDescriptionIterator; nodeDescriptionIterator != nodeList.cend(); ++nodeDescriptionIterator) {
         const nlohmann::json& nodeDescription { nodeDescriptionIterator.value() };
         std::shared_ptr<SceneNodeCore> node { nullptr };
-        std::cout << "Loading node : " << nlohmann::to_string(nodeDescription) << "\n";
-
         assert(
             nodeDescription.at("parent").get<std::string>() != "" 
             && "All scene nodes besides the root must specify a parent node present in the same scene file"
