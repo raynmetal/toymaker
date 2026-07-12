@@ -529,7 +529,7 @@ namespace ToyMaker {
          * 
          */
         ::std::string mName {};
-        
+
         /**
          * @brief The same as in an InputSource, describes the type of data (normalized) this action is expected to have.
          * 

@@ -11,7 +11,6 @@
 #ifndef TOYMAKERENGINE_SPATIALQUERYSWEEPPRUNE_H
 #define TOYMAKERENGINE_SPATIALQUERYSWEEPPRUNE_H
 
-#include "toymaker/engine/input_system/input_data.hpp"
 #include "types.hpp"
 #include "../core/ecs_world.hpp"
 
