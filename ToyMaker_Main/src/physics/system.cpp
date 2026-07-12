@@ -421,11 +421,11 @@ void PhysicsSystem::onEntityDisabled(EntityID entityID) {
 
     // if this entity was colliding with another, report it
     mCollisionSignallers.erase(entityID);
-    const auto collidingWith { mEntityCollision.find(entityID) };
-    if(collidingWith != mEntityCollision.cend()) {
-        for(const auto& other: collidingWith->second) {
+    const auto iterCollidingWith { mEntityCollision.find(entityID) };
+    if(iterCollidingWith != mEntityCollision.cend()) {
+        const auto collidingWith { *iterCollidingWith };
+        for(const auto& other: collidingWith.second) {
             onSeparated({entityID, other}, mCollisionReports);
-            mEntityCollision[other].erase(entityID);
         }
         mEntityCollision.erase(entityID);
     }
