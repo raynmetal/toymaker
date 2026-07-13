@@ -3,7 +3,7 @@
 ## What is it?
 
 The ToyMaker::PhysicsSystem is responsible for applying physics updates each simulation frame to all eligible entities, especially
-those that are tagged with PhysicsState::MODE_DYNAMIC.  Additionally, it watches for and reports
+those that are tagged with ToyMaker::PhysicsState::MODE_DYNAMIC.  Additionally, it watches for and reports
 collision events detected between physics entities during each simulation frame.
 
 In order for an entity to be eligible for the physics system, it _must_ hold the
@@ -25,7 +25,7 @@ Mainly, aside from setting object positions through ToyMaker::ObjectBounds rathe
 ToyMaker::Placement, one interacts with the physics system through the ToyMaker::PhysicsState component.
 
 
-- Toymaker::PhysicsState::mTraits -- Which kind of physics updates(kinematic, dynamic) this object is
+- ToyMaker::PhysicsState::mTraits -- Which kind of physics updates(kinematic, dynamic) this object is
 subscribed to, and how it responds to collision events.
 
     - ToyMaker::PhysicsState::MODE_DYNAMIC -- This object responds to both position updates derived from its
