@@ -1173,6 +1173,22 @@ namespace ToyMaker {
         void setPositionWorld(const glm::vec3& newPosition);
 
         /**
+         * @brief Sets the offset of the bounds origin to the scene node origin.
+         *
+         * Does _not_ keep bounds position stable while updating position offset.
+         *
+         */
+        void setPositionOffset(const glm::vec3& newPosition);
+
+        /**
+         * @brief Sets the position of the scene node origin.
+         *
+         * Does _not_ keep bounds position stable while updating position offset.
+         *
+         */
+        void setPositionOrigin(const glm::vec3& newPosition);
+
+        /**
          * @brief Recomputes bounds world position based on origin and offsets.
          *
          */
@@ -1199,6 +1215,20 @@ namespace ToyMaker {
          *
          */
         void setOrientationWorld(const glm::quat& newOrientation);
+
+        /**
+         * @brief Sets orientation offset relative to the scene node's orientation.
+         *
+         * Does _not_ keep bounds orientation stable.
+         */
+        void setOrientationOffset(const glm::quat& newOrientation);
+
+        /**
+         * @brief Sets orientation of the scene node.
+         *
+         * Does _not_ keep bounds orientation stable.
+         */
+        void setOrientationOrigin(const glm::quat& newOrientation);
 
         /**
          * @brief Gets the corners of the box just encapsulating this object's true volume, relative to the origin of the spatial query volume alone.

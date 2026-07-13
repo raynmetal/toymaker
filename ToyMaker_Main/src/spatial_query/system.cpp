@@ -81,8 +81,7 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
     if(!model->boundsNeedRecompute() && objectBounds.mUpdatedFromTransform) {
         const ObjectBounds modelBounds { model->getBounds() };
         objectBounds.mTrueVolume.mBox.mDimensions = objectScale * modelBounds.mTrueVolume.mBox.mDimensions;
-        objectBounds.mPositionOffset = objectScale * modelBounds.mPositionOffset;
-        objectBounds.recomputeWorldPositionOrientation();
+        objectBounds.setPositionOffset(objectScale * modelBounds.mPositionOffset);
         updateComponent<ObjectBounds>(entityID, objectBounds);
         return;
     }
@@ -134,14 +133,14 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::recomputeObjectBounds(E
 
     // cache untransformed bounds in the static model itself, for later use
     objectBounds.mTrueVolume.mBox = box;
-    objectBounds.mPositionOffset = minCorner + .5f * box.mDimensions;
+    objectBounds.setPositionOffset(minCorner + .5f * box.mDimensions);
     objectBounds.mType = ObjectBounds::TrueVolumeType::BOX;
     model->setBounds(objectBounds);
 
     // apply the object's current scale to the model before setting the bounds on the entity
     if(objectBounds.mUpdatedFromTransform) {
         objectBounds.mTrueVolume.mBox.mDimensions = objectScale * objectBounds.mTrueVolume.mBox.mDimensions;
-        objectBounds.mPositionOffset = objectScale * objectBounds.mPositionOffset;
+        objectBounds.setPositionOffset(objectScale * objectBounds.mPositionOffset);
     }
 
     objectBounds.recomputeWorldPositionOrientation();
@@ -180,11 +179,10 @@ void SpatialQuerySystem::LightBoundsComputeSystem::recomputeObjectBounds(EntityI
         0.f:
         lightEmissionData.mRadius;
     objectBounds.mType = ObjectBounds::TrueVolumeType::SPHERE;
-    objectBounds.mOrientationOffset = glm::vec3{0.f};
-    objectBounds.mPositionOffset = glm::vec3{0.f};
+    objectBounds.setOrientationOffset(glm::vec3{ 0.f });
+    objectBounds.setPositionOffset(glm::vec3{ 0.f });
     objectBounds.mInteractionLayers = 1 << (sizeof(InteractionLayerMask) * 4 - 1);
     objectBounds.mInteractionMask = 0;
-    objectBounds.recomputeWorldPositionOrientation();
     updateComponent(entityID, objectBounds);
 }
 
@@ -342,10 +340,9 @@ void SpatialQuerySystem::updateBoundingVolume(
 
     bounds.mTrueVolume = volume;
     bounds.mType = volumeType;
-    bounds.mPositionOffset = positionOffset;
-    bounds.mOrientationOffset = glm::normalize(orientationOffset);
+    bounds.setPositionOffset(positionOffset);
+    bounds.setOrientationOffset(orientationOffset);
     bounds.mVolumeSystemComputed = false;
-    bounds.recomputeWorldPositionOrientation();
 
     updateComponent<ObjectBounds>(entity, bounds);
 }

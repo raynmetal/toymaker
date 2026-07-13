@@ -247,9 +247,21 @@ glm::vec3 ObjectBounds::getPositionWorld() const {
 void ObjectBounds::setPositionWorld(const glm::vec3& newPosition) {
     mPositionWorld = newPosition;
     mPositionOrigin = newPosition - (
-        glm::transpose(glm::mat3 { getRotationTransformOrigin() }) * mPositionOffset
+        glm::inverse(mOrientationOrigin) * mPositionOffset
     );
     assert(isNumber(mPositionOrigin) && "Position update failed");
+    mTransformUpdateRequired = true;
+}
+
+void ObjectBounds::setPositionOffset(const glm::vec3& newPosition) {
+    mPositionOffset = newPosition;
+    recomputeWorldPositionOrientation();
+}
+
+void ObjectBounds::setPositionOrigin(const glm::vec3& newPosition) {
+    mPositionOrigin = newPosition;
+
+    recomputeWorldPositionOrientation();
     mTransformUpdateRequired = true;
 }
 
@@ -268,9 +280,7 @@ void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
 
     // object origin position depends on origin orientation
     const glm::vec3 worldPositionPrevious { getPositionWorld() };
-    mOrientationOrigin = glm::normalize(glm::quat_cast(
-        glm::mat3_cast(orientationNormalized) * glm::transpose(getRotationTransformLocal())
-    ));
+    mOrientationOrigin = glm::normalize(orientationNormalized * glm::inverse(mOrientationOffset));
     assert(
         isNumber(mOrientationOrigin.w)
         && isNumber(glm::vec3{mOrientationOrigin.x, mOrientationOrigin.y, mOrientationOrigin.z})
@@ -279,6 +289,21 @@ void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
     // update world position such that it stays in-place by
     // updating the origin's position instead
     setPositionWorld(worldPositionPrevious);
+    mTransformUpdateRequired = true;
+}
+
+void ObjectBounds::setOrientationOffset(const glm::quat& newOrientation) {
+    const glm::quat orientationNormalized { glm::normalize(newOrientation) };
+    mOrientationOffset = orientationNormalized;
+
+    recomputeWorldPositionOrientation();
+}
+
+void ObjectBounds::setOrientationOrigin(const glm::quat& newOrientation) {
+    const glm::quat orientationNormalized { glm::normalize(newOrientation) };
+    mOrientationOrigin = orientationNormalized;
+
+    recomputeWorldPositionOrientation();
     mTransformUpdateRequired = true;
 }
 
