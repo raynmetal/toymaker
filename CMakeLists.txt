@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.23)
 project(
-    ToyMaker 
-    VERSION 0.2.3
-    DESCRIPTION "A simple game engine built using SDL3 and OpenGL."
+    ToyMaker
+    VERSION 0.3.0
+    DESCRIPTION "A game engine built using SDL3 and OpenGL."
     HOMEPAGE_URL https://www.github.com/raynmetal/toymaker
     LANGUAGES CXX
 )
@@ -47,6 +47,8 @@ endif()
 
 include(InstallRequiredSystemLibraries)
 
+# Build ToyMaker from source if not directed to use installed version (e.g., when compiling
+# examples)
 if(NOT TOYMAKER_USE_INSTALLED)
     include(GNUInstallDirs)
     include(CMakePackageConfigHelpers)
