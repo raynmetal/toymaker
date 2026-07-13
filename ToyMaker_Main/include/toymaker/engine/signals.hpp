@@ -145,18 +145,21 @@ namespace ToyMaker {
      * {
      *     "from": "/viewport_UI/return/@UIButton",
      *     "signal": "ButtonReleased",
-     * 
+     *
      *     "to": "/@UrUINavigation",
      *     "observer": "ButtonClickedObserved"
      * }
-     * 
+     *
      * ```
-     * 
+     *
      * @remarks SceneNodeCores have a signal tracker member, allowing them to interface with the scene system.
-     * 
+     *
+     * @note While SignalTracker provides a uniform interface for interacting with its subclasses signal
+     * list, it doesn't actually _own_ any signals of its own.
+     *
      * @see Signal
      * @see SignalObserver
-     * 
+     *
      */
     class SignalTracker {
     public:
@@ -172,7 +175,7 @@ namespace ToyMaker {
          * @param other The object being copied from.
          */
         SignalTracker(const SignalTracker& other);
-    
+
         /**
          * @brief Copy assignment operator.
          * 
@@ -234,7 +237,7 @@ namespace ToyMaker {
         template <typename ...TArgs>
         std::shared_ptr<SignalObserver_<TArgs...>> declareSignalObserver(
             const std::string& observerName,
-            std::function<void(TArgs...)> callbackFunction 
+            std::function<void(TArgs...)> callbackFunction
         );
 
         /**
@@ -251,7 +254,7 @@ namespace ToyMaker {
 
         /**
          * @brief A list of weak references to this object's Signals, along with their names.
-         * 
+         *
          */
         std::unordered_map<std::string, std::weak_ptr<ISignal>> mSignals {};
     friend class ISignal;
@@ -445,7 +448,7 @@ namespace ToyMaker {
          * @param signal The Signal this SignalObserver should subscribe to.
          */
         void connectTo(Signal<TArgs...>& signal);
-    
+
     private:
 
         /**
@@ -453,7 +456,7 @@ namespace ToyMaker {
          * 
          */
         std::shared_ptr<SignalObserver_<TArgs...>> mSignalObserver_;
-    
+
     friend class Signal<TArgs...>;
     };
 
@@ -462,6 +465,7 @@ namespace ToyMaker {
         assert(!observer.expired() && "Cannot register a null pointer as an observer");
         mObservers.insert(std::static_pointer_cast<SignalObserver_<TArgs...>>(observer.lock()));
     }
+
     template <typename ...TArgs>
     void Signal_<TArgs...>::emit (TArgs ... args) {
         //observers that will be removed from the list after this signal has been emitted
@@ -500,6 +504,7 @@ namespace ToyMaker {
         garbageCollection();
         return std::static_pointer_cast<Signal_<TArgs...>>(newSignal);
     }
+
     template <typename ...TArgs>
     inline std::shared_ptr<SignalObserver_<TArgs...>> SignalTracker::declareSignalObserver(const std::string& name, std::function<void(TArgs...)> callback) {
         std::shared_ptr<ISignalObserver> newObserver { new SignalObserver_<TArgs...>{callback} };
@@ -507,18 +512,22 @@ namespace ToyMaker {
         garbageCollection();
         return std::static_pointer_cast<SignalObserver_<TArgs...>>(newObserver);
     }
+
     template <typename ...TArgs>
     Signal<TArgs...>::Signal(SignalTracker& owningTracker, const std::string& name) {
         resetSignal(owningTracker, name);
     }
+
     template <typename ...TArgs>
     void Signal<TArgs...>::emit(TArgs...args) {
         mSignal_->emit(args...);
     }
+
     template <typename ...TArgs>
     void Signal<TArgs...>::resetSignal(SignalTracker& owningTracker, const std::string& name) {
         mSignal_ = owningTracker.declareSignal<TArgs...>(name);
     }
+
     template <typename ...TArgs>
     void Signal<TArgs...>::registerObserver(SignalObserver<TArgs...>& observer) {
         mSignal_->registerObserver(observer.mSignalObserver_);
@@ -528,11 +537,13 @@ namespace ToyMaker {
     SignalObserver<TArgs...>::SignalObserver(SignalTracker& owningTracker, const std::string& name, std::function<void(TArgs...)> callback) {
         resetObserver(owningTracker, name, callback);
     };
+
     template <typename ...TArgs>
     void SignalObserver<TArgs...>::resetObserver(SignalTracker& owningTracker, const std::string& name, std::function<void(TArgs...)> callback) {
         assert(callback && "Empty callback is not allowed");
         mSignalObserver_ = owningTracker.declareSignalObserver<TArgs...>(name, callback);
     }
+
     template <typename ...TArgs>
     void SignalObserver<TArgs...>::connectTo(Signal<TArgs...>& signal) {
         signal.registerObserver(*this);

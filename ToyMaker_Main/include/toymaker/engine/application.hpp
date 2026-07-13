@@ -17,6 +17,7 @@
 
 #include "signals.hpp"
 #include "scene_system.hpp"
+#include "physics/system.hpp"
 #include "render_system.hpp"
 #include "input_system/input_system.hpp"
 #include "window_context_manager.hpp"

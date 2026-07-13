@@ -9,6 +9,7 @@ tags
 # /**/*.dll
 # /**/*.exe
 build
+compile_commands.json
 install
 docs/_generated
 _CPack_Packages

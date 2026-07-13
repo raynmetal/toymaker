@@ -16,14 +16,12 @@
 
 #include <cstdint>
 #include <typeinfo>
-#include <iostream>
 #include <tuple>
 #include <memory>
 #include <vector>
 #include <set>
 #include <bitset>
 #include <unordered_map>
-#include <type_traits>
 #include <set>
 
 #include <nlohmann/json.hpp>
@@ -595,7 +593,7 @@ namespace ToyMaker {
          * @return ComponentType The ID of the component type.
          */
         template<typename TComponent>
-        ComponentType getComponentType() const; 
+        ComponentType getComponentType() const;
 
         /**
          * @brief Get the component type ID for a given component type string.
@@ -833,7 +831,19 @@ namespace ToyMaker {
          * @retval false This system belongs to the world it is a part of, and is instantiated once for each world;
          */
         virtual bool isSingleton() const { return false; }
+
     protected:
+        /**
+         * @brief Get the component type ID for a given component type.
+         *
+         * Available only after this base system has been attached to an ECS World, which it will use
+         * for the query.
+         * 
+         * @tparam TComponent The type of the component type ID being retrieved.
+         * @return ComponentType The ID of the component type.
+         */
+        template<typename TComponent>
+        ComponentType getComponentType() const;
 
         /**
          * @brief Get a set of all entities that are influenced by this System.
@@ -841,6 +851,13 @@ namespace ToyMaker {
          * @return const std::set<EntityID>& The active set of entities.
          */
         const std::set<EntityID>& getEnabledEntities();
+
+        /**
+         * @brief Get a set of all entities that are influenced by this System
+         *
+         * @return const std::set<EntityID>& The active set of entities
+         */
+        const std::set<EntityID>& getEnabledEntities() const;
 
         /**
          * @brief The actual implementation of getComponent for a system.
@@ -948,8 +965,14 @@ namespace ToyMaker {
          * @brief An overridable callback for when another system has updated a component shared by this system and an entity.
          * 
          * @param entityID The updated entity.
+         * @param updatedComponentType Which component was updated
          */
-        virtual void onEntityUpdated(EntityID entityID) { (void)entityID; /* prevent unused parameter warnings*/assert(false && "The base class version of onEntityUpdated should never be called"); }
+        virtual void onEntityUpdated(EntityID entityID, ComponentType updatedComponentType) {
+            /* prevent unused parameter warnings*/
+            (void)entityID;
+            (void)updatedComponentType;
+            assert(false && "The base class version of onEntityUpdated should never be called");
+        }
 
         /**
          * @brief An overridable callback for right after an ECS world has just been created.
@@ -1635,6 +1658,15 @@ namespace ToyMaker {
          */
         template <typename TSystem>
         SystemType getSystemType();
+
+        /**
+         * @brief Get the component type ID for a given component type.
+         * 
+         * @tparam TComponent The type of the component type ID being retrieved.
+         * @return ComponentType The ID of the component type.
+         */
+        template<typename TComponent>
+        ComponentType getComponentType() const;
 
         /**
          * @brief Tests whether a particular entity is enabled for a particular system.
@@ -2354,8 +2386,9 @@ namespace ToyMaker {
 
         std::size_t newComponentID { mComponentsNext.size() };
 
-        mComponentsNext.push_back(component);
-        mComponentsPrevious.push_back(component);
+        const TComponent componentCopy { component };
+        mComponentsNext.push_back(componentCopy);
+        mComponentsPrevious.push_back(componentCopy);
         mEntityToComponentIndex[entityID] = newComponentID;
         mComponentToEntity[newComponentID] = entityID;
     }
@@ -2440,8 +2473,8 @@ namespace ToyMaker {
         ComponentArray<TComponent>& downcastOther { static_cast<ComponentArray<TComponent>&>(other) };
         if(downcastOther.mEntityToComponentIndex.find(from) == downcastOther.mEntityToComponentIndex.end()) return;
 
-        const TComponent& componentValueNext { downcastOther.mComponentsNext[downcastOther.mEntityToComponentIndex[from]] };
-        const TComponent& componentValuePrevious { downcastOther.mComponentsPrevious[downcastOther.mEntityToComponentIndex[from]] };
+        const TComponent componentValueNext { downcastOther.mComponentsNext[downcastOther.mEntityToComponentIndex[from]] };
+        const TComponent componentValuePrevious { downcastOther.mComponentsPrevious[downcastOther.mEntityToComponentIndex[from]] };
 
         if(mEntityToComponentIndex.find(to) == mEntityToComponentIndex.end()) {
             addComponent(to, componentValueNext);
@@ -2654,6 +2687,11 @@ namespace ToyMaker {
     }
 
     template<typename TComponent>
+    ComponentType ECSWorld::getComponentType() const {
+        return mComponentManager->getComponentType<TComponent>();
+    }
+
+    template<typename TComponent>
     void ECSWorld::addComponent(EntityID entityID, const TComponent& component) {
         assert(entityID < kMaxEntities && "Cannot add a component to an entity that does not exist");
         mComponentManager->addComponent<TComponent>(entityID, component);
@@ -2785,6 +2823,11 @@ namespace ToyMaker {
         return system;
     }
 
+    template<typename TComponent>
+    ComponentType BaseSystem::getComponentType() const {
+        return mWorld.lock()->getComponentType<TComponent>();
+    }
+
     template<typename TComponent, typename TSystem>
     TComponent BaseSystem::getComponent_(EntityID entityID, float progress) const {
         assert(!isSingleton() && "Singletons cannot retrieve entity components through entity ID alone");
@@ -2825,9 +2868,10 @@ namespace ToyMaker {
             if(system.isSingleton() || !system.isEnabled(entityID)) continue;
 
             // apply update
-            system.onEntityUpdated(entityID);
+            system.onEntityUpdated(entityID, updatedComponent);
         }
     }
 
 }
+
 #endif

@@ -86,9 +86,7 @@ std::shared_ptr<Texture> TextFont::renderTextArea(const std::string& text, glm::
             wrapLength
         )
     };
-    if(!renderedText) {
-        std::cout << "TTF text rendering error occurred: " << SDL_GetError() << "\n";
-    }
+    assert(renderedText && "Failed to render text");
 
     return MakeTexture(renderedText);
 }
@@ -100,9 +98,6 @@ std::shared_ptr<Texture> TextFont::MakeTexture(SDL_Surface* renderedText) {
         .mUsesWebColors { true }
     };
     SDL_Surface* pretexture { SDL_ConvertSurface(renderedText, SDL_PIXELFORMAT_RGBA32) };
-    if(!pretexture) {
-        std::cout << "SDL surface conversion error: " << SDL_GetError() << "\n";
-    }
     SDL_DestroySurface(renderedText);
     renderedText = nullptr;
     assert(pretexture && "Could not convert SDL image to known image format");

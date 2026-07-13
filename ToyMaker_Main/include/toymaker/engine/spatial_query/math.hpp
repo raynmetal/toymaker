@@ -3,11 +3,11 @@
  * @file spatial_query/math.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Geometrical, mathematical functions and related structs used to answer some simple questions about shapes situated somewhere in the world.
- * 
+ *
  * @version 0.3.2
  * @date 2025-09-08
- * 
- * 
+ *
+ *
  */
 
 #ifndef TOYMAKERENGINE_SPATIALQUERYMATH_H
@@ -19,7 +19,24 @@
 
 namespace ToyMaker {
 
-    static constexpr uint8_t kMaxIterations { 64 };
+    static constexpr uint8_t kMaxIterations { 32 };
+    static constexpr float kSimplexEpsilon { 0.0001 };
+
+
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Computes a Barycentric solver matrix based on an input triangle.
+     *
+     * @warning Error if triangle with colinear points provided.
+     */
+    glm::mat3 computeBarycentricSolver(const AreaTriangle& triangle);
+
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     * @brief Determines whether a particular matrix is valid and finite
+     *
+     */
+    bool isSensible(const glm::mat3& matrix);
 
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
@@ -71,6 +88,7 @@ namespace ToyMaker {
      * @brief Returns a bool value indicating whether the ray passes through the object volume
      */
     bool overlaps(const Ray& ray, const ObjectBounds& bounds);
+
     /**
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns a bool value indicating whether the ray passes through the object volume
@@ -124,6 +142,7 @@ namespace ToyMaker {
      * 
      */
     bool overlaps(const AxisAlignedBounds& one, const ObjectBounds& two);
+
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
      * @brief Returns whether `one` overlaps `two`. 
@@ -133,20 +152,31 @@ namespace ToyMaker {
         return overlaps(two, one);
     }
 
-    /** 
+    /**
+     * @ingroup ToyMakerSpatialQuerySystem
+     *
+     * @brief Specialization of checkCollision() where both objects being tested are spheres.
+     *
+     * This is useful because we can get collision information in a single iteration and avoid
+     * the expensive gjk test.
+     *
+     */
+    Collision checkCollisionSphereSphere(const ObjectBounds& one, const ObjectBounds& two);
+
+    /**
      * @brief GJK implementation based on Casey Muratori's video lecture, which
      * is available [here](https://www.youtube.com/watch?v=Qupqu1xe7Io)
-     * 
-     * Computes furthest point along a given direction in `one`, minus furthest point along 
+     *
+     * Computes furthest point along a given direction in `one`, minus furthest point along
      * the opposite direction in shape 2.  Performing this in _all_ directions yields a surface
      * which, if the two shapes overlap, contains origin (0, 0, 0)
-     * 
+     *
      * GJK attempts to find a minimal tetrahedron whose points are points on the boundaries of the
      * Minkowski difference shape which encloses (0, 0, 0)
-     * 
+     *
      * @retval true If overlap is found, with Tetrahedron enclosing origin;
      * @retval false If the shapes don't overlap;
-     * 
+     *
      */
     template <typename T, typename U>
     std::pair<bool, Simplex> gjkOverlaps(const T& one, const U& two);
@@ -288,8 +318,7 @@ namespace ToyMaker {
             return { false, Simplex {} };
         }
 
-
-        glm::vec3 searchDirection { two.getComputedWorldPosition() - one.getComputedWorldPosition() };
+        glm::vec3 searchDirection { two.getPositionWorld() - one.getPositionWorld() };
 
         // Two non-degenerate objects share the same origin, obviously they overlap
         if(squareDistance(searchDirection) == 0.f) {
@@ -298,71 +327,95 @@ namespace ToyMaker {
 
         Simplex simplex {};
         auto fullDifference { minkowskiDifferenceFull(one, two, searchDirection) };
-        const auto& candidatePoint { std::get<0>(fullDifference) };
-        const auto& supportA { std::get<1>(fullDifference) };
-        const auto& supportB { std::get<2>(fullDifference) };
+        const auto& candidatePoint { std::get<0>(fullDifference) }; // updated with fullDifference
+        const auto& supportA { std::get<1>(fullDifference) }; // updated with fullDifference
+        const auto& supportB { std::get<2>(fullDifference) }; // updated with fullDifference
         simplex.append(candidatePoint, supportA, supportB);
 
         // we go towards the origin from the first point we found
-        searchDirection = squareDistance(simplex.mPoints[0]) ? -simplex.mPoints[0]: glm::vec3 { 1.f, 0.f, 0.f };
-        bool found { false };
-        for(uint8_t iteration { 0 }; iteration < kMaxIterations; ++iteration) {
+        glm::vec3 toOrigin { -simplex.mPoints[0] };
+        searchDirection = toOrigin;
+        for(uint8_t iteration { 0 }; squareDistance(toOrigin) && iteration < kMaxIterations; ++iteration) {
+            // find a new search direction
+            searchDirection = toOrigin;
 
-            // We force a tetrahedron to form by picking arbitrary search directions
-            // in the event our degenerate simplex contains (0, 0, 0)
-            if(!squareDistance(searchDirection)) {
-                const float signMult { (iteration & 1)? -1.f: 1.f };
-
-                // Pick a new search direction to expand 1-simplex (line) to 2-simplex (triangle)
-                if(simplex.mNPoints == 2) {
-                    const float signMult2 { (iteration & 2)? -1.f: 1.f };
-                    const glm::vec3 dirAB { glm::normalize(simplex.mPoints[1] - simplex.mPoints[0]) };
-                    assert(squareDistance(dirAB) > 0 && "A and B should never be the same point");
-
-                    const glm::vec3 dirOffset { (dirAB.x != 0.f || dirAB.z != 0.f)? 
-                        glm::vec3{ 0.f, signMult * 1.f, 0.f } : glm::vec3{ signMult2 * 1.f, 0.f, signMult * 1.f }
-                    };
-
-                    searchDirection = -dirAB + dirOffset;
-
-                // Pick a new search direction to expand 2-simplex (triangle) to 3-simplex (tetrahedron)
-                } else if(simplex.mNPoints == 3) {
-                    const glm::vec3 normABC { glm::normalize(glm::cross(simplex.mPoints[1] - simplex.mPoints[0], simplex.mPoints[2] - simplex.mPoints[0])) };
-                    searchDirection = signMult * normABC;
-
-                } else {
-                    assert(false && "A simplex with 4 points is not degenerate, and there's no solving necessary here");
-                }
-            }
-
+            // find a new candidate point
             fullDifference = minkowskiDifferenceFull(one, two, searchDirection);
 
-            // We couldn't find a point past the origin in this direction, so obviously there is no intersection
-            if(glm::dot(candidatePoint, searchDirection) <= 0) {
+            // we couldn't find a point far enough past the origin in this direction, so
+            // obviously there is no intersection
+            if(glm::dot(candidatePoint, searchDirection) <= 0.f) {
                 return { false, simplex };
             }
 
-            // This will return false generally when we're trying to fabricate
-            // a search direction.  In that case we just fabricate another one at
-            // the start of the loop.
-            if(!simplex.append(candidatePoint, supportA, supportB)) {
-                searchDirection = glm::vec3 { 0.f, 0.f, 0.f };
-                continue;
-            }
-
+            simplex.append(candidatePoint, supportA, supportB);
             const auto result { simplex.evaluate() };
+            toOrigin = result.second;
             if(result.first) {
                 return { true, simplex };
             }
-
-            searchDirection = result.second;
         }
-        assert(false && "We should not have exited the loop without finding a simplex");
-        return { false, simplex };
+
+        // handle degenerate simplexes by forcing them to expand to a full simplex
+        while(simplex.mNPoints < 4) {
+            switch(simplex.mNPoints) {
+                case 1:
+                    simplex.mPoints[simplex.mNPoints] = glm::vec3 { 2.f * kSimplexEpsilon, 0.f, 0.f };
+                    simplex.mPointsSupportA[simplex.mNPoints] = glm::vec3 { kSimplexEpsilon, 0.f, 0.f };
+                    simplex.mPointsSupportB[simplex.mNPoints] = -glm::vec3 { kSimplexEpsilon, 0.f, 0.f };
+                    ++simplex.mNPoints;
+                    break;
+                case 2:
+                    {
+                        const glm::vec3 dirAB { glm::normalize(simplex.mPoints[1] - simplex.mPoints[0]) };
+                        assert(squareDistance(dirAB) > 0 && "A and B should never be the same point");
+                        const glm::vec3 dirOffset { (dirAB.x != 0.f || dirAB.z != 0.f)?
+                            glm::vec3{ 0.f, 1.f, 0.f } : glm::vec3{ 1.f, 0.f, 1.f }
+                        };
+                        searchDirection = glm::normalize(-dirAB + dirOffset);
+                        simplex.mPoints[simplex.mNPoints] = 2.f * kSimplexEpsilon * dirOffset;
+                        simplex.mPointsSupportA[simplex.mNPoints] = kSimplexEpsilon * dirOffset;
+                        simplex.mPointsSupportB[simplex.mNPoints] = -kSimplexEpsilon * dirOffset;
+                        ++simplex.mNPoints;
+                    }
+                    break;
+                case 3:
+                    {
+                        const glm::vec3 normABC { glm::normalize(glm::cross(simplex.mPoints[1] - simplex.mPoints[0], simplex.mPoints[2] - simplex.mPoints[0])) };
+                        assert(isNumber(normABC) && isFinite(normABC) && "Invalid norm computed, degenerate triangle detected.");
+                        simplex.mPoints[simplex.mNPoints] = 2.f * kSimplexEpsilon * normABC;
+                        simplex.mPointsSupportA[simplex.mNPoints] = kSimplexEpsilon * normABC;
+                        simplex.mPointsSupportB[simplex.mNPoints] = -kSimplexEpsilon * normABC;
+                        ++simplex.mNPoints;
+                    }
+                    break;
+                default:
+                    assert(false && "Simplex with invalid number of points for this section of the algorithm provided");
+                    break;
+            };
+        }
+
+        return { true, simplex };
     }
 
+    // TODO: This shouldn't be a template, since both parameters will _have_ to be ObjectBounds
     template <typename T, typename U>
     inline Collision checkCollision(const T& one, const U& two) {
+        // perform inexpensive AABB test first
+        if(!overlaps(AxisAlignedBounds(one), AxisAlignedBounds(two))) {
+            return {
+                .mCollided { false }
+            };
+        }
+
+        // special case: sphere sphere collision, solvable in constant time
+        if(
+            one.mType == ObjectBounds::TrueVolumeType::SPHERE
+            && two.mType == ObjectBounds::TrueVolumeType::SPHERE
+        ) {
+            return checkCollisionSphereSphere(one, two);
+        }
+
         // check via GJK whether there's any overlap at all
         const std::pair<bool, Simplex> overlapResult { gjkOverlaps(one, two) };
         if(!overlapResult.first) {
@@ -371,12 +424,12 @@ namespace ToyMaker {
             };
         }
 
+
         // allocate result storage
         Collision collisionResult { Collision {
             .mCollided { true },
         } };
 
-        
         // build a polytope containing the closest surface to the origin in 
         // the Minkowski difference between the objects
         const Polytope polytope { buildPolytope(one, two, overlapResult.second) };
@@ -385,9 +438,12 @@ namespace ToyMaker {
         // triangle in the difference shape it lies on
         const glm::vec3 closestPoint { polytope.getClosestPoint() };
         const AreaTriangle closestTriangle { polytope.getClosestTriangle() };
-        const glm::mat3 barycentricSolver { glm::inverse(glm::mat3 {
-            closestTriangle.mPoints[0], closestTriangle.mPoints[1], closestTriangle.mPoints[2]
-        }) };
+        const glm::mat3 barycentricSolver { computeBarycentricSolver(closestTriangle) };
+        // If we can't solve this, then there's nothing for us to do
+        if(!isSensible(barycentricSolver)) {
+            return { false };
+        }
+
         const glm::vec3 barycentricCoordinates {
             barycentricSolver * closestPoint
         };
@@ -406,11 +462,22 @@ namespace ToyMaker {
             closestTriangleTwo.mPoints[0], closestTriangleTwo.mPoints[1], closestTriangleTwo.mPoints[2]
         };
         collisionResult.mContactA.mPoint = barycentricOne * barycentricCoordinates;
+        assert(
+            isNumber(collisionResult.mContactA.mPoint) && isFinite(collisionResult.mContactA.mPoint)
+            && "Invalid contact point computed for object A"
+        );
         collisionResult.mContactB.mPoint = barycentricTwo * barycentricCoordinates;
+        assert(
+            isNumber(collisionResult.mContactB.mPoint) && isFinite(collisionResult.mContactB.mPoint)
+            && "Invalid contact point computed for object B"
+        );
 
         // build tangent vectors to the normal (used for friction calculations)
-        const auto tangentPair { deriveTangents(closestPoint) };
-        collisionResult.mContactB.mNormal = glm::normalize(closestPoint);
+        const auto contactNormal {
+            squareDistance(closestPoint)? closestPoint: one.getPositionWorld() - two.getPositionWorld()
+        };
+        const auto tangentPair { deriveTangents(contactNormal) };
+        collisionResult.mContactB.mNormal = glm::normalize(contactNormal);
         collisionResult.mContactB.mTangent1 = glm::normalize(tangentPair.first);
         collisionResult.mContactB.mTangent2 = glm::normalize(tangentPair.second);
         collisionResult.mContactA.mNormal = -collisionResult.mContactB.mNormal;
@@ -418,7 +485,9 @@ namespace ToyMaker {
         collisionResult.mContactA.mTangent2 = -collisionResult.mContactB.mTangent2;
 
         // set penetration depth value for both contacts
-        collisionResult.mContactA.mPenetrationDepth = collisionResult.mContactB.mPenetrationDepth = glm::length(closestPoint);
+        collisionResult.mContactA.mPenetrationDepth
+            = collisionResult.mContactB.mPenetrationDepth
+            = glm::length(closestPoint);
 
         return collisionResult;
     }
@@ -449,5 +518,7 @@ namespace ToyMaker {
         return polytope;
     }
 }
+
+
 
 #endif

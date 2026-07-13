@@ -58,7 +58,8 @@ void CameraSystem::onEntityDisabled(EntityID entity) {
     mProjectionUpdateQueue.erase(entity);
 }
 
-void CameraSystem::onEntityUpdated(EntityID entity)  {
+void CameraSystem::onEntityUpdated(EntityID entity, ComponentType updatedComponent)  {
+    (void)updatedComponent; // avoid unused parameter warnings
     mViewUpdateQueue.insert(entity);
     mProjectionUpdateQueue.insert(entity);
 }

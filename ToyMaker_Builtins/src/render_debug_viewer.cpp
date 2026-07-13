@@ -1,3 +1,5 @@
+#include <iostream>
+
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/string_cast.hpp>
 
@@ -11,7 +13,7 @@ using namespace ToyMaker;
 bool RenderDebugViewer::onUpdateGamma(const ToyMaker::ActionData& actionData, const ToyMaker::ActionDefinition& actionDefinition) {
     (void)actionDefinition; // prevent unused parameter warning
     getLocalViewport().updateGamma(
-        getLocalViewport().getGamma() 
+        getLocalViewport().getGamma()
         + actionData.mOneAxisActionData.mValue*mGammaStep
     );
     return true;

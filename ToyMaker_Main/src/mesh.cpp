@@ -75,7 +75,7 @@ StaticMesh& StaticMesh::operator=(StaticMesh&& other) {
 StaticMesh& StaticMesh::operator=(const StaticMesh& other) {
     if(&other == this) 
         return *this;
-    
+
     destroyResource();
 
     mVertices = other.mVertices;

@@ -133,6 +133,10 @@ const std::set<EntityID>& BaseSystem::getEnabledEntities() {
     return mEnabledEntities;
 }
 
+const std::set<EntityID>& BaseSystem::getEnabledEntities() const {
+    return mEnabledEntities;
+}
+
 bool BaseSystem::isEnabled(EntityID entityID) const {
     return !isSingleton() && mEnabledEntities.find(entityID) != mEnabledEntities.end();
 }
@@ -264,13 +268,15 @@ void SystemManager::handleEntitySignatureChanged(EntityID entityID, Signature si
         if(system.isSingleton()) continue;
 
         if(
-            (signature&systemSignature) == systemSignature 
+            (signature&systemSignature) == systemSignature
             && !system.isRegistered(entityID)
         ) {
             system.addEntity(entityID, false);
-
+            // NOTE: ECS user should manually enable any additional systems they want after they
+            // change an entity's signature (which is why we don't attempt to enable theentity
+            // here)
         } else if(
-            (signature&systemSignature) != systemSignature 
+            (signature&systemSignature) != systemSignature
             && system.isRegistered(entityID) 
         ) {
             system.disableEntity(entityID);
@@ -306,7 +312,7 @@ void SystemManager::handleEntityUpdated(EntityID entityID, Signature signature, 
         if(system.isSingleton() || !system.isEnabled(entityID)) continue;
 
         // apply update
-        system.onEntityUpdated(entityID);
+        system.onEntityUpdated(entityID, updatedComponent);
     }
 }
 

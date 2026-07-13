@@ -1,16 +1,17 @@
 cmake_minimum_required(VERSION 3.23)
 project(
-    ToyMaker 
-    VERSION 0.2.3
-    DESCRIPTION "A simple game engine built using SDL3 and OpenGL."
+    ToyMaker
+    VERSION 0.3.0
+    DESCRIPTION "A game engine built using SDL3 and OpenGL."
     HOMEPAGE_URL https://www.github.com/raynmetal/toymaker
     LANGUAGES CXX
 )
 
 include(CMakeDependentOption)
-option(TOYMAKER_BUILD_EXAMPLE_BASIC "Build the executable for the basic toymaker example project" OFF)
-cmake_dependent_option(TOYMAKER_USE_INSTALLED "Use locally installed ToyMaker library for the basic example project" ON TOYMAKER_BUILD_EXAMPLE_BASIC OFF)
+option(TOYMAKER_BUILD_EXAMPLES "Whether projects under `Examples/` should be built" OFF)
+cmake_dependent_option(TOYMAKER_USE_INSTALLED "Use locally installed ToyMaker library for the basic example project" ON TOYMAKER_BUILD_EXAMPLE_CENTERTEXT OFF)
 
+# Build toymaker examples and tests on top of engine built here
 if(NOT TOYMAKER_USE_INSTALLED)
     message("ToyMaker library is configured to be built from source")
     add_library(ToyMakerCompilerFlags INTERFACE)
@@ -23,11 +24,12 @@ else()
     message("Machine-local installation of ToyMaker will be used to build ToyMaker executables")
 endif()
 
-if(TOYMAKER_BUILD_EXAMPLE_BASIC)
-    message("The basic toymaker example project has been configured to be built")
-    add_subdirectory(ExampleProject_Basic)
+# Build the centertext example project, if configured
+if(TOYMAKER_BUILD_EXAMPLES)
+    message("The toymaker centertext example project has been configured to be built")
+    add_subdirectory(Examples)
 else()
-    message("The basic ToyMaker example project will not be built in this configuration")
+    message("The ToyMaker centertext example project will not be built in this configuration")
 endif()
 
 # Provide ctest related options IF the project being built is ToyMaker
@@ -45,9 +47,10 @@ endif()
 
 include(InstallRequiredSystemLibraries)
 
+# Build ToyMaker from source if not directed to use installed version (e.g., when compiling
+# examples)
 if(NOT TOYMAKER_USE_INSTALLED)
     include(GNUInstallDirs)
-
     include(CMakePackageConfigHelpers)
     configure_package_config_file(cmake/ToyMakerConfig.cmake.in
     ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfig.cmake
@@ -62,7 +65,6 @@ if(NOT TOYMAKER_USE_INSTALLED)
         EXPORT
             LibToyMakerTargets
     )
-
     install(
         EXPORT
             LibToyMakerTargets
@@ -71,7 +73,6 @@ if(NOT TOYMAKER_USE_INSTALLED)
         NAMESPACE
             ToyMaker::
     )
-
     include(GNUInstallDirs)
     install(
         FILES
@@ -79,7 +80,7 @@ if(NOT TOYMAKER_USE_INSTALLED)
             ${CMAKE_CURRENT_BINARY_DIR}/cmake/ToyMakerConfigVersion.cmake
             LICENSE.txt
             README.md
-        DESTINATION 
+        DESTINATION
             ${CMAKE_INSTALL_LIBDIR}/cmake/ToyMaker
     )
 endif()
@@ -92,7 +93,6 @@ if(NOT TARGET uninstall)
         "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
         IMMEDIATE @ONLY
     )
-
     add_custom_target(uninstall
         COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
     )
@@ -104,3 +104,4 @@ set(CPACK_PACKAGE_INSTALL_DIRECTORY "ToyMaker/ToyMaker-${ToyMaker_VERSION_MAJOR}
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
 include(CPack)
+

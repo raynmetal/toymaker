@@ -28,7 +28,9 @@ std::shared_ptr<StaticMesh> buildMesh(aiMesh* pAiMesh);
 StaticModel::StaticModel(const std::vector<std::shared_ptr<StaticMesh>>& meshHandles, const std::vector<std::shared_ptr<Material>>& materialHandles):
 Resource<StaticModel>{0},
 mMeshHandles { meshHandles },
-mMaterialHandles { materialHandles }
+mMaterialHandles { materialHandles },
+mCoarseBounds { ObjectBounds { .mType = ObjectBounds::TrueVolumeType::BOX } },
+mCoarseBoundsDirty { true }
 {
     assert(meshHandles.size() > 0 && meshHandles.size() == materialHandles.size()
         && "Every mesh in the mesh list must have its corresponding material in the material list"
@@ -70,10 +72,13 @@ std::vector<std::shared_ptr<Material>> StaticModel::getMaterialHandles() const {
 void StaticModel::free() {
     mMeshHandles.clear();
     mMaterialHandles.clear();
+    mCoarseBoundsDirty = true;
 }
 void StaticModel::stealResources(StaticModel& other) {
     std::swap(mMeshHandles, other.mMeshHandles);
     std::swap(mMaterialHandles, other.mMaterialHandles);
+    mCoarseBounds = other.mCoarseBounds;
+    mCoarseBoundsDirty = other.mCoarseBoundsDirty;
 
     // Prevent other from destroying our resources when its
     // destructor is called
@@ -82,6 +87,8 @@ void StaticModel::stealResources(StaticModel& other) {
 void StaticModel::copyResources(const StaticModel& other) {
     mMeshHandles = other.mMeshHandles;
     mMaterialHandles = other.mMaterialHandles;
+    mCoarseBounds = other.mCoarseBounds;
+    mCoarseBoundsDirty = other.mCoarseBoundsDirty;
 }
 void StaticModel::destroyResource() {
     free();
@@ -279,7 +286,7 @@ std::vector<std::shared_ptr<Texture>> loadAssimpTextures(aiMaterial* pAiMaterial
             };
             ResourceDatabase::AddResourceDescription(textureDescription);
         }
-        
+
         textureHandles.push_back(
             ResourceDatabase::GetRegisteredResource<Texture>(textureName)
         );

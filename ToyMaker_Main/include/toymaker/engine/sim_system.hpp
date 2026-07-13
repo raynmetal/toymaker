@@ -5,14 +5,14 @@
  * @brief Classes and structs relating to the SimSystem, the system responsible for providing some level of general scriptability to scene nodes from a game developer's point-of-view.
  * @version 0.3.2
  * @date 2025-09-07
- * 
- * 
+ *
+ *
  */
 
 /**
  * @defgroup ToyMakerSimSystem User Object-Oriented Logic
  * @ingroup ToyMakerEngine ToyMakerSceneSystem
- * 
+ *
  */
 
 #ifndef TOYMAKERENGINE_SIMSYSTEM_H
@@ -115,7 +115,7 @@ namespace ToyMaker{
         virtual std::shared_ptr<BaseSystem> instantiate(std::weak_ptr<ECSWorld> world) override;
 
     private:
-        
+
         /**
          * @brief Registers a new aspect (a derived class of SimObjectAspect) as an aspect known by the SimSystem.
          * 
@@ -137,7 +137,7 @@ namespace ToyMaker{
          * 
          * @param simulationStepMillis The time by which the simulation should be advanced, in milliseconds.
          */
-        void onSimulationStep(uint32_t simulationStepMillis) override;
+        void onSimulationPreStep(uint32_t simulationStepMillis) override;
 
         /**
          * @brief The method responsible for forwarding engine variable step events to SimObjects and their SimObjectAspects.

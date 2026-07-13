@@ -25,10 +25,7 @@
 
 #include <memory>
 #include <string>
-#include <vector>
-#include <tuple>
 #include <map>
-#include <iostream>
 #include <type_traits>
 
 #include <nlohmann/json.hpp>
@@ -391,19 +388,19 @@ namespace ToyMaker {
 
         /**
          * @brief A helper function that actually performs the task of registering this class with the ResourceDatabase.
-         * 
+         *
          * This registration occurs during the static initialization phase of the program.
-         * 
+         *
          */
         static void registerSelf();
 
         /**
          * @brief A static variable to this classes Registrator.
-         * 
+         *
          * The registrator ensures that registerSelf() is called during the program's static initialization.
-         * 
+         *
          * @see Registrator<T>
-         * 
+         *
          */
         inline static Registrator<Resource<TDerived>>& s_registrator { Registrator<Resource<TDerived>>::getRegistrator() };
 
@@ -609,7 +606,6 @@ namespace ToyMaker {
 
     template <typename TResource>
     std::shared_ptr<IResource> ResourceFactory<TResource>::createResource(const nlohmann::json& resourceDescription) {
-        std::cout << "Loading resource (" << TResource::getResourceTypeName() << ") : " << nlohmann::to_string(resourceDescription["parameters"]) << "\n";
         return mFactoryMethods.at(resourceDescription["method"].get<std::string>())->createResource(
             resourceDescription["parameters"].get<nlohmann::json>()
         );

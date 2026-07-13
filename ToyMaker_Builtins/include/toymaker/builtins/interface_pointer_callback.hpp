@@ -17,6 +17,8 @@
 #ifndef ZOAPPINTERFACEPOINTERCALLBACK_H
 #define ZOAPPINTERFACEPOINTERCALLBACK_H
 
+#include <glm/glm.hpp>
+
 namespace ToyMaker {
     class IRightClickable;
     class ILeftClickable;

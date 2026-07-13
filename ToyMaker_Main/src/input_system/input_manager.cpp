@@ -63,24 +63,30 @@ const std::map<InputSourceType, InputAttributesType> ToyMaker::kInputSourceTypeA
     {{DeviceType::NA, ControlType::NA}, 0}
 };
 bool hasValue(const InputSourceDescription& input, const AxisFilterType filter) {
-    uint8_t axisID { static_cast<uint8_t>(filter&AxisFilterMask::ID) };
-    uint8_t axisSign { static_cast<uint8_t>(filter&AxisFilterMask::SIGN) };
-    uint8_t axisDelta { static_cast<uint8_t>(filter&AxisFilterMask::CHANGE) };
+    AxisFilterType axisID {
+        static_cast<AxisFilterType>(filter&static_cast<AxisFilterType>(AxisFilterMask::ID))
+    };
+    AxisFilterType axisSign {
+        static_cast<AxisFilterType>(filter&static_cast<AxisFilterType>(AxisFilterMask::SIGN))
+    };
+    AxisFilterType axisDelta {
+        static_cast<AxisFilterType>(filter&static_cast<AxisFilterType>(AxisFilterMask::CHANGE))
+    };
 
     return (
         input
         && (
             // No axis specified, so in other words it's a button
-            (axisID == AxisFilter::SIMPLE && input.mAttributes&HAS_BUTTON_VALUE)
+            (axisID == static_cast<AxisFilterType>(AxisFilter::SIMPLE) && input.mAttributes&static_cast<InputAttributesValueType>(HAS_BUTTON_VALUE))
 
             // An axis is specified, so check whether the desired value
             // supports negatives or represents a change
             || (
                 axisID > 0
-                && (axisID <= (input.mAttributes&N_AXES))
+                && (axisID <= (input.mAttributes&static_cast<InputAttributesValueType>(InputAttributes::N_AXES)))
                 && (
-                    (axisSign <= (input.mAttributes&HAS_NEGATIVE))
-                    || (axisDelta <= (input.mAttributes&HAS_CHANGE_VALUE))
+                    (axisSign <= (input.mAttributes&static_cast<InputAttributesValueType>(InputAttributes::HAS_NEGATIVE)))
+                    || (axisDelta <= (input.mAttributes&static_cast<InputAttributesValueType>(InputAttributes::HAS_CHANGE_VALUE)))
                 )
             )
         )
@@ -134,14 +140,14 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
                         case X_CHANGE_POS:
                         case X_CHANGE_NEG:
                         {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f };
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f };
                             axisValue = RangeMapperLinear{0.f, static_cast<double>(windowWidth), 0.f, 1.f}(sign * inputEvent.motion.xrel);
                         }
                         break;
                         case Y_CHANGE_POS:
                         case Y_CHANGE_NEG:
                         {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f };
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f };
                             axisValue = RangeMapperLinear{0.f, static_cast<double>(windowHeight), 0.f, 1.f}(sign * inputEvent.motion.yrel);
                         }
                         break;
@@ -157,13 +163,13 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
                     switch(inputFilter.mAxisFilter) {
                         case X_CHANGE_POS:
                         case X_CHANGE_NEG: {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f };
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f };
                             axisValue = RangeMapperLinear{0.f, 1.f, 0.f, 1.f}(sign * inputEvent.wheel.x);
                         }
                         break;
                         case Y_CHANGE_POS:
                         case Y_CHANGE_NEG: {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f };
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f };
                             axisValue = RangeMapperLinear{0.f, 1.f, 0.f, 1.f}(sign * inputEvent.wheel.y);
                         }
                         break;
@@ -215,7 +221,7 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
                     switch(inputFilter.mAxisFilter) {
                         case X_POS:
                         case X_NEG: {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f};
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f};
                             axisValue = RangeMapperLinear{0.f, 32768.f, 0.f, 1.f} (sign * inputEvent.jaxis.value);
                         }
                         break;
@@ -285,13 +291,13 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
                     switch(inputFilter.mAxisFilter) {
                         case X_CHANGE_POS:
                         case X_CHANGE_NEG: {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f };
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f };
                             axisValue = RangeMapperLinear{ 0.f, 128.f, 0.f, 1.f }(sign * inputEvent.jball.xrel);
                         }
                         break;
                         case Y_CHANGE_POS:
                         case Y_CHANGE_NEG: {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f };
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f };
                             axisValue = RangeMapperLinear{ 0.f, 128.f, 0.f, 1.f }(sign * inputEvent.jball.yrel);
                         }
                         break;
@@ -323,13 +329,13 @@ double InputManager::getRawValue(const InputFilter& inputFilter, const SDL_Event
                         break;
                         case AxisFilter::X_CHANGE_POS:
                         case AxisFilter::X_CHANGE_NEG: {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f };
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f };
                             axisValue = RangeMapperLinear{0.f, 1.f, 0.f, 1.f}(sign * inputEvent.tfinger.dx);
                         }
                         break;
                         case AxisFilter::Y_CHANGE_POS:
                         case AxisFilter::Y_CHANGE_NEG: {
-                            const float sign { inputFilter.mAxisFilter&AxisFilterMask::SIGN? -1.f: 1.f };
+                            const float sign { inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::SIGN)? -1.f: 1.f };
                             axisValue = RangeMapperLinear{0.f, 1.f, 0.f, 1.f}(sign * inputEvent.tfinger.dy);
                         }
                         break;
@@ -359,12 +365,12 @@ std::vector<AxisFilter> deriveAxisFilters(InputAttributesType attributes) {
         result.push_back(static_cast<AxisFilter>(i));
 
         if(attributes&HAS_NEGATIVE) {
-            result.push_back(static_cast<AxisFilter>(i|AxisFilterMask::SIGN));
+            result.push_back(static_cast<AxisFilter>(i|static_cast<AxisFilterType>(AxisFilterMask::SIGN)));
         }
 
         if(attributes&HAS_CHANGE_VALUE) {
-            result.push_back(static_cast<AxisFilter>(i|AxisFilterMask::CHANGE));
-            result.push_back(static_cast<AxisFilter>(i|AxisFilterMask::SIGN|AxisFilterMask::CHANGE));
+            result.push_back(static_cast<AxisFilter>(i|static_cast<AxisFilterType>(AxisFilterMask::CHANGE)));
+            result.push_back(static_cast<AxisFilter>(i|static_cast<AxisFilterType>(AxisFilterMask::SIGN)|static_cast<AxisFilterType>(AxisFilterMask::CHANGE)));
         }
     }
 
@@ -481,7 +487,7 @@ void InputManager::queueInput(const SDL_Event& inputEvent) {
         InputFilter inputFilter {inputIdentity, axisFilter};
         if(mRawInputState.find(inputFilter) != mRawInputState.end()) {
             double newValue { getRawValue(inputFilter, inputEvent) };
-            if(mRawInputState[inputFilter] != newValue || inputFilter.mAxisFilter&AxisFilterMask::CHANGE){
+            if(mRawInputState[inputFilter] != newValue || inputFilter.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::CHANGE)){
                 mRawInputState[inputFilter] = newValue;
                 updatedInputFilters.push_back(inputFilter);
             }
@@ -551,7 +557,7 @@ void InputManager::queueInput(const SDL_Event& inputEvent) {
                     (combo.mTrigger == InputCombo::Trigger::ON_CHANGE || combo.mTrigger == InputCombo::Trigger::ON_BUTTON_CHANGE)
                     && (
                         // ... and input type is change
-                        (combo.mMainControl.mAxisFilter&AxisFilterMask::CHANGE && newComboState.mActivated)
+                        (combo.mMainControl.mAxisFilter&static_cast<AxisFilterType>(AxisFilterMask::CHANGE) && newComboState.mActivated)
                         // ... or a state change occurred (and therefore the new state should 
                         // be forwarded)
                         || (newComboState.mAxisValue != previousComboState.mAxisValue)

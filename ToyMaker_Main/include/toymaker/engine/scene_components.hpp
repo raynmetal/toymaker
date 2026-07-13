@@ -19,6 +19,49 @@
 #include "core/ecs_world.hpp"
 
 namespace ToyMaker {
+    /**
+     *
+     * @ingroup ToyMakerSceneSystem
+     *
+     * @brief Field indicating which transform components this object would like to inherit
+     * from its parent in the scene hierarchy.
+     *
+     * @see TransformComponentOption
+     */
+    using TransformComponentSet = uint8_t;
+
+    /**
+     * @ingroup ToyMakerSceneSystem
+     *
+     * @brief The different kinds of values that can be inherited from a transform belonging
+     * to a parent
+     *
+     */
+    enum TransformComponentOption: TransformComponentSet {
+        /// Translation is inherited from this objects parent
+        TRANSFORMCOMPONENT_TRANSLATION=0x1,
+        /// Rotation is inherited from this object's parent
+        TRANSFORMCOMPONENT_ROTATION=0x2,
+        /// Scale is inherited from this object's parent
+        TRANSFORMCOMPONENT_SCALE=0x4,
+    };
+
+    /**
+     * @ingroup ToyMakerSceneSystem
+     *
+     * @brief The different kinds of values that can be inherited from a transform belonging
+     * to a parent.
+     *
+     */
+    enum class TransformInheritMode: uint8_t {
+        /// Transform components are inherited from this object's parent
+        PARENT,
+        /// This object's transform is directly specified as a world-relative matrix (where the world matrix
+        /// is simply the identity matrix)
+        GLOBAL,
+        /// This object's transform is specified relative to the view matrix of the active camera in its ECS world
+        CAMERA,
+    };
 
     /**
      * @ingroup ToyMakerSceneSystem ToyMakerECSComponent
@@ -47,6 +90,19 @@ namespace ToyMaker {
          * 
          */
         glm::vec3 mScale { 1.f, 1.f, 1.f };
+
+        /**
+         * @brief Field specifying which aspects of its parent's transform this object's transform is specified
+         * relative to
+         *
+         */
+        TransformComponentSet mInheritedComponents { TRANSFORMCOMPONENT_TRANSLATION | TRANSFORMCOMPONENT_ROTATION | TRANSFORMCOMPONENT_SCALE };
+
+        /**
+         * @brief Field specifying which coordinate system this object's transform is specified relative to
+         *
+         */
+        TransformInheritMode mInheritMode { TransformInheritMode::PARENT };
 
         /**
          * @brief Gets the component type string for this component.
@@ -96,7 +152,20 @@ namespace ToyMaker {
          * @brief The actual currently cached model matrix for this entity.
          * 
          */
-        glm::mat4 mModelMatrix {1.f};
+        glm::mat4 mModelMatrix { 1.f };
+
+        /**
+         * @brief Field specifying which aspects of its parent's transform this object's transform is specified
+         * relative to
+         *
+         */
+        TransformComponentSet mInheritedComponents { TRANSFORMCOMPONENT_TRANSLATION | TRANSFORMCOMPONENT_ROTATION | TRANSFORMCOMPONENT_SCALE };
+
+        /**
+         * @brief Field specifying which coordinate system this object's transform is specified relative to
+         *
+         */
+        TransformInheritMode mInheritMode { TransformInheritMode::PARENT };
 
         /**
          * @brief Gets the component type string for this object.
@@ -104,7 +173,32 @@ namespace ToyMaker {
          * @return std::string This object's component type string.
          */
         inline static std::string getComponentTypeName() { return "Transform"; }
+
+        /**
+         * @brief Isolates the world-relative translation matrix associated with this transform
+         *
+         */
+        inline glm::mat4 getMatrixTranslation() const {
+            return getTranslationMatrix(mModelMatrix);
+        }
+
+        /**
+         * @brief Isolates the world-relative rotation matrix associated with this transform
+         *
+         */
+        inline glm::mat4 getMatrixRotation() const {
+            return getRotationMatrix(mModelMatrix);
+        }
+
+        /**
+         * @brief Isolates the world-relative scale matrix associated with this transform
+         *
+         */
+        inline glm::mat4 getMatrixScale() const {
+            return getScaleMatrix(mModelMatrix);
+        }
     };
+
 
     /**
      * @ingroup ToyMakerSceneSystem ToyMakerECSComponent
@@ -149,8 +243,37 @@ namespace ToyMaker {
     };
 
     /** @ingroup ToyMakerSerialization ToyMakerSceneSystem */
+    NLOHMANN_JSON_SERIALIZE_ENUM(TransformComponentOption, {
+        { TransformComponentOption::TRANSFORMCOMPONENT_TRANSLATION, "translation" },
+        { TransformComponentOption::TRANSFORMCOMPONENT_ROTATION, "rotation" },
+        { TransformComponentOption::TRANSFORMCOMPONENT_SCALE, "scale" },
+    });
+
+    /** @ingroup ToyMakerSerialization ToyMakerSceneSystem */
+    NLOHMANN_JSON_SERIALIZE_ENUM(TransformInheritMode, {
+        { TransformInheritMode::PARENT, "parent" },
+        { TransformInheritMode::GLOBAL, "global" },
+        { TransformInheritMode::CAMERA, "camera" },
+    });
+
+    /** @ingroup ToyMakerSerialization ToyMakerSceneSystem */
     inline void from_json(const nlohmann::json& json, Placement& placement) {
         assert(json.at("type").get<std::string>() == Placement::getComponentTypeName() && "Type mismatch. Component json must have type Placement");
+
+        // Initialize the placement component properly if not done already
+        placement = Placement {};
+
+        if(json.contains("inherit_mode")) {
+            placement.mInheritMode = json.at("inherit_mode");
+        }
+
+        if(json.contains("inherit_components") && json.at("inherit_components").is_array()) {
+            placement.mInheritedComponents = 0x0;
+            for(const auto& component: json.at("inherit_components")) {
+                placement.mInheritedComponents |= component.get<TransformComponentOption>();
+            }
+        }
+
         json.at("position")[0].get_to(placement.mPosition.x);
         json.at("position")[1].get_to(placement.mPosition.y);
         json.at("position")[2].get_to(placement.mPosition.z);
@@ -167,10 +290,25 @@ namespace ToyMaker {
         json.at("scale")[2].get_to(placement.mScale.z);
     }
 
-    /** @ingroup ToyMakerSerialization  ToyMakerSceneSystem */
+    /** @ingroup ToyMakerSerialization ToyMakerSceneSystem */
     inline void to_json(nlohmann::json& json, const Placement& placement) {
+        std::vector<nlohmann::json> inheritComponentList {};
+        if(placement.mInheritedComponents & TRANSFORMCOMPONENT_TRANSLATION) {
+            const nlohmann::json translationComponent = TRANSFORMCOMPONENT_TRANSLATION;
+            inheritComponentList.push_back(translationComponent);
+        }
+        if(placement.mInheritedComponents & TRANSFORMCOMPONENT_ROTATION) {
+            const nlohmann::json rotationComponent = TRANSFORMCOMPONENT_ROTATION;
+            inheritComponentList.push_back(rotationComponent);
+        }
+        if(placement.mInheritedComponents & TRANSFORMCOMPONENT_SCALE) {
+            const nlohmann::json scaleComponent = TRANSFORMCOMPONENT_SCALE;
+            inheritComponentList.push_back(scaleComponent);
+        }
         json = {
             {"type", Placement::getComponentTypeName()},
+            {"inherit_mode", placement.mInheritMode},
+            {"inherit_components", inheritComponentList},
             {"position", {
                 placement.mPosition.x,
                 placement.mPosition.y,
@@ -285,7 +423,6 @@ namespace ToyMaker {
         (void)simulationProgress; // prevent unused parameter warnings
         return nextState;
     }
-
 }
 
 #endif

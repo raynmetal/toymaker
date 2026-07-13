@@ -5,13 +5,13 @@
  * @brief System classes relating to the SceneSystem, which in some ways lies at the heart of the engine.
  * @version 0.3.2
  * @date 2025-09-05
- * 
+ *
  */
 
 /**
  * @defgroup ToyMakerSceneSystem Scene System
  * @ingroup ToyMakerEngine
- * 
+ *
  */
 
 #ifndef TOYMAKERENGINE_SCENESYSTEM_H
@@ -20,17 +20,15 @@
 #include <vector>
 #include <memory>
 #include <unordered_map>
-#include <algorithm>
-#include <cctype>
 #include <type_traits>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include "spatial_query/types.hpp"
 #include "core/ecs_world.hpp"
 #include "core/resource_database.hpp"
 #include "scene_components.hpp"
-#include "spatial_query/math.hpp"
 #include "render_system.hpp"
 #include "texture.hpp"
 #include "input_system/input_system.hpp"
@@ -282,7 +280,7 @@ namespace ToyMaker {
          * @retval false There is no node present at the path specified;
          */
         bool hasNode(const std::string& pathToChild) const;
-        
+
         /**
          * @brief Adds a node (or a tree of them) as a child of the node specified by the path in the argument.
          * 
@@ -1066,6 +1064,13 @@ namespace ToyMaker {
         void setActiveCamera(std::shared_ptr<SceneNodeCore> cameraNode);
 
         /**
+         * @brief Gets the active camera for this viewport
+         *
+         * @return std::shared_ptr<const SceneNodeCore> The active camera node corresponding to this viewport.
+         */
+        std::shared_ptr<const SceneNodeCore> getActiveCamera() const;
+
+        /**
          * @brief Gets the render configuration for this viewport.
          * 
          * @return RenderConfiguration Object representing this viewport's render configuration.
@@ -1433,7 +1438,7 @@ namespace ToyMaker {
          * 
          * @retval true The SceneSystem is a singleton System;
          * 
-         * @todo This is obviously stupid and I should do something about it.
+         * @TODO: This is obviously stupid and I should do something about it.
          * 
          */
         bool isSingleton() const override { return true; }
@@ -1535,8 +1540,9 @@ namespace ToyMaker {
         /**
          * @brief Runs the variable step for the SceneSystem's root viewport and its descendants.
          * 
-         * This variable step may run multiple times between simulation steps, or once every handful of simulation steps, depending on the processing power and tasks being performed by the platform on which this application is running.
-         * 
+         * This variable step may run multiple times between simulation steps, or once every handful of simulation steps, depending
+         * on the processing power and tasks being performed by the platform on which this application is running.
+         *
          * @param simulationProgress The progress to the next simulation step after the previous simulation step as a number between 0 and 1.
          * @param simulationLagMillis The time to the next simulation step at the present time, in milliseconds.
          * @param variableStepMillis The time since the computation of the last frame.
@@ -1548,7 +1554,7 @@ namespace ToyMaker {
          * @brief Updates transforms of objects in the scene per changes in those object's Placement component.
          * 
          */
-        void updateTransforms();
+        void updateTransformsPlacements();
 
         /**
          * @brief Runs the render step for the SceneSystem's root viewport and its descendants.
@@ -1569,14 +1575,74 @@ namespace ToyMaker {
          * This sub-system only listens for updates on an entity's Placement component, as seen in its base class.
          * 
          */
-        class SceneSubworld: public System<SceneSubworld, std::tuple<Placement>, std::tuple<Transform, SceneHierarchyData>> {
+        class PlacementUpdateReporter: public System<PlacementUpdateReporter, std::tuple<Placement>, std::tuple<Transform, SceneHierarchyData>> {
         public:
-            explicit SceneSubworld(std::weak_ptr<ECSWorld> world):
-            System<SceneSubworld, std::tuple<Placement>, std::tuple<Transform, SceneHierarchyData>> { world }
+            explicit PlacementUpdateReporter(std::weak_ptr<ECSWorld> world):
+            System<PlacementUpdateReporter, std::tuple<Placement>, std::tuple<Transform, SceneHierarchyData>> { world }
             {}
-            static std::string getSystemTypeName() { return "SceneSubworld"; }
+            static std::string getSystemTypeName() { return "SceneSystem::PlacementUpdateReporter"; }
         private:
-            void onEntityUpdated(EntityID entityID) override;
+
+            /**
+             * @brief Entities whose placement updates this system has reported.
+             *
+             */
+            std::set<EntityID> mReportedEntities {};
+
+            /**
+             * @brief Notifies scene system that a placement component in its world has been updated.
+             *
+             */
+            void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
+
+            /**
+             * @brief Called at the end of the transform update to clear report list in preparation for the next
+             * time step's updates
+             *
+             */
+            inline void clearReportList() { mReportedEntities.clear(); }
+
+            friend class SceneSystem;
+        };
+
+
+        /**
+         * @ingroup ToyMakerECSSystem ToyMakerSceneSystem
+         * @brief A subsystem of the SceneSystem which tracks, per world, which objects have had their Transform components updated.
+         * 
+         * These objects then have their UniversalEntityIDs sent to the SceneSystem, which schedules an update to their transforms as soon as possible.
+         * 
+         * This sub-system only listens for updates on an entity's Transform component, as seen in its base class.
+         * 
+         */
+        class TransformUpdateReporter: public System<TransformUpdateReporter, std::tuple<Transform>, std::tuple<Placement, SceneHierarchyData>> {
+        public:
+            explicit TransformUpdateReporter(std::weak_ptr<ECSWorld> world):
+            System<TransformUpdateReporter, std::tuple<Transform>, std::tuple<Placement, SceneHierarchyData>> { world }
+            {}
+            static std::string getSystemTypeName() { return "SceneSystem::TransformUpdateReporter"; }
+        private:
+            /**
+             * @brief Entities whose transform updates this system has reported.
+             *
+             */
+            std::set<EntityID> mReportedEntities {};
+
+
+            /**
+             * @brief Notifies the scene system that an entity in its world has had its transform updated.
+             *
+             */
+            void onEntityUpdated(EntityID entityID, ComponentType updatedComponent) override;
+
+            /**
+             * @brief Called at the end of the placement update to clear report list in preparation for the next
+             * time step's updates
+             *
+             */
+            inline void clearReportList() { mReportedEntities.clear(); }
+
+            friend class SceneSystem;
         };
 
         /**
@@ -1626,14 +1692,22 @@ namespace ToyMaker {
          * @retval true The scene node is a member of the SceneSystem's scene tree.
          * @retval false The scene node is not a member of the SceneSystem's scene tree.
          */
-        bool inScene(UniversalEntityID UniversalEntityID) const;
+        bool inScene(UniversalEntityID universalEntityID) const;
 
         /**
          * @brief Marks a node as in need of a transform update based on its universal entity id.
          * 
          * @param UniversalEntityID The ID of the node needing a Transform update.
          */
-        void markDirty(UniversalEntityID UniversalEntityID);
+        void markDirtyTransform(UniversalEntityID universalEntityID);
+
+        /**
+         * @brief Marks a node as in need of a placement update based on its universal entity id.
+         *
+         * @param UniversalEntityID The ID of the node needing a Placement update.
+         *
+         */
+        void markDirtyPlacement(UniversalEntityID universalEntityID);
 
         /**
          * @brief Returns a list of active viewports including the root viewport of the scene tree.
@@ -1650,6 +1724,14 @@ namespace ToyMaker {
         std::vector<std::weak_ptr<ECSWorld>> getActiveWorlds();
 
         /**
+         * @brief Returns a reference to the world with a particular ID
+         *
+         *
+         * @return std::weak_ptr<ECSWorld> Pointer to the world with a particular ID, if the world is still active
+         */
+        std::weak_ptr<ECSWorld> getWorld(WorldID world);
+
+        /**
          * @brief Gets the transform of a node solely based on its Placement component and independent of its position in the scene hierarchy.
          * 
          * @param sceneNode The node whose Transform is being computed.
@@ -1664,6 +1746,21 @@ namespace ToyMaker {
          * @return Transform The computed Transform.
          */
         Transform getCachedWorldTransform(std::shared_ptr<const SceneNodeCore> sceneNode) const;
+
+        /**
+         * @brief Gets the transform premultiplied with this object's local transform based on its
+         * transform settings.
+         *
+         * @see Placement::mInheritMode
+         * @see Placement::mInheritedComponents
+         * @see Transform::mInheritMode
+         * @see Transform::mInheritedComponents
+         *
+         * @param sceneNode The node whose inherited transform is being retrieved
+         * @return Transform The found transform
+         *
+         */
+        Transform getInheritedTransform(std::shared_ptr<const SceneNodeCore> sceneNode) const;
 
         /**
          * @brief Updates a node's scene hierarchy data per its location in the scene tree.
@@ -1716,11 +1813,20 @@ namespace ToyMaker {
         void deactivateSubtree(std::shared_ptr<SceneNodeCore> sceneNode);
 
         /**
-         * @brief A callback used by this system's subsystem to notify the SceneSystem that an entity has been updated.
+         * @brief A callback used by this system's subsystem to notify the SceneSystem that an entity's placement has been updated.
          * 
          * @param UniversalEntityID The world-entity id pair associated with the updated active scene node.
          */
-        void onWorldEntityUpdate(UniversalEntityID UniversalEntityID);
+        void onWorldPlacementUpdate(UniversalEntityID UniversalEntityID);
+
+        /**
+         *
+         * @brief A callback used by this system's subsystem to notify it that an entity's Transform has been updated.
+         *
+         * @param UniversalEntityID The world-entity id pair associated with the updated active scene node.
+         *
+         */
+        void onWorldTransformUpdate(UniversalEntityID universalEntityID);
 
         /**
          * @brief Gets the scene node associated with an entity of a world-entity ID pair.
@@ -1753,6 +1859,14 @@ namespace ToyMaker {
          * 
          */
         std::set<UniversalEntityID, std::less<UniversalEntityID>> mComputeTransformQueue {};
+
+        /**
+         * 
+         * @brief Nodes whose transforms were updated this variable or simulation
+         * step should have their placements recomputed.
+         *
+         */
+        std::set<UniversalEntityID, std::less<UniversalEntityID>> mComputePlacementQueue {};
 
     friend class SceneNodeCore;
     };
@@ -1842,30 +1956,42 @@ namespace ToyMaker {
         validateName(name);
         mName = name;
         mEntity = std::make_shared<Entity>(
-            ECSWorld::createEntityPrototype<Placement, SceneHierarchyData, Transform, ObjectBounds, AxisAlignedBounds, TComponents...>(
+            ECSWorld::createEntityPrototype<Placement, SceneHierarchyData, Transform, AxisAlignedBounds, TComponents...>(
                 placement,
                 SceneHierarchyData{},
-                Transform{glm::mat4{1.f}},
-                ObjectBounds {},
+                Transform{
+                    .mModelMatrix { glm::mat4{1.f} },
+                    .mInheritedComponents { placement.mInheritedComponents },
+                    .mInheritMode { placement.mInheritMode },
+                },
                 AxisAlignedBounds {},
                 components...
             )
         );
+        if(!hasComponent<ObjectBounds>()) {
+            addComponent<ObjectBounds>({}, true);
+        }
     }
 
     template <typename ...TComponents>
     SceneNodeCore::SceneNodeCore(const Key&, const Placement& placement, const std::string& name, TComponents...components) {
         mName = name;
         mEntity = std::make_shared<Entity>(
-            ECSWorld::createEntityPrototype<Placement, SceneHierarchyData, Transform, ObjectBounds, AxisAlignedBounds, TComponents...>(
+            ECSWorld::createEntityPrototype<Placement, SceneHierarchyData, Transform, AxisAlignedBounds, TComponents...>(
                 placement,
                 SceneHierarchyData{},
-                Transform{glm::mat4{1.f}},
-                ObjectBounds {},
-                AxisAlignedBounds{},
+                Transform{
+                    .mModelMatrix { glm::mat4{1.f} },
+                    .mInheritedComponents { placement.mInheritedComponents },
+                    .mInheritMode { placement.mInheritMode },
+                },
+                AxisAlignedBounds {},
                 components...
             )
         );
+        if(!hasComponent<ObjectBounds>()) {
+            addComponent<ObjectBounds>({}, true);
+        }
     }
 
     template <typename TComponent>
@@ -1952,6 +2078,7 @@ namespace ToyMaker {
     inline void SceneNodeCore::removeComponent<Placement>() {
         assert(false && "Cannot remove a scene node's Placement component");
     }
+
     template <>
     inline void SceneNodeCore::removeComponent<Transform>() {
         assert(false && "Cannot remove a scene node's Transform component");

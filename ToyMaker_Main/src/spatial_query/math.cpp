@@ -1,8 +1,9 @@
 #include <cmath>
+
+#include "toymaker/engine/util.hpp"
 #include "toymaker/engine/spatial_query/math.hpp"
 
 using namespace ToyMaker;
-
 
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getBoxIntersections(const Ray& ray, const std::array<AreaTriangle, 12>& boxTriangles);
 std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCapsuleIntersections(const Ray& ray, const ObjectBounds& capsule);
@@ -396,7 +397,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getSphereIntersections(const
     std::array<glm::vec3, 2> intersectionPoints { glm::vec3{std::numeric_limits<float>::infinity()}, glm::vec3{std::numeric_limits<float>::infinity()} };
 
     // Solve ray-sphere intersection
-    const glm::vec3 originDifference { ray.mStart - sphere.getComputedWorldPosition() };
+    const glm::vec3 originDifference { ray.mStart - sphere.getPositionWorld() };
     const float qdrtcA { 1.f };
     const float qdrtcB { 2.f * glm::dot(originDifference, rayDirection) };
     const float qdrtcC { glm::dot(originDifference, originDifference) - sphere.mTrueVolume.mSphere.mRadius * sphere.mTrueVolume.mSphere.mRadius };
@@ -440,8 +441,8 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCapsuleIntersections(cons
     std::vector<glm::vec3> consideredIntersections {};
 
     // Cache some specifics about our capsule
-    const glm::vec3 capsulePosition { capsule.getComputedWorldPosition() };
-    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getComputedWorldOrientation()) };
+    const glm::vec3 capsulePosition { capsule.getPositionWorld() };
+    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getOrientationWorld()) };
     const glm::vec3 capsuleAxis { capsuleRotation * glm::vec3 { 0.f, 1.f, 0.f } };
     const std::array<glm::vec3, 2> capsuleEnds {
         capsulePosition - capsule.mTrueVolume.mCapsule.mHeight * .5f * capsuleAxis,
@@ -651,8 +652,8 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> getCylinderIntersections(
 }
 
 bool checkContainsPointBox(const glm::vec3& point, const ObjectBounds& box) {
-    const glm::quat boxOrientation { box.getComputedWorldOrientation() };
-    const glm::vec3 boxPosition { box.getComputedWorldPosition() };
+    const glm::quat boxOrientation { box.getOrientationWorld() };
+    const glm::vec3 boxPosition { box.getPositionWorld() };
     const glm::mat4 boxTransformInverse {
         glm::inverse(buildModelMatrix(glm::vec4{boxPosition, 1.f}, boxOrientation))
     };
@@ -668,7 +669,7 @@ bool checkContainsPointBox(const glm::vec3& point, const ObjectBounds& box) {
 
 bool checkContainsPointSphere(const glm::vec3& point, const ObjectBounds& sphere) {
     const glm::vec3 sphereCenterToPoint {
-        point - sphere.getComputedWorldPosition()
+        point - sphere.getPositionWorld()
     };
     const float sphereRadius { sphere.mTrueVolume.mSphere.mRadius };
     return (
@@ -679,8 +680,8 @@ bool checkContainsPointSphere(const glm::vec3& point, const ObjectBounds& sphere
 
 bool checkContainsPointCapsule(const glm::vec3& point, const ObjectBounds& capsule) {
     // Cache some specifics about our capsule
-    const glm::vec3 capsulePosition { capsule.getComputedWorldPosition() };
-    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getComputedWorldOrientation()) };
+    const glm::vec3 capsulePosition { capsule.getPositionWorld() };
+    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getOrientationWorld()) };
     const glm::vec3 capsuleAxis { capsuleRotation * glm::vec3 { 0.f, 1.f, 0.f } };
     const float capsuleRadius { capsule.mTrueVolume.mCapsule.mRadius };
     const float capsuleHeight { capsule.mTrueVolume.mCapsule.mHeight };
@@ -724,7 +725,7 @@ std::array<glm::vec3, 3> getBoxEdgeAxes(const ObjectBounds& box) {
     const glm::vec3 localRight { 1.f, 0.f, 0.f };
     const glm::vec3 localUp { 0.f, 1.f, 0.f };
 
-    const glm::mat3 boxOrientation { box.getComputedWorldOrientation() };
+    const glm::mat3 boxOrientation { box.getOrientationWorld() };
     std::array<glm::vec3, 3> boxAxes {{
         { boxOrientation * localForward },
         { boxOrientation * localRight },
@@ -767,4 +768,88 @@ glm::vec3 getClosestPointOnBox(const glm::vec3& point, const ObjectBounds& box) 
         + saturatedPoint.y * boxAxes[1]
         + saturatedPoint.z * boxAxes[2]
     );
+}
+
+bool ToyMaker::isSensible(const glm::mat3& matrix) {
+    return isNumber(matrix[0]) && isFinite(matrix[0])
+        && isNumber(matrix[1]) && isFinite(matrix[1])
+        && isNumber(matrix[2]) && isFinite(matrix[2]);
+}
+glm::mat3 ToyMaker::computeBarycentricSolver(const AreaTriangle& triangle) {
+    assert(
+        isNumber(triangle.mPoints[0]) && isFinite(triangle.mPoints[0])
+        && isNumber(triangle.mPoints[1]) && isFinite(triangle.mPoints[1])
+        && isNumber(triangle.mPoints[2]) && isFinite(triangle.mPoints[2])
+        && "Triangle with invalid (infinite or not-a-number) point provided"
+    );
+
+    const bool isColinear {
+        squareDistance(glm::cross(
+            triangle.mPoints[0] - triangle.mPoints[1],
+            triangle.mPoints[0] - triangle.mPoints[2]
+        )) == 0.f
+    };
+    assert(!isColinear && "Cannot form barycentric solver from degenerate triangle");
+    const glm::mat3 matrixTriangle {
+        triangle.mPoints[0],
+        triangle.mPoints[1],
+        triangle.mPoints[2]
+    };
+
+    // return the (presumably faster, optimized) glm result
+    // if possible
+    const glm::mat3 glmResult { glm::inverse(matrixTriangle) };
+    if(
+        isNumber(glmResult[0]) && isFinite(glmResult[0])
+        && isNumber(glmResult[1]) && isFinite(glmResult[1])
+        && isNumber(glmResult[2]) && isFinite(glmResult[2])
+    ) {
+        return glmResult;
+    }
+
+    // otherwise compute this the old school way, with added
+    // precision
+    const double determinant { glm::determinant(static_cast<glm::dmat3>(matrixTriangle)) };
+    const glm::dmat3 matrixCofactor {
+        glm::vec3 { 1.f, -1.f, 1.f } * matrixTriangle[0],
+        glm::vec3 { -1.f, 1.f, -1.f } * matrixTriangle[1],
+        glm::vec3 { 1.f, -1.f, 1.f } * matrixTriangle[2],
+    };
+    const glm::dmat3 finalResult {
+        (1.0 / determinant) * glm::transpose(matrixCofactor)
+    };
+
+    return finalResult;
+}
+
+Collision ToyMaker::checkCollisionSphereSphere(const ObjectBounds& one, const ObjectBounds& two) {
+    assert(
+        one.mType == ObjectBounds::TrueVolumeType::SPHERE
+        && two.mType == ObjectBounds::TrueVolumeType::SPHERE
+        && "Both objects being tested must be spheres for this optimization"
+    );
+    const auto toTwo {
+        two.getPositionWorld() - one.getPositionWorld()
+    };
+    assert(squareDistance(toTwo) && "These objects overlap at their center, and no collision data can be computed for them");
+    const auto sumRadius { one.mTrueVolume.mSphere.mRadius + two.mTrueVolume.mSphere.mRadius };
+    if(squareDistance(toTwo) >= sumRadius * sumRadius) {
+        return { .mCollided { false } };
+    }
+    Collision collisionResult { .mCollided { true } };
+    const auto contactNormal { glm::normalize(toTwo) };
+    const auto penetrationDepth { sumRadius - glm::length(toTwo) };
+    const auto tangentPair { deriveTangents(contactNormal) };
+    collisionResult.mContactB.mPoint = two.getPositionWorld() - contactNormal * two.mTrueVolume.mSphere.mRadius;
+    collisionResult.mContactA.mPoint = one.getPositionWorld() + contactNormal * one.mTrueVolume.mSphere.mRadius;
+    collisionResult.mContactB.mPenetrationDepth
+        = collisionResult.mContactA.mPenetrationDepth
+        = penetrationDepth;
+    collisionResult.mContactB.mNormal = contactNormal;
+    collisionResult.mContactB.mTangent1 = tangentPair.first;
+    collisionResult.mContactB.mTangent2 = tangentPair.second;
+    collisionResult.mContactA.mNormal = -contactNormal;
+    collisionResult.mContactA.mTangent1 = -tangentPair.first;
+    collisionResult.mContactA.mTangent2 = -tangentPair.second;
+    return collisionResult;
 }

@@ -14,8 +14,6 @@
 
 #include <vector>
 #include <string>
-#include <map>
-#include <unordered_set>
 
 #include <GL/glew.h>
 #include <glm/glm.hpp>
@@ -23,14 +21,12 @@
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/material.h>
+#include <nlohmann/json.hpp>
 
 #include "core/ecs_world_resource_ext.hpp" // this instead of the regular ECS and resource includes
-#include "vertex.hpp"
+#include "spatial_query/types.hpp"
 #include "mesh.hpp"
-#include "texture.hpp"
-#include "shader_program.hpp"
 #include "material.hpp"
-
 
 namespace ToyMaker {
 
@@ -105,16 +101,56 @@ namespace ToyMaker {
          */
         std::vector<std::shared_ptr<Material>> getMaterialHandles() const;
 
+        /**
+         * @brief Sets a new object oriented bounding box for this object.
+         *
+         * This is usually done once at start up, or when an underlying mesh has been
+         * modified.
+         */
+        inline void setBounds(const ObjectBounds& newBounds) {
+            mCoarseBounds = newBounds;
+            mCoarseBoundsDirty = false;
+        }
+
+        /**
+         * @brief Returns the latest computed bounding box encapsulating the model in its untransformed state.
+         *
+         */
+        inline ObjectBounds getBounds() const {
+            return mCoarseBounds;
+        }
+
+        /**
+         * @brief Indicates whether this static model requires its bounding box recomputed
+         *
+         * Usually done at start up, or when an underlying mesh has been modified.
+         */
+        inline const bool boundsNeedRecompute() const { return mCoarseBoundsDirty; }
+
     private:
         /**
          * @brief The meshes that make up this model
          */
         std::vector<std::shared_ptr<StaticMesh>> mMeshHandles {};
+
         /**
          * @brief The materials that correspond to each mesh on this model
          * 
          */
         std::vector<std::shared_ptr<Material>> mMaterialHandles {};
+
+        /**
+         * @brief The coarse object bounds for this model, used mainly for mouse picking
+         *
+         */
+        ObjectBounds mCoarseBounds {};
+
+        /**
+         * @brief Whether any of the meshes under this object has been modified, requiring
+         * a recompute of this object's bounds
+         *
+         */
+        bool mCoarseBoundsDirty { true };
 
         /**
          * @brief Utility method for destroying resources associated with this model

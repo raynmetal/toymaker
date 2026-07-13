@@ -57,11 +57,18 @@ SceneNodeCore::SceneNodeCore(const nlohmann::json& sceneNodeDescription) {
     addComponent<Transform>({}, true);
     addComponent<SceneHierarchyData>({}, true);
     addComponent<AxisAlignedBounds>({}, true);
-    addComponent<ObjectBounds>({}, true);
     for(const nlohmann::json& componentDescription: sceneNodeDescription.at("components")) {
         addComponent(componentDescription, true);
     }
+    if(!hasComponent<ObjectBounds>()) {
+        addComponent<ObjectBounds>({}, true);
+    }
     assert(hasComponent<Placement>() && "scene nodes must define a placement component");
+    const Placement placement { getComponent<Placement>() };
+    Transform transform { getComponent<Transform>() };
+    transform.mInheritMode = placement.mInheritMode;
+    transform.mInheritedComponents = placement.mInheritedComponents;
+    updateComponent<Transform>(transform);
 }
 
 SceneNodeCore::SceneNodeCore(const SceneNodeCore& other): enable_shared_from_this{}
@@ -318,6 +325,8 @@ std::shared_ptr<SceneNodeCore> SceneNodeCore::getParentNode() {
 }
 
 std::shared_ptr<const SceneNodeCore> SceneNodeCore::getParentNode() const {
+    if(mParent.expired()) return nullptr;
+
     std::shared_ptr<SceneNodeCore> parent { mParent };
     return parent;
 }
@@ -614,7 +623,7 @@ void ViewportNode::setActiveCamera(const std::string& cameraPath) {
 
 void ViewportNode::setActiveCamera(std::shared_ptr<SceneNodeCore> cameraNode) {
     assert((cameraNode || !isActive() || mRenderConfiguration.mRenderType == RenderConfiguration::RenderType::ADDITION) && "Active camera may only be unset if this viewport is inactive");
-    if(!cameraNode) { 
+    if(!cameraNode) {
         mActiveCamera = nullptr;
         return;
     }
@@ -626,6 +635,10 @@ void ViewportNode::setActiveCamera(std::shared_ptr<SceneNodeCore> cameraNode) {
     mActiveCamera = cameraNode;
     getWorld().lock()->getSystem<RenderSystem>()->useRenderSet(mRenderSet);
     getWorld().lock()->getSystem<RenderSystem>()->setCamera(mActiveCamera->getEntityID());
+}
+
+std::shared_ptr<const ToyMaker::SceneNodeCore> ViewportNode::getActiveCamera() const {
+    return mActiveCamera;
 }
 
 void ViewportNode::requestDimensions(glm::u16vec2 requestDimensions) {
@@ -667,7 +680,7 @@ void ViewportNode::requestDimensions(glm::u16vec2 requestDimensions) {
                 // Taller aspect, but narrower than base. Shrink Y in proportion to X, preserving aspect in render
                 } else /*if (requestToBaseRatio.x <= 1.f && requestAspect <= baseAspect)*/ {
                     mRenderConfiguration.mComputedDimensions.y = requestToBaseRatio.x * mRenderConfiguration.mBaseDimensions.y;
-                } 
+                }
 
             break;
             case RenderConfiguration::ResizeMode::EXPAND_VERTICALLY:
@@ -975,6 +988,7 @@ std::vector<std::weak_ptr<ECSWorld>> ViewportNode::getActiveDescendantWorlds() {
 }
 
 void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<ActionDefinition, ActionData>> triggeredActions) {
+    // pre simulation step
     std::queue<std::shared_ptr<ViewportNode>> viewportsToVisit { {mRootNode} };
     while(!viewportsToVisit.empty()) {
         std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
@@ -994,6 +1008,7 @@ void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<A
         mRootNode->handleAction(pendingAction);
     }
 
+    // simulation step
     viewportsToVisit.push(mRootNode);
     while(!viewportsToVisit.empty()) {
         std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
@@ -1009,7 +1024,25 @@ void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<A
         }
     }
 
-    updateTransforms();
+    // post simulation step
+    viewportsToVisit.push(mRootNode);
+    while(!viewportsToVisit.empty()) {
+        std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
+        viewportsToVisit.pop();
+
+        if(!viewport->isActive()) continue;
+
+        if(viewport->mOwnWorld) {
+            viewport->mOwnWorld->simulationPostStep(simStepMillis);
+        }
+
+        for(auto& childViewport: viewport->mChildViewports) {
+            viewportsToVisit.push(childViewport);
+        }
+    }
+
+    // transform updates
+    updateTransformsPlacements();
     viewportsToVisit.push(mRootNode);
     while(!viewportsToVisit.empty()) {
         std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
@@ -1019,14 +1052,12 @@ void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<A
 
         if(viewport->mOwnWorld) {
             viewport->mOwnWorld->postTransformUpdate(simStepMillis);
-            viewport->mOwnWorld->simulationPostStep(simStepMillis);
         }
 
         for(auto& childViewport: viewport->mChildViewports) {
             viewportsToVisit.push(childViewport);
         }
     }
-    updateTransforms();
 }
 
 void SceneSystem::variableStep(float simulationProgress, uint32_t simulationLagMillis, uint32_t variableStepMillis, std::vector<std::pair<ActionDefinition, ActionData>> triggeredActions) {
@@ -1049,7 +1080,7 @@ void SceneSystem::variableStep(float simulationProgress, uint32_t simulationLagM
         }
     }
 
-    updateTransforms();
+    updateTransformsPlacements();
 
     viewportsToVisit.push({mRootNode});
     while(!viewportsToVisit.empty()) {
@@ -1066,7 +1097,7 @@ void SceneSystem::variableStep(float simulationProgress, uint32_t simulationLagM
             viewportsToVisit.push(childViewport);
         }
     }
-    updateTransforms();
+    updateTransformsPlacements();
 }
 
 uint32_t SceneSystem::render(float simulationProgress, uint32_t variableStep) {
@@ -1124,8 +1155,18 @@ std::weak_ptr<ECSWorld> SceneSystem::getRootWorld() const {
 std::vector<std::shared_ptr<ViewportNode>> SceneSystem::getActiveViewports() {
     return mRootNode->getActiveDescendantViewports();
 }
+
 std::vector<std::weak_ptr<ECSWorld>> SceneSystem::getActiveWorlds() {
     return mRootNode->getActiveDescendantWorlds();
+}
+
+std::weak_ptr<ECSWorld> SceneSystem::getWorld(WorldID worldID) {
+    for(auto world: getActiveWorlds()) {
+        if(world.lock()->getID() == worldID) {
+            return world;
+        }
+    }
+    return {};
 }
 
 ViewportNode& SceneSystem::getRootViewport() const {
@@ -1294,6 +1335,9 @@ void SceneSystem::activateSubtree(std::shared_ptr<SceneNodeCore> rootNode) {
     mActiveEntities.insert(rootNode->getUniversalEntityID());
     mComputeTransformQueue.insert(rootNode->getUniversalEntityID());
 
+    // NOTE:  We needn't insert anything into the placement queue, it's assumed that placements are
+    // in their intended states when a tree is activated (since that is what the user interacts with)
+
     rootNode->onActivated();
 }
 
@@ -1303,6 +1347,7 @@ void SceneSystem::deactivateSubtree(std::shared_ptr<SceneNodeCore> rootNode) {
     rootNode->mEntity->disableSystems();
     mActiveEntities.erase(rootNode->getUniversalEntityID());
     mComputeTransformQueue.erase(rootNode->getUniversalEntityID());
+    mComputePlacementQueue.erase(rootNode->getUniversalEntityID());
     rootNode->mStateFlags &= ~SceneNodeCore::StateFlags::ACTIVE;
 
     for(auto& childNode: rootNode->getChildren()) {
@@ -1312,13 +1357,19 @@ void SceneSystem::deactivateSubtree(std::shared_ptr<SceneNodeCore> rootNode) {
     }
 }
 
-void SceneSystem::updateTransforms() {
+void SceneSystem::updateTransformsPlacements() {
     // Prune the transform queue of nodes that will be
     // covered by their ancestor's update
     std::set<std::pair<WorldID, EntityID>> entitiesToIgnore {};
     for(std::pair<WorldID, EntityID> entityWorldPair: mComputeTransformQueue) {
         if(mEntityToNode.at(entityWorldPair).lock() == mRootNode) continue;
-        std::shared_ptr<SceneNodeCore> sceneNode { mEntityToNode.at(entityWorldPair).lock()->mParent };
+
+        // Prioritise user-generated placement updates over physics transform
+        // updates (regardless of any resulting bugs)
+        mComputePlacementQueue.erase(entityWorldPair);
+
+        // Find an ancestor in need of an update, if any
+        std::shared_ptr<SceneNodeCore> sceneNode { mEntityToNode.at(entityWorldPair).lock()->mParent.lock() };
         while(sceneNode != nullptr) {
             if(mComputeTransformQueue.find(sceneNode->getUniversalEntityID()) != mComputeTransformQueue.end()) {
                 entitiesToIgnore.insert(entityWorldPair);
@@ -1328,9 +1379,36 @@ void SceneSystem::updateTransforms() {
         }
     }
 
+
     for(std::pair<WorldID, EntityID> entityWorldPair: entitiesToIgnore) {
         mComputeTransformQueue.erase(entityWorldPair);
     }
+
+    // Derive placement parameters from transforms for all entities
+    // in the placement queue. 
+    // TODO: Very fragile, make nicer
+    for(std::pair<WorldID, EntityID> entityWorldPair: mComputePlacementQueue) {
+        std::shared_ptr<SceneNodeCore> currentNode { mEntityToNode.at(entityWorldPair).lock() };
+        const Transform parentTransform{ getInheritedTransform(currentNode) };
+        const Transform localTransform { currentNode->getComponent<Transform>() };
+        const glm::mat3 parentScale { parentTransform.getMatrixScale() };
+        const glm::mat3 localScale { localTransform.getMatrixScale() };
+        Placement newPlacement { currentNode->getComponent<Placement>() };
+        newPlacement.mInheritMode = localTransform.mInheritMode;
+        newPlacement.mInheritedComponents = localTransform.mInheritedComponents;
+        newPlacement.mPosition = glm::vec4 { glm::vec3 { localTransform.mModelMatrix[3] - parentTransform.mModelMatrix[3] }, 1.f };
+        newPlacement.mOrientation = ( // `new_rotation - old_rotation`, basically
+                glm::quat_cast(localTransform.getMatrixRotation())
+                * glm::inverse(glm::quat_cast(parentTransform.getMatrixRotation()))
+        );
+        newPlacement.mScale = {
+            localScale[0][0]/parentScale[0][0],
+            localScale[1][1]/parentScale[1][1],
+            localScale[2][2]/parentScale[2][2]
+        };
+        currentNode->updateComponent<Placement>(newPlacement);
+    }
+    mComputePlacementQueue.clear();
 
     // Apply transform updates to all subtrees present in the queue
     for(std::pair<WorldID, EntityID> entityWorldPair: mComputeTransformQueue) {
@@ -1338,24 +1416,29 @@ void SceneSystem::updateTransforms() {
         while(!toVisit.empty()) {
             std::shared_ptr<SceneNodeCore> currentNode { toVisit.back() };
             toVisit.pop_back();
-
-            glm::mat4 localModelMatrix { getLocalTransform(currentNode).mModelMatrix };
-            glm::mat4 worldMatrix { getCachedWorldTransform(currentNode->mParent.lock()).mModelMatrix };
+            const glm::mat4 localModelMatrix { getLocalTransform(currentNode).mModelMatrix };
+            const glm::mat4 worldMatrix { getInheritedTransform(currentNode).mModelMatrix };
             currentNode->updateComponent<Transform>({worldMatrix * localModelMatrix});
-
             for(std::shared_ptr<SceneNodeCore> child: currentNode->getChildren()) {
                 toVisit.push_back(child);
             }
         }
     }
     mComputeTransformQueue.clear();
+
+    // Let reporters prepare for the next batch of updates
+    for(auto world: getActiveWorlds()) {
+        auto realWorld { world.lock() };
+        realWorld->getSystem<PlacementUpdateReporter>()->clearReportList();
+        realWorld->getSystem<TransformUpdateReporter>()->clearReportList();
+    }
 }
 
 Transform SceneSystem::getLocalTransform(std::shared_ptr<const SceneNodeCore> sceneNode) const {
-    constexpr Transform rootTransform {
+    constexpr Transform identityTransform {
         glm::mat4{1.f}
-    };   
-    if(!sceneNode) { return rootTransform; }
+    };
+    if(!sceneNode) { return identityTransform; }
     const Placement nodePlacement { sceneNode->getComponent<Placement>() };
     return Transform{ buildModelMatrix (
         nodePlacement.mPosition,
@@ -1365,18 +1448,76 @@ Transform SceneSystem::getLocalTransform(std::shared_ptr<const SceneNodeCore> sc
 }
 
 Transform SceneSystem::getCachedWorldTransform(std::shared_ptr<const SceneNodeCore> sceneNode) const {
-    constexpr Transform rootTransform { glm::mat4{1.f} };
-    if(!sceneNode) { return rootTransform; }
+    constexpr Transform identityTransform { glm::mat4{1.f} };
+    if(!sceneNode) { return identityTransform; }
     return sceneNode->getComponent<Transform>();
 }
 
-void SceneSystem::markDirty(UniversalEntityID UniversalEntityID) {
+Transform SceneSystem::getInheritedTransform(std::shared_ptr<const SceneNodeCore> sceneNode) const {
+    constexpr Transform identityTransform{
+        glm::mat4 { 1.f }
+    };
+    if(!sceneNode) { return identityTransform; }
+    const auto localTransform { sceneNode->getComponent<Transform>() };
+    Transform parentTransform {};
+
+    // Find matrix according to transform inheritance mode
+    switch(localTransform.mInheritMode) {
+        case TransformInheritMode::GLOBAL:
+            return identityTransform;
+            break;
+        case TransformInheritMode::CAMERA:
+            {
+                // TODO: Involve camera projection in this calculation to ensure that object scales
+                // are specified relative to screen dimensions (as opposed to world dimensions, which
+                // is nonsensical here)
+                const std::shared_ptr<const SceneNodeCore> activeCamera { sceneNode->getLocalViewport()->getActiveCamera() };
+                if(!activeCamera) {
+                    parentTransform.mModelMatrix = identityTransform.mModelMatrix;
+                    break;
+                }
+                const Transform cameraTransform { activeCamera->getComponent<Transform>() };
+                parentTransform.mModelMatrix = cameraTransform.mModelMatrix;
+            }
+            break;
+        case TransformInheritMode::PARENT:
+            parentTransform = getCachedWorldTransform(sceneNode->getParentNode());
+            break;
+        default:
+            assert(false && "Unrecognized transform inheritance mode specified");
+            break;
+    }
+
+    // Return the parent transform as-is if all components are inherited
+    if(localTransform.mInheritedComponents == (
+        TRANSFORMCOMPONENT_ROTATION | TRANSFORMCOMPONENT_TRANSLATION | TRANSFORMCOMPONENT_SCALE
+    )) {
+        return parentTransform;
+    }
+    parentTransform.mModelMatrix = {
+        ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_TRANSLATION) ? parentTransform.getMatrixTranslation() : identityTransform.mModelMatrix)
+        * ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_ROTATION) ? parentTransform.getMatrixRotation() : identityTransform.mModelMatrix)
+        * ((localTransform.mInheritedComponents&TRANSFORMCOMPONENT_SCALE) ? parentTransform.getMatrixScale() : identityTransform.mModelMatrix)
+    };
+    return parentTransform;
+}
+
+void SceneSystem::markDirtyTransform(UniversalEntityID UniversalEntityID) {
     if(!isActive(UniversalEntityID)) return;
     mComputeTransformQueue.insert(UniversalEntityID);
 }
 
-void SceneSystem::onWorldEntityUpdate(UniversalEntityID UniversalEntityID) {
-    markDirty(UniversalEntityID);
+void SceneSystem::markDirtyPlacement(UniversalEntityID universalEntityID) {
+    if(!isActive(universalEntityID)) return;
+    mComputePlacementQueue.insert(universalEntityID);
+}
+
+void SceneSystem::onWorldPlacementUpdate(UniversalEntityID UniversalEntityID) {
+    markDirtyTransform(UniversalEntityID);
+}
+
+void SceneSystem::onWorldTransformUpdate(UniversalEntityID UniversalEntityID) {
+    markDirtyPlacement(UniversalEntityID);
 }
 
 void SceneSystem::onApplicationInitialize(const ViewportNode::RenderConfiguration& rootViewportRenderConfiguration) {
@@ -1390,11 +1531,41 @@ void SceneSystem::onApplicationInitialize(const ViewportNode::RenderConfiguratio
 
 void SceneSystem::onApplicationStart() {
     nodeActivationChanged(mRootNode, true);
-    updateTransforms();
+    updateTransformsPlacements();
+
+    // signal first post transform update to all active viewports
+    std::queue<std::shared_ptr<ViewportNode>> viewportsToVisit { {mRootNode} };
+    while(!viewportsToVisit.empty()) {
+        std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
+        viewportsToVisit.pop();
+        if(!viewport->isActive()) continue;
+        if(viewport->mOwnWorld) {
+            viewport->mOwnWorld->postTransformUpdate(0.f);
+        }
+        for(auto& childViewport: viewport->mChildViewports) {
+            viewportsToVisit.push(childViewport);
+        }
+    }
 }
 
-void SceneSystem::SceneSubworld::onEntityUpdated(EntityID entityID) {
-    mWorld.lock()->getSystem<SceneSystem>()->onWorldEntityUpdate({mWorld.lock()->getID(), entityID});
+void SceneSystem::PlacementUpdateReporter::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
+    (void) updatedComponent; // avoid unused parameter warnings
+    // skip already reported entities
+    if(mReportedEntities.find(entityID) != mReportedEntities.cend()) {
+        return;
+    }
+
+    mWorld.lock()->getSystem<SceneSystem>()->onWorldPlacementUpdate({mWorld.lock()->getID(), entityID});
+}
+
+void SceneSystem::TransformUpdateReporter::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
+    (void) updatedComponent; // avoid unused parameter warnings
+    // skip already reported entities
+    if(mReportedEntities.find(entityID) != mReportedEntities.cend()) {
+        return;
+    }
+
+    mWorld.lock()->getSystem<SceneSystem>()->onWorldTransformUpdate({mWorld.lock()->getID(), entityID});
 }
 
 std::shared_ptr<SceneNodeCore> SceneSystem::getNodeByID(const UniversalEntityID& universalEntityID) {

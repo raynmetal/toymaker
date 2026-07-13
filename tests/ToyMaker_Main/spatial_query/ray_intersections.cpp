@@ -29,8 +29,8 @@ TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -68,8 +68,8 @@ TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -106,8 +106,8 @@ TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 50.f, -50.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -144,8 +144,8 @@ TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, 0.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -182,8 +182,8 @@ TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -100.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, -100.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -220,8 +220,8 @@ TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -259,7 +259,7 @@ TEST_CASE("Finite Ray and Object Oriented Box Intersection") {
             )
         };
         const float kTolerance { 3.f }; // High tolerance, there's something wrong with my math
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -322,8 +322,8 @@ TEST_CASE("Infinite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -352,8 +352,8 @@ TEST_CASE("Infinite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 50.f, -50.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -382,8 +382,8 @@ TEST_CASE("Infinite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, 0.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -412,8 +412,8 @@ TEST_CASE("Infinite Ray and Object Oriented Box Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(box.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -442,7 +442,7 @@ TEST_CASE("Infinite Ray and Object Oriented Box Intersection") {
             )
         };
         const float kTolerance { 3.f };
-        REQUIRE(box.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(box.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, box)
@@ -498,8 +498,8 @@ TEST_CASE("Finite Ray and Capsule Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(capsule.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(capsule.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, capsule)
@@ -537,8 +537,8 @@ TEST_CASE("Finite Ray and Capsule Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(capsule.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(capsule.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, capsule)
@@ -576,8 +576,8 @@ TEST_CASE("Finite Ray and Capsule Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
-        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(capsule.getPositionWorld() == glm::vec3{ 0.f, 50.f, -50.f});
+        REQUIRE(capsule.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, capsule)
@@ -615,8 +615,8 @@ TEST_CASE("Finite Ray and Capsule Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
-        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(capsule.getPositionWorld() == glm::vec3{ 0.f, 0.f, 0.f});
+        REQUIRE(capsule.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, capsule)
@@ -654,8 +654,8 @@ TEST_CASE("Finite Ray and Capsule Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -100.f});
-        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(capsule.getPositionWorld() == glm::vec3{ 0.f, 0.f, -100.f});
+        REQUIRE(capsule.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, capsule)
@@ -693,8 +693,8 @@ TEST_CASE("Finite Ray and Capsule Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(capsule.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(capsule.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(capsule.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, capsule)
@@ -733,7 +733,7 @@ TEST_CASE("Finite Ray and Capsule Bounds Intersection") {
             )
         };
         const float kTolerance { 3.f }; // High tolerance, there's something wrong with my math
-        REQUIRE(capsule.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(capsule.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, capsule)
@@ -786,8 +786,8 @@ TEST_CASE("Finite Ray and Sphere Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(sphere.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(sphere.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(sphere.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(sphere.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, sphere)
@@ -824,8 +824,8 @@ TEST_CASE("Finite Ray and Sphere Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(sphere.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(sphere.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(sphere.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(sphere.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, sphere)
@@ -862,8 +862,8 @@ TEST_CASE("Finite Ray and Sphere Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(sphere.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
-        REQUIRE(sphere.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(sphere.getPositionWorld() == glm::vec3{ 0.f, 50.f, -50.f});
+        REQUIRE(sphere.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, sphere)
@@ -900,8 +900,8 @@ TEST_CASE("Finite Ray and Sphere Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(sphere.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
-        REQUIRE(sphere.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(sphere.getPositionWorld() == glm::vec3{ 0.f, 0.f, 0.f});
+        REQUIRE(sphere.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, sphere)
@@ -938,8 +938,8 @@ TEST_CASE("Finite Ray and Sphere Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(sphere.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -100.f});
-        REQUIRE(sphere.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(sphere.getPositionWorld() == glm::vec3{ 0.f, 0.f, -100.f});
+        REQUIRE(sphere.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, sphere)
@@ -976,8 +976,8 @@ TEST_CASE("Finite Ray and Sphere Bounds Intersection") {
                 glm::vec3 { 0.f, 0.f, 0.f }
             )
         };
-        REQUIRE(sphere.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
-        REQUIRE(sphere.getComputedWorldOrientation() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
+        REQUIRE(sphere.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(sphere.getOrientationWorld() == glm::quat(glm::vec3{0.f, 0.f, 0.f}));
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, sphere)
@@ -1020,7 +1020,7 @@ TEST_CASE("Finite Ray and Axis Aligned Bounds Intersection") {
             glm::vec3 { 0.f, 0.f, -50.f },
             glm::vec3 { 0.f, 0.f, 0.f }
         };
-        REQUIRE(aaBox.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(aaBox.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, aaBox)
@@ -1052,7 +1052,7 @@ TEST_CASE("Finite Ray and Axis Aligned Bounds Intersection") {
             glm::vec3{ 0.f, 0.f, -50.f },
             glm::vec3{ 200.f, 200.f, 200.f }
         };
-        REQUIRE(aaBox.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(aaBox.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, aaBox)
@@ -1084,7 +1084,7 @@ TEST_CASE("Finite Ray and Axis Aligned Bounds Intersection") {
             glm::vec3 { 0.f, 50.f, -50.f },
             glm::vec3 { 10.f, 10.f, 10.f }
         };
-        REQUIRE(aaBox.getComputedWorldPosition() == glm::vec3{ 0.f, 50.f, -50.f});
+        REQUIRE(aaBox.getPositionWorld() == glm::vec3{ 0.f, 50.f, -50.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, aaBox)
@@ -1116,7 +1116,7 @@ TEST_CASE("Finite Ray and Axis Aligned Bounds Intersection") {
             glm::vec3 { 0.f, 0.f, 0.f },
             glm::vec3 { 10.f, 10.f, 10.f }
         };
-        REQUIRE(aaBox.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, 0.f});
+        REQUIRE(aaBox.getPositionWorld() == glm::vec3{ 0.f, 0.f, 0.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, aaBox)
@@ -1148,7 +1148,7 @@ TEST_CASE("Finite Ray and Axis Aligned Bounds Intersection") {
             glm::vec3 { 0.f, 0.f, -100.f },
             glm::vec3 { 10.f, 10.f, 10.f }
         };
-        REQUIRE(aaBox.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -100.f});
+        REQUIRE(aaBox.getPositionWorld() == glm::vec3{ 0.f, 0.f, -100.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, aaBox)
@@ -1180,7 +1180,7 @@ TEST_CASE("Finite Ray and Axis Aligned Bounds Intersection") {
             glm::vec3 { 0.f, 0.f, -50.f },
             glm::vec3 { 10.f, 10.f, 10.f }
         };
-        REQUIRE(aaBox.getComputedWorldPosition() == glm::vec3{ 0.f, 0.f, -50.f});
+        REQUIRE(aaBox.getPositionWorld() == glm::vec3{ 0.f, 0.f, -50.f});
 
         const std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> intersectionResults {
             ToyMaker::computeIntersections(ray, aaBox)

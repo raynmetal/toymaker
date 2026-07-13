@@ -1,0 +1,202 @@
+{
+    "resources": [
+        {
+            "name": "Sad_Texture",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/Sad.png",
+                "cubemap_layout": "row"
+            }
+        },
+        {
+            "name": "PlatformModel",
+            "method": "cuboidDimensions",
+            "type": "StaticModel",
+            "parameters": {
+                "height": 1.0, "width": 16.0, "depth": 3.0,
+                "material_properties": [
+                    { "name": "colorMultiplier", "type": "vec4", "value": [1.2, 0.2, 0.4, 1.0] },
+                    { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
+                    { "name": "usesTextureAlbedo", "type": "int", "value": 1 }
+                ]
+            }
+        },
+        {
+            "name": "BoxModel",
+            "method": "cuboidDimensions",
+            "type": "StaticModel",
+            "parameters": {
+                "height": 2.0, "width": 2.0, "depth": 2.0,
+                "material_properties": [
+                    { "name": "colorMultiplier", "type": "vec4", "value": [0.2, 0.2, 1.4, 1.0] },
+                    { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
+                    { "name": "usesTextureAlbedo", "type": "int", "value": 1 }
+                ]
+            }
+        }
+    ],
+
+    "nodes": [
+        {
+            "name": "root",
+            "aspects": [],
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ],
+            "parent": "",
+            "type": "SimObject"
+        },
+
+        {
+            "name": "light1",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "orientation": [ 0.707, 0.408, 0.408, -0.408 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                },
+                {
+                    "ambient": [ 0.1, 0.2, 0.3 ],
+                    "diffuse": [ 7.5, 5.4, 3.7 ],
+                    "specular": [ 0.5, 0.5, 0.5 ],
+                    "lightType": "directional",
+                    "type": "LightEmissionData"
+                }
+            ]
+        },
+
+        {
+            "name": "light2",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 5.0, -4.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                },
+                {
+                    "ambient": [ 0.0, 0.001, 0.0 ],
+                    "diffuse": [ 0.0, 0.1, 0.02 ],
+                    "specular": [ 0.003, 0.003, 0.003 ],
+                    "linearConst": 0.01,
+                    "quadraticConst": 0.002,
+                    "lightType": "point",
+                    "type": "LightEmissionData"
+                }
+            ]
+        },
+
+        {
+            "name": "camera",
+            "aspects":[{"type": "QueryClick" }, {"type": "RenderDebugViewer"}],
+            "parent": "/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "fov": 75.0,
+                    "aspect": 1.333,
+                    "orthographic_dimensions": {
+                        "horizontal": 800,
+                        "vertical": 600
+                    },
+                    "near_far_planes": {
+                        "near": 0.4,
+                        "far": 50
+                    },
+                    "projection_mode": "frustum",
+                    "type": "CameraProperties"
+                },
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 3.0, 2.0, 10.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ]
+        },
+
+        {
+            "name": "slope",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 0.9998, 0.0, 0.0, -0.0174 ],
+                    "position": [ 0.0, -0.5, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": "infinity",
+                    "mode": "static",
+                    "coefficient_friction_static": 1.0,
+                    "coefficient_friction_dynamic": 1.0,
+                    "velocity": [0.0, 0.0, 0.0]
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 16.0,
+                        "depth": 3.0,
+                        "height": 1.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "PlatformModel", "type": "StaticModel" }
+            ]
+        },
+        {
+            "name": "object",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [ {"type": "Gravity"} ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [1, 0, 0, 0],
+                    "position": [ -2.0, 1.7, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "dynamic",
+                    "collision_response": [ "separate", "signal" ],
+                    "mass": 1.0,
+                    "coefficient_friction_static": 0.4,
+                    "coefficient_friction_dynamic": 0.35,
+                    "velocity": [5.0, 0.0, 0.0],
+                    "angular_velocity": [0.0, 0.0, 0.0]
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": { "width": 2.0, "depth": 2.0, "height": 2.0 },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BoxModel", "type": "StaticModel" }
+            ]
+        }
+    ],
+
+    "connections":[]
+}
+

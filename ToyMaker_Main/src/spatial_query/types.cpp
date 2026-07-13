@@ -1,7 +1,12 @@
-#include <cmath>
+#include <set>
+
+#include "toymaker/engine/util.hpp"
 #include "toymaker/engine/spatial_query/types.hpp"
 
 using namespace ToyMaker;
+
+constexpr float kEPAEpsilon { 0.001 };
+
 
 // Gets the minimum and maximum points of a 3D box projected on an axis
 std::pair<float, float> axisProjectBox(const glm::vec3& axis, const ObjectBounds& box);
@@ -33,30 +38,42 @@ bool ToyMaker::ObjectBounds::isPositiveStrict() const {
     return isBoundsNonZero;
 }
 
-ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positionOffset, const glm::quat& orientationOffset, InteractionLayerMask interactionLayers, InteractionLayerMask interactionMask) {
     return ObjectBounds {
         .mType { TrueVolumeType::BOX },
         .mTrueVolume { .mBox { box } },
+        .mPositionWorld { positionOffset },
         .mPositionOffset { positionOffset },
+        .mOrientationWorld { orientationOffset },
         .mOrientationOffset{ orientationOffset },
+        .mInteractionLayers { interactionLayers },
+        .mInteractionMask { interactionMask },
     };
 }
 
-ObjectBounds ObjectBounds::create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeSphere& sphere, const glm::vec3& positionOffset, const glm::quat& orientationOffset, InteractionLayerMask interactionLayers, InteractionLayerMask interactionMask) {
     return ObjectBounds {
         .mType { TrueVolumeType::SPHERE },
         .mTrueVolume { .mSphere { sphere } },
+        .mPositionWorld { positionOffset },
         .mPositionOffset { positionOffset },
+        .mOrientationWorld { orientationOffset },
         .mOrientationOffset { orientationOffset },
+        .mInteractionLayers { interactionLayers },
+        .mInteractionMask { interactionMask },
     };
 }
 
-ObjectBounds ObjectBounds::create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::quat& orientationOffset) {
+ObjectBounds ObjectBounds::create(const VolumeCapsule& capsule, const glm::vec3& positionOffset, const glm::quat& orientationOffset, InteractionLayerMask interactionLayers, InteractionLayerMask interactionMask) {
     return ObjectBounds {
         .mType { TrueVolumeType::CAPSULE },
         .mTrueVolume { .mCapsule { capsule } },
+        .mPositionWorld { positionOffset },
         .mPositionOffset { positionOffset },
+        .mOrientationWorld { orientationOffset },
         .mOrientationOffset { orientationOffset },
+        .mInteractionLayers { interactionLayers },
+        .mInteractionMask { interactionMask },
     };
 }
 
@@ -143,11 +160,10 @@ bool Polytope::append(const glm::vec3& newPoint, const glm::vec3& supportA, cons
         crossTriangle, mPoints[oldTriangle.mIndices[0]]
     ) };
     const float newDistance { glm::dot(crossTriangle, newPoint) };
-    assert(oldDistance >= 0 && "Old distance should be greater than or equal to 0");
 
     // Our new point is not further from the origin in this direction; there
     // is nothing to be done
-    if(newDistance - oldDistance <= 0.001) {
+    if(newDistance - oldDistance <= kEPAEpsilon) {
         return false;
     }
 
@@ -195,13 +211,19 @@ bool Polytope::append(const glm::vec3& newPoint, const glm::vec3& supportA, cons
     for(const auto& edge: edgeList) {
         mFaces.push(Face { .mIndices { indexNew, edge.first, edge.second } });
     }
-
     return true;
 }
 
 void ObjectBounds::applyModelMatrix(const glm::mat4& modelMatrix) {
-    mPosition = static_cast<glm::vec3>(modelMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f});
-    mOrientation = glm::normalize(glm::quat_cast(glm::transpose(glm::inverse(modelMatrix))));
+    mPositionOrigin = static_cast<glm::vec3>(modelMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f});
+    assert(isNumber(mPositionOrigin) && "Position update failed");
+    mOrientationOrigin = glm::normalize(glm::quat_cast(getRotationMatrix(modelMatrix)));
+    recomputeWorldPositionOrientation();
+    assert(
+        isNumber(mOrientationOrigin.w)
+        && isNumber(glm::vec3 { mOrientationOrigin.x, mOrientationOrigin.y, mOrientationOrigin.z })
+        && "Orientation update failed"
+    );
 }
 
 std::array<glm::vec3, 8> ObjectBounds::getVolumeRelativeBoxCorners() const {
@@ -218,17 +240,77 @@ std::array<glm::vec3, 8> ObjectBounds::getVolumeRelativeBoxCorners() const {
     }
 }
 
-glm::vec3 ObjectBounds::getComputedWorldPosition() const {
-    return mPosition + getWorldRotationTransform() * mPositionOffset;
+glm::vec3 ObjectBounds::getPositionWorld() const {
+    return mPositionWorld;
 }
-glm::quat ObjectBounds::getComputedWorldOrientation() const {
-    return glm::normalize(glm::quat_cast(getWorldRotationTransform() * getLocalRotationTransform()));
+
+void ObjectBounds::setPositionWorld(const glm::vec3& newPosition) {
+    mPositionWorld = newPosition;
+    mPositionOrigin = newPosition - (
+        glm::inverse(mOrientationOrigin) * mPositionOffset
+    );
+    assert(isNumber(mPositionOrigin) && "Position update failed");
+    mTransformUpdateRequired = true;
+}
+
+void ObjectBounds::setPositionOffset(const glm::vec3& newPosition) {
+    mPositionOffset = newPosition;
+    recomputeWorldPositionOrientation();
+}
+
+void ObjectBounds::setPositionOrigin(const glm::vec3& newPosition) {
+    mPositionOrigin = newPosition;
+
+    recomputeWorldPositionOrientation();
+    mTransformUpdateRequired = true;
+}
+
+glm::quat ObjectBounds::getOrientationWorld() const {
+    return mOrientationWorld;
+}
+
+void ObjectBounds::recomputeWorldPositionOrientation() {
+    mPositionWorld = mPositionOrigin + mOrientationOrigin * mPositionOffset;
+    mOrientationWorld = mOrientationOrigin * mOrientationOffset;
+}
+
+void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
+    const glm::quat orientationNormalized { glm::normalize(newOrientation) };
+    mOrientationWorld = orientationNormalized;
+
+    // object origin position depends on origin orientation
+    const glm::vec3 worldPositionPrevious { getPositionWorld() };
+    mOrientationOrigin = glm::normalize(orientationNormalized * glm::inverse(mOrientationOffset));
+    assert(
+        isNumber(mOrientationOrigin.w)
+        && isNumber(glm::vec3{mOrientationOrigin.x, mOrientationOrigin.y, mOrientationOrigin.z})
+        && "Orientation update failed"
+    );
+    // update world position such that it stays in-place by
+    // updating the origin's position instead
+    setPositionWorld(worldPositionPrevious);
+    mTransformUpdateRequired = true;
+}
+
+void ObjectBounds::setOrientationOffset(const glm::quat& newOrientation) {
+    const glm::quat orientationNormalized { glm::normalize(newOrientation) };
+    mOrientationOffset = orientationNormalized;
+
+    recomputeWorldPositionOrientation();
+}
+
+void ObjectBounds::setOrientationOrigin(const glm::quat& newOrientation) {
+    const glm::quat orientationNormalized { glm::normalize(newOrientation) };
+    mOrientationOrigin = orientationNormalized;
+
+    recomputeWorldPositionOrientation();
+    mTransformUpdateRequired = true;
 }
 
 std::array<glm::vec3, 8> ObjectBounds::getLocalOrientedBoxCorners() const {
     std::array<glm::vec3, 8> orientedCorners { getVolumeRelativeBoxCorners() };
     for(glm::vec3& localCorner: orientedCorners) {
-        localCorner = mPositionOffset + getLocalRotationTransform() * localCorner;
+        localCorner = mPositionOffset + mOrientationOffset * localCorner;
     }
     return orientedCorners;
 }
@@ -236,7 +318,7 @@ std::array<glm::vec3, 8> ObjectBounds::getLocalOrientedBoxCorners() const {
 std::array<glm::vec3, 8> ObjectBounds::getWorldOrientedBoxCorners() const {
     std::array<glm::vec3, 8> worldCorners { getLocalOrientedBoxCorners() };
     for(glm::vec3& orientedCorner: worldCorners) {
-        orientedCorner = mPosition + getWorldRotationTransform() * orientedCorner;
+        orientedCorner = mPositionOrigin + mOrientationOrigin * orientedCorner;
     }
     return worldCorners;
 }
@@ -262,7 +344,7 @@ glm::vec3 AxisAlignedBounds::getSupportAlong(const glm::vec3& axis) const {
 
     // Degenerate shapes yield origin
     if(!isPositiveStrict()) {
-        return getComputedWorldPosition();
+        return getPositionWorld();
     }
 
     return getSupportBox(axis, *this);
@@ -294,7 +376,7 @@ glm::vec3 ObjectBounds::getSupportAlong(const glm::vec3& axis) const {
 
     // Degenerate shapes yield origin
     if(!isPositiveStrict()) {
-        return getComputedWorldPosition();
+        return getPositionWorld();
     }
 
     switch(mType) {
@@ -323,11 +405,13 @@ AxisAlignedBounds::AxisAlignedBounds(const ObjectBounds& objectBounds): AxisAlig
         { projectedOnX.second, projectedOnY.second, projectedOnZ.second },
         {  projectedOnX.first,  projectedOnY.first,  projectedOnZ.first },
     };
+    mInteractionLayers = objectBounds.mInteractionLayers;
     setByExtents(axisAlignedExtents);
 }
 
-AxisAlignedBounds::AxisAlignedBounds(const Extents& axisAlignedExtents): AxisAlignedBounds{} {
+AxisAlignedBounds::AxisAlignedBounds(const Extents& axisAlignedExtents, InteractionLayerMask interactionLayers): AxisAlignedBounds{} {
     setByExtents(axisAlignedExtents);
+    mInteractionLayers = interactionLayers;
 }
 
 std::array<glm::vec3, 8> AxisAlignedBounds::getAxisAlignedBoxCorners() const {
@@ -362,7 +446,7 @@ AxisAlignedBounds AxisAlignedBounds::operator+(const AxisAlignedBounds& other) c
         {glm::max(topCorner, otherTopCorner)}, {glm::min(bottomCorner, otherBottomCorner)} 
     };
 
-    return { extents };
+    return { extents, static_cast<InteractionLayerMask>(mInteractionLayers | other.mInteractionLayers) };
 }
 
 void AxisAlignedBounds::setByExtents(const Extents& axisAlignedExtents) {
@@ -376,7 +460,7 @@ void AxisAlignedBounds::setByExtents(const Extents& axisAlignedExtents) {
 }
 
 glm::vec3 getSupportBox(const glm::vec3& axis, const AxisAlignedBounds& box) {
-    const glm::vec3 origin { box.getComputedWorldPosition() };
+    const glm::vec3 origin { box.getPositionWorld() };
     const std::array<glm::vec3, 8> corners { box.getAxisAlignedBoxCorners() };
 
     // the point we're looking for _must_ be one of the corners of the box
@@ -394,7 +478,7 @@ glm::vec3 getSupportBox(const glm::vec3& axis, const AxisAlignedBounds& box) {
 }
 
 glm::vec3 getSupportBox(const glm::vec3& axis, const ObjectBounds& box) {
-    const glm::vec3 origin { box.getComputedWorldPosition() };
+    const glm::vec3 origin { box.getPositionWorld() };
     const std::array<glm::vec3, 8> corners { box.getWorldOrientedBoxCorners() };
 
     // the point we're looking for _must_ be one of the corners of the box
@@ -412,16 +496,16 @@ glm::vec3 getSupportBox(const glm::vec3& axis, const ObjectBounds& box) {
 }
 
 glm::vec3 getSupportSphere(const glm::vec3& axis, const ObjectBounds& sphere) {
-    const glm::vec3 origin { sphere.getComputedWorldPosition() };
+    const glm::vec3 origin { sphere.getPositionWorld() };
     const float radius { sphere.mTrueVolume.mSphere.mRadius };
 
     return origin + radius * glm::normalize(axis);
 }
 
 glm::vec3 getSupportCapsule(const glm::vec3& vector, const ObjectBounds& capsule) {
-    const glm::vec3 origin { capsule.getComputedWorldPosition() };
+    const glm::vec3 origin { capsule.getPositionWorld() };
     const glm::vec3 capsuleAxis { glm::normalize(
-        capsule.getComputedWorldOrientation() * glm::vec3 { 0.f, 1.f, 0.f }
+        capsule.getOrientationWorld() * glm::vec3 { 0.f, 1.f, 0.f }
     ) };
     const float radius { capsule.mTrueVolume.mCapsule.mRadius };
     const float height { capsule.mTrueVolume.mCapsule.mHeight };
@@ -536,11 +620,11 @@ std::pair<float, float> axisProjectSphere(const glm::vec3& axis, const ObjectBou
     const glm::vec3 axisNormalized { glm::normalize(axis) };
 
     const float pointOne { 
-        glm::dot(axisNormalized, sphere.getComputedWorldPosition())
+        glm::dot(axisNormalized, sphere.getPositionWorld())
         + sphere.mTrueVolume.mSphere.mRadius
     };
     const float pointTwo {
-        glm::dot(axisNormalized, sphere.getComputedWorldPosition())
+        glm::dot(axisNormalized, sphere.getPositionWorld())
         - sphere.mTrueVolume.mSphere.mRadius
     };
 
@@ -551,8 +635,8 @@ std::pair<float, float> axisProjectSphere(const glm::vec3& axis, const ObjectBou
 }
 
 std::pair<float, float> axisProjectCapsule(const glm::vec3& axis, const ObjectBounds& capsule) {
-    const glm::vec3 capsulePosition { capsule.getComputedWorldPosition() };
-    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getComputedWorldOrientation()) };
+    const glm::vec3 capsulePosition { capsule.getPositionWorld() };
+    const glm::mat3 capsuleRotation { glm::mat3_cast(capsule.getOrientationWorld()) };
     const glm::vec3 capsuleAxis { capsuleRotation * glm::vec3 { 0.f, 1.f, 0.f } };
     const std::array<glm::vec3, 2> capsuleEnds {
         capsulePosition - capsule.mTrueVolume.mCapsule.mHeight * .5f * capsuleAxis,
@@ -735,3 +819,5 @@ std::pair<bool, glm::vec3> Simplex::doSimplex4() {
     // that we're in the tetrahedron
     return { true, glm::vec3 { 0.f } };
 }
+
+

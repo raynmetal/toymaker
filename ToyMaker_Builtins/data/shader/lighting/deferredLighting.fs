@@ -1,11 +1,3 @@
-/*
-Include: 
-    -common/versionHeader.glsl
-    -common/lightStruct.fs
-    -common/geometrySampler.fs
-    -common/fragmentAttributes.fs
-*/
-
 uniform float uBrightCutoff = 1.f;
 
 layout (location=0) out vec4 outColor;
