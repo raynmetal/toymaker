@@ -308,6 +308,8 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, CollisionCo
 }
 
 void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, CollisionConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+    // TODO: Add code to call registered and initialized velocity constraint providers
+
     applyVelocityCollisionConstraints(collisionConstraints, substepSeconds, currentStates);
 }
 
@@ -562,7 +564,6 @@ bool PhysicsSystem::wasColliding(const CollisionPair& pair) const {
 
     return false;
 }
-
 
 void PhysicsSystem::onCollided(
     const CollisionPair& pair,

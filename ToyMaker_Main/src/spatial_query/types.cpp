@@ -42,7 +42,9 @@ ObjectBounds ObjectBounds::create(const VolumeBox& box, const glm::vec3& positio
     return ObjectBounds {
         .mType { TrueVolumeType::BOX },
         .mTrueVolume { .mBox { box } },
+        .mPositionWorld { positionOffset },
         .mPositionOffset { positionOffset },
+        .mOrientationWorld { orientationOffset },
         .mOrientationOffset{ orientationOffset },
         .mInteractionLayers { interactionLayers },
         .mInteractionMask { interactionMask },
@@ -53,7 +55,9 @@ ObjectBounds ObjectBounds::create(const VolumeSphere& sphere, const glm::vec3& p
     return ObjectBounds {
         .mType { TrueVolumeType::SPHERE },
         .mTrueVolume { .mSphere { sphere } },
+        .mPositionWorld { positionOffset },
         .mPositionOffset { positionOffset },
+        .mOrientationWorld { orientationOffset },
         .mOrientationOffset { orientationOffset },
         .mInteractionLayers { interactionLayers },
         .mInteractionMask { interactionMask },
@@ -64,7 +68,9 @@ ObjectBounds ObjectBounds::create(const VolumeCapsule& capsule, const glm::vec3&
     return ObjectBounds {
         .mType { TrueVolumeType::CAPSULE },
         .mTrueVolume { .mCapsule { capsule } },
+        .mPositionWorld { positionOffset },
         .mPositionOffset { positionOffset },
+        .mOrientationWorld { orientationOffset },
         .mOrientationOffset { orientationOffset },
         .mInteractionLayers { interactionLayers },
         .mInteractionMask { interactionMask },
@@ -212,6 +218,7 @@ void ObjectBounds::applyModelMatrix(const glm::mat4& modelMatrix) {
     mPositionOrigin = static_cast<glm::vec3>(modelMatrix * glm::vec4{0.f, 0.f, 0.f, 1.f});
     assert(isNumber(mPositionOrigin) && "Position update failed");
     mOrientationOrigin = glm::normalize(glm::quat_cast(getRotationMatrix(modelMatrix)));
+    recomputeWorldPositionOrientation();
     assert(
         isNumber(mOrientationOrigin.w)
         && isNumber(glm::vec3 { mOrientationOrigin.x, mOrientationOrigin.y, mOrientationOrigin.z })
@@ -234,10 +241,11 @@ std::array<glm::vec3, 8> ObjectBounds::getVolumeRelativeBoxCorners() const {
 }
 
 glm::vec3 ObjectBounds::getPositionWorld() const {
-    return mPositionOrigin + glm::mat3 { getRotationTransformOrigin() } * mPositionOffset;
+    return mPositionWorld;
 }
 
 void ObjectBounds::setPositionWorld(const glm::vec3& newPosition) {
+    mPositionWorld = newPosition;
     mPositionOrigin = newPosition - (
         glm::transpose(glm::mat3 { getRotationTransformOrigin() }) * mPositionOffset
     );
@@ -246,11 +254,17 @@ void ObjectBounds::setPositionWorld(const glm::vec3& newPosition) {
 }
 
 glm::quat ObjectBounds::getOrientationWorld() const {
-    return glm::normalize(glm::quat_cast(glm::mat3{ getRotationTransformOrigin() } * getRotationTransformLocal()));
+    return mOrientationWorld;
+}
+
+void ObjectBounds::recomputeWorldPositionOrientation() {
+    mPositionWorld = mPositionOrigin + mOrientationOrigin * mPositionOffset;
+    mOrientationWorld = mOrientationOrigin * mOrientationOffset;
 }
 
 void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
     const glm::quat orientationNormalized { glm::normalize(newOrientation) };
+    mOrientationWorld = orientationNormalized;
 
     // object origin position depends on origin orientation
     const glm::vec3 worldPositionPrevious { getPositionWorld() };
@@ -271,7 +285,7 @@ void ObjectBounds::setOrientationWorld(const glm::quat& newOrientation) {
 std::array<glm::vec3, 8> ObjectBounds::getLocalOrientedBoxCorners() const {
     std::array<glm::vec3, 8> orientedCorners { getVolumeRelativeBoxCorners() };
     for(glm::vec3& localCorner: orientedCorners) {
-        localCorner = mPositionOffset + getRotationTransformLocal() * localCorner;
+        localCorner = mPositionOffset + mOrientationOffset * localCorner;
     }
     return orientedCorners;
 }
@@ -279,7 +293,7 @@ std::array<glm::vec3, 8> ObjectBounds::getLocalOrientedBoxCorners() const {
 std::array<glm::vec3, 8> ObjectBounds::getWorldOrientedBoxCorners() const {
     std::array<glm::vec3, 8> worldCorners { getLocalOrientedBoxCorners() };
     for(glm::vec3& orientedCorner: worldCorners) {
-        orientedCorner = mPositionOrigin + glm::mat3 { getRotationTransformOrigin() } * orientedCorner;
+        orientedCorner = mPositionOrigin + mOrientationOrigin * orientedCorner;
     }
     return worldCorners;
 }

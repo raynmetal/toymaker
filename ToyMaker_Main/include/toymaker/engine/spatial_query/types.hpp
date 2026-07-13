@@ -1027,6 +1027,12 @@ namespace ToyMaker {
         TrueVolume mTrueVolume {};
 
         /**
+         * @brief The world position of the bounds of this object in the current frame.
+         *
+         */
+        glm::vec3 mPositionWorld { 0.f };
+
+        /**
          * @brief The position, in the real world, of origin of the scene node this data is attached to.
          *
          */
@@ -1037,6 +1043,12 @@ namespace ToyMaker {
          *
          */
         glm::vec3 mPositionOffset { 0.f };
+
+        /**
+         * @brief The world orientation of the bounds of this object in the current frame.
+         *
+         */
+        glm::quat mOrientationWorld { glm::vec3 { 0.f } };
 
         /**
          * @brief The orientation in the real world of the origin of the scene node this bounds component is attached to.
@@ -1155,8 +1167,16 @@ namespace ToyMaker {
          * to its entity fixed.
          *
          * @param newPosition The new position this object should appear in
+         *
+         * Keeps bounds position stable while updating origin orientation.
          */
         void setPositionWorld(const glm::vec3& newPosition);
+
+        /**
+         * @brief Recomputes bounds world position based on origin and offsets.
+         *
+         */
+        void recomputeWorldPositionOrientation();
 
         /**
          * @brief The final orientation of the object bounds in the world.
@@ -1174,6 +1194,8 @@ namespace ToyMaker {
          *
          * Orientation here refers to global orientation, where w=1,xyz=0 corresponds to the object facing
          * down the -Z axis
+         *
+         * Keeps bounds orientation stable, while updating origin orientation.
          *
          */
         void setOrientationWorld(const glm::quat& newOrientation);
@@ -1335,7 +1357,6 @@ namespace ToyMaker {
          *
          */
         inline void setInteractionMask(InteractionLayerMask newMask) { mInteractionMask = newMask; }
-    protected:
     };
 
     /**
