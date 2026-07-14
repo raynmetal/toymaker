@@ -13,10 +13,11 @@
                 "ZO_DUMB_DELAY": "OFF"
             }
         },
+
         {
             "name": "LibraryDebug",
             "displayName": "Build ToyMaker Engine (Debug)",
-            "description": "Build ToyMaker Engine with debug flags enabled.",
+            "description": "Build ToyMaker Engine library with debug flags enabled.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
@@ -25,10 +26,11 @@
                 "ZO_DUMB_DELAY": "OFF"
             }
         },
+
         {
             "name": "FullBuild_Examples",
-            "displayName": "Build CenterText example (Debug) from ToyMaker source",
-            "description": "Build example projects with debug flags enabled from engine and project sources.  Demonstrates various toymaker features.",
+            "displayName": "Build Example Projects (with debug) from ToyMaker source",
+            "description": "Build example projects with debug flags enabled from engine and project sources.  Demonstrates various ToyMaker features.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
@@ -41,8 +43,8 @@
 
         {
             "name": "AppBuild_Examples",
-            "displayName": "Build CenterText example (Debug) from local ToyMaker installation",
-            "description": "Build example projects with debug flags enabled from engine and project sources.  Demonstrates various toymaker features.",
+            "displayName": "Build Example Projects (with debug) from local ToyMaker installation",
+            "description": "Build example projects with debug flags enabled from project sources and installed engine library.  Demonstrates various ToyMaker features.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",
