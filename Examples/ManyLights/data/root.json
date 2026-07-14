@@ -1,0 +1,333 @@
+{
+    "resources": [
+        {
+            "name": "Sad_Texture",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/Sad.png",
+                "cubemap_layout": "row"
+            }
+        },
+        {
+            "name": "WallModel",
+            "method": "cuboidDimensions",
+            "type": "StaticModel",
+            "parameters": {
+                "height": 1000.0, "width": 1000.0, "depth": 0.5,
+                "material_properties": [
+                    { "name": "colorMultiplier", "type": "vec4", "value": [0.0025, 0.0025, 0.0025, 1.0] },
+                    { "name": "usesTextureAlbedo", "type": "int", "value": 0 }
+                ]
+            }
+        },
+        {
+            "name": "BallModel",
+            "method": "sphereLatLong",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    { "name": "colorMultiplier", "type": "vec4", "value": [1.2, 0.2, 0.4, 1.0] },
+                    { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
+                    { "name": "usesTextureAlbedo", "type": "int", "value": 1 }
+                ]
+            }
+        },
+        {
+            "name": "BallAsset",
+            "type": "SimObject",
+            "method": "fromSceneFile",
+            "parameters": {
+                "path": "data/ball.json"
+            }
+        },
+        {
+            "name": "FlyCameraAsset",
+            "type": "SimObject",
+            "method": "fromSceneFile",
+            "parameters": {
+                "path": "data/fly_camera.json"
+            }
+        }
+    ],
+
+    "nodes": [
+        {
+            "name": "root",
+            "aspects": [],
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ],
+            "parent": "",
+            "type": "SimObject"
+        },
+
+        {
+            "name": "light1",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "orientation": [ -0.707, 0.408, 0.408, -0.408 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                },
+                {
+                    "ambient": [ 0.1, 0.2, 0.3 ],
+                    "diffuse": [ 7.5, 5.4, 3.7 ],
+                    "specular": [ 0.5, 0.5, 0.5 ],
+                    "lightType": "directional",
+                    "type": "LightEmissionData"
+                }
+            ]
+        },
+
+        {
+            "type": "Scene",
+            "name": "FlyCameraAsset",
+            "parent": "/",
+            "copy": false,
+            "overrides": {}
+        },
+
+        {
+            "name": "container",
+            "type": "SceneNode",
+            "parent": "/",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 490.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            ]
+        },
+
+        {
+            "name": "wall_back",
+            "parent": "/container/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0],
+                    "position": [ 0.0, 0.0, -500.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "static",
+                    "mass": "infinity"
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 1000.0,
+                        "depth": 0.5,
+                        "height": 1000.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "WallModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "wall_front",
+            "parent": "/container/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0],
+                    "position": [ 0.0, 0.0, 500.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "static",
+                    "mass": "infinity"
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 1000.0,
+                        "depth": 0.5,
+                        "height": 1000.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                }
+            ]
+        },
+
+        {
+            "name": "wall_left",
+            "parent": "/container/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 0.8509035, 0.0, 0.8509035, 0.0],
+                    "position": [ -500.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "static",
+                    "mass": "infinity"
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 1000.0,
+                        "depth": 0.5,
+                        "height": 1000.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "WallModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "wall_right",
+            "parent": "/container/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 0.8509035, 0.0, 0.8509035, 0.0],
+                    "position": [ 500.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "static",
+                    "mass": "infinity"
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 1000.0,
+                        "depth": 0.5,
+                        "height": 1000.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "WallModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "wall_down",
+            "parent": "/container/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 0.8509035, 0.8509035, 0.0, 0.0],
+                    "position": [ 0.0, -500.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "static",
+                    "mass": "infinity",
+                    "coefficient_friction_static": 1.0,
+                    "coefficient_friction_dynamic": 1.0,
+                    "velocity": [0.0, 0.0, 0.0]
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 1000.0,
+                        "depth": 0.5,
+                        "height": 1000.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "WallModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "wall_up",
+            "parent": "/container/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 0.8509035, 0.8509035, 0.0, 0.0 ],
+                    "position": [ 0.0, 500.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "static",
+                    "mass": "infinity"
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 1000.0,
+                        "depth": 0.5,
+                        "height": 1000.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "WallModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "spawner",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [ { "type": "BallSpawner" } ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [1.0, 0.0, 0.0, 0.0],
+                    "position": [0.0, 1.7, 0.0, 1.0],
+                    "scale": [1.0, 1.0, 1.0]
+                }
+            ]
+        }
+    ],
+
+    "connections":[]
+}
+

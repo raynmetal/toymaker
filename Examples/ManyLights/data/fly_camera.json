@@ -1,0 +1,39 @@
+
+{
+    "resources": [],
+    "nodes": [
+        {
+            "name": "fly_camera",
+            "aspects":[
+                {"type": "QueryClick" },
+                {"type": "RenderDebugViewer"},
+                {"type": "FlyCamera"}
+            ],
+            "parent": "",
+            "type": "SimObject",
+            "components": [
+                {
+                    "fov": 75.0,
+                    "aspect": 1.333,
+                    "orthographic_dimensions": {
+                        "horizontal": 800,
+                        "vertical": 600
+                    },
+                    "near_far_planes": {
+                        "near": 0.4,
+                        "far": 2000.0
+                    },
+                    "projection_mode": "frustum",
+                    "type": "CameraProperties"
+                },
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 15.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ]
+        }
+    ],
+    "connections": []
+}
