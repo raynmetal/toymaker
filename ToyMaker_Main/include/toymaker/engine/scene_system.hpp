@@ -1551,6 +1551,12 @@ namespace ToyMaker {
         void variableStep(float simulationProgress, uint32_t simulationLagMillis, uint32_t variableStepMillis, std::vector<std::pair<ActionDefinition, ActionData>> triggeredActions={});
 
         /**
+         * @brief Updates transforms and placements as needed after a system update step.
+         *
+         */
+        void transformStep(uint32_t timestepMillis);
+
+        /**
          * @brief Updates transforms of objects in the scene per changes in those object's Placement component.
          * 
          */

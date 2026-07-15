@@ -14,6 +14,8 @@
 #ifndef TOYMAKERENGINE_ECSWORLD_H
 #define TOYMAKERENGINE_ECSWORLD_H
 
+#include <iostream>
+#include <chrono>
 #include <cstdint>
 #include <typeinfo>
 #include <tuple>

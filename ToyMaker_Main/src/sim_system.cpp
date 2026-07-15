@@ -1,3 +1,6 @@
+#include <iostream>
+#include <chrono>
+
 #include "toymaker/engine/sim_system.hpp"
 
 using namespace ToyMaker;
@@ -86,15 +89,24 @@ std::shared_ptr<BaseSimObjectAspect> SimSystem::constructAspect(const nlohmann::
 }
 
 void SimSystem::onSimulationPreStep(uint32_t simulationStepMillis) {
+    const auto timeStartAspectSim { std::chrono::high_resolution_clock::now() };
     for(EntityID entity: getEnabledEntities()) {
         getComponent<SimCore>(entity).mSimObject->simulationUpdate(simulationStepMillis);
     }
+    const auto timeEndAspectSim { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeAspectSim { timeEndAspectSim - timeStartAspectSim };
+    std::cout << "Aspect sim update time: " << timeAspectSim.count() << "\n";
 }
+
 void SimSystem::onVariableStep(float simulationProgress, uint32_t variableStepMillis) {
+    const auto timeStartAspectVariable { std::chrono::high_resolution_clock::now() };
     (void)simulationProgress; // prevent unused parameter warning
     for(EntityID entity: getEnabledEntities()) {
         getComponent<SimCore>(entity).mSimObject->variableUpdate(variableStepMillis);
     }
+    const auto timeEndAspectVariable { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeAspectVariable { timeEndAspectVariable - timeStartAspectVariable };
+    std::cout << "Aspect variable update time: " << timeAspectVariable.count() << "\n";
 }
 
 void SimObject::simulationUpdate(uint32_t simStepMillis) {

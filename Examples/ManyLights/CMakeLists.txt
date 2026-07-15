@@ -12,8 +12,7 @@ add_executable(Example_ManyLights)
 
 target_sources(Example_ManyLights
     PRIVATE
-        gravity.cpp
-        spawner.cpp
+        scene_setup.cpp
         fly_camera.cpp
 )
 

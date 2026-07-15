@@ -1,3 +1,4 @@
+#include <iostream>
 #include <vector>
 #include <cassert>
 #include <cstdint>
@@ -163,47 +164,82 @@ void SystemManager::handleSimulationActivated() {
     }
 }
 void SystemManager::handleSimulationPreStep(uint32_t simStepMillis) {
+    const auto timeStartSimPreStep { std::chrono::high_resolution_clock::now() };
     for(auto& pair: mNameToSystem) {
         if(pair.second->isSingleton()) { continue; }
         pair.second->onSimulationPreStep(simStepMillis);
     }
+    const auto timeEndSimPreStep { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeSimPreStep { timeEndSimPreStep - timeStartSimPreStep };
+    std::cout << "System sim pre step: " << timeSimPreStep.count() << "ms\n";
 }
 void SystemManager::handleSimulationStep(uint32_t simStepMillis) {
+    const auto timeStartSimStep { std::chrono::high_resolution_clock::now() };
+
     for(auto& pair: mNameToSystem) {
         if(pair.second->isSingleton()) { continue; }
         pair.second->onSimulationStep(simStepMillis);
     }
+
+    const auto timeEndSimStep { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeSimStep { timeEndSimStep - timeStartSimStep };
+    std::cout << "System sim step: " << timeSimStep.count() << "ms\n";
 }
+
 void SystemManager::handleSimulationPostStep(uint32_t simStepMillis) {
+    const auto timeStartSimPostStep { std::chrono::high_resolution_clock::now() };
+
     for(auto& pair: mNameToSystem) {
         if(pair.second->isSingleton()) { continue; }
         pair.second->onSimulationPostStep(simStepMillis);
     }
+
+    const auto timeEndSimPostStep { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeSimPostStep { timeEndSimPostStep - timeStartSimPostStep };
+    std::cout << "System sim post step: " << timeSimPostStep.count() << "ms\n";
 }
 void SystemManager::handlePostTransformUpdate(uint32_t timestepMillis) {
+    const auto timeStartTransformPost { std::chrono::high_resolution_clock::now() };
     for(auto& pair: mNameToSystem) {
         if(pair.second->isSingleton()) { continue; }
         pair.second->onPostTransformUpdate(timestepMillis);
     }
+    const auto timeEndTransformPost { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeTransformPost { timeEndTransformPost - timeStartTransformPost };
+    std::cout << "System transform post: " << timeTransformPost.count() << "ms\n";
 }
+
 void SystemManager::handleVariableStep(float simulationProgress, uint32_t variableStepMillis) {
+    const auto timeStartVariable { std::chrono::high_resolution_clock::now() };
     for(auto& pair: mNameToSystem) {
         if(pair.second->isSingleton()) { continue; }
         pair.second->onVariableStep(simulationProgress, variableStepMillis);
     }
+    const auto timeEndVariable { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeVariable { timeEndVariable - timeStartVariable };
+    std::cout << "System variable: " << timeVariable.count() << "ms\n";
 }
 void SystemManager::handlePreRenderStep(float simulationProgress) {
+    const auto timeStartRenderPre { std::chrono::high_resolution_clock::now() };
     for(auto& pair: mNameToSystem) {
         if(pair.second->isSingleton()) { continue; }
         pair.second->onPreRenderStep(simulationProgress);
     }
+    const auto timeEndRenderPre { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeRenderPre { timeEndRenderPre - timeStartRenderPre };
+    std::cout << "System render pre: " << timeRenderPre.count() << "ms\n";
 }
 void SystemManager::handlePostRenderStep(float simulationProgress) {
+    const auto timeStartRenderPost { std::chrono::high_resolution_clock::now() };
     for(auto& pair: mNameToSystem) {
         if(pair.second->isSingleton()) { continue; }
         pair.second->onPostRenderStep(simulationProgress);
     }
+    const auto timeEndRenderPost { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeRenderPost { timeEndRenderPost - timeStartRenderPost };
+    std::cout << "System variable: " << timeRenderPost.count() << "ms\n";
 }
+
 void SystemManager::handleSimulationDeactivated() {
     for(auto& pair: mNameToSystem) {
         if(pair.second->isSingleton()) { continue; }

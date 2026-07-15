@@ -1,5 +1,5 @@
+#include <chrono>
 #include <iostream>
-#include <array>
 
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
@@ -25,17 +25,17 @@ constexpr float MIN_EXPOSURE { 0.f };
 void RenderSystem::LightQueue::onInitialize() {
     if(!ResourceDatabase::HasResourceDescription("sphereLight-10lat-5long")) {
         nlohmann::json sphereLightDescription {
-            {"name", "sphereLight-10lat-5long"},
+            {"name", "sphereLight-4lat-4long"},
             {"type", StaticMesh::getResourceTypeName()},
             {"method", StaticMeshSphereLatLong::getResourceConstructorName()},
             {"parameters", {
-                {"nLatitudes", 10},
-                {"nMeridians", 5}
+                {"nLatitudes", 4},
+                {"nMeridians", 4}
             }}
         };
         ResourceDatabase::AddResourceDescription(sphereLightDescription);
     }
-    mSphereMesh = ResourceDatabase::GetRegisteredResource<StaticMesh>("sphereLight-10lat-5long");
+    mSphereMesh = ResourceDatabase::GetRegisteredResource<StaticMesh>("sphereLight-4lat-4long");
 }
 
 void RenderSystem::onInitialize() {
@@ -69,6 +69,7 @@ void RenderSystem::onInitialize() {
 void RenderSystem::execute(float simulationProgress) {
     assert(mRenderSets.find(mActiveRenderSetID) != mRenderSets.end() && "No render set corresponding to the currently set active render set exists");
 
+    const auto timeStartRender { std::chrono::high_resolution_clock::now() };
     if(mRenderSets.at(mActiveRenderSetID).mRenderType != RenderSet::RenderType::ADDITION) {
         assert(
             getEnabledEntities().find(mRenderSets.at(mActiveRenderSetID).mActiveCamera) != getEnabledEntities().end()
@@ -118,6 +119,10 @@ void RenderSystem::execute(float simulationProgress) {
         std::cout << "OpenGL error: " << openglError << ", " << glewGetErrorString(openglError) << std::endl;
         assert(!openglError && "Error during render system execution step");
     }
+
+    const auto timeEndRender { std::chrono::high_resolution_clock::now() };
+    const std::chrono::duration<float, std::milli> timeRender { timeEndRender - timeStartRender };
+    std::cout << "Render time: " << timeRender.count() << "ms\n";
 
     mRenderSets.at(mActiveRenderSetID).mRerendered = true;
 }
@@ -324,7 +329,7 @@ void RenderSystem::OpaqueQueue::enqueueTo(BaseRenderStage& renderStage, float si
 }
 
 void RenderSystem::LightQueue::enqueueTo(BaseRenderStage& renderStage, float simulationProgress) {
-    std::shared_ptr<StaticMesh> screenRectangleMesh { 
+    std::shared_ptr<StaticMesh> screenRectangleMesh {
         ResourceDatabase::GetRegisteredResource<StaticMesh>("screenRectangleMesh")
     };
     for(EntityID entity: getEnabledEntities()) {

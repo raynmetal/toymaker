@@ -16,8 +16,7 @@ const float MIN_FOV { 40.f };
 /**
  * @ingroup Examples
  *
- * @brief Aspect responsible for applying downward gravitational force to object's center
- * of mass.
+ * @brief Aspect responsible for providing a movable camera, usually for debug.
  */
 class FlyCamera: public ToyMaker::SimObjectAspect<FlyCamera> {
 public:

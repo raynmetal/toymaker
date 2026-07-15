@@ -46,7 +46,7 @@ std::vector<std::pair<EntityID, AxisAlignedBounds>> SpatialQuerySystem::findEnti
 
 void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityEnabled(EntityID entityID) {
     const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
-    if(!bounds.mVolumeSystemComputed) {
+    if(!bounds.mVolumeSystemComputed || !bounds.mVolumeUpdateRequired) {
         return;
     }
     recomputeObjectBounds(entityID);
@@ -56,7 +56,7 @@ void SpatialQuerySystem::StaticModelBoundsComputeSystem::onEntityUpdated(EntityI
     const ObjectBounds bounds { getComponent<ObjectBounds>(entityID) };
     // TODO: Logic for object bound recomputation is scattered, find a way to simplify
     if(
-        !bounds.mVolumeSystemComputed 
+        !bounds.mVolumeSystemComputed
         // only update bounding volume when requested, or when a related component has been updated
         || !(
             bounds.mVolumeUpdateRequired

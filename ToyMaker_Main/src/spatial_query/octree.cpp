@@ -692,7 +692,7 @@ void Octree::removeEntity(EntityID entityID) {
 
 std::vector<std::pair<EntityID, AxisAlignedBounds>> Octree::findEntitiesOverlappingCoarse(const Ray& searchRay, InteractionLayerMask layerMask) const {
     std::vector<std::pair<EntityID, AxisAlignedBounds>> results{ mRootNode->findEntitiesOverlappingCoarse(searchRay, layerMask) };
-    std::sort(results.begin(), results.end(), [&searchRay](std::pair<EntityID, AxisAlignedBounds>& volumeOne, std::pair<EntityID, AxisAlignedBounds>& volumeTwo) {
+    std::stable_sort(results.begin(), results.end(), [&searchRay](std::pair<EntityID, AxisAlignedBounds> volumeOne, std::pair<EntityID, AxisAlignedBounds> volumeTwo) {
         // the first intersection point for both objects
         const glm::vec3 intersectionOne { computeIntersections(searchRay, volumeOne.second).second.first - searchRay.mStart };
         const glm::vec3 intersectionTwo { computeIntersections(searchRay, volumeTwo.second).second.first - searchRay.mStart };
