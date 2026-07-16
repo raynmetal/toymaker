@@ -59,9 +59,9 @@ API with JSON serialization.  Additionally supports:
     - Input events are buffered on receipt, and only sent to listeners when the input's timestamp matches the simulation window
     currently being processed by the engine.  This ensures that user inputs are processed predictably even during update compute lags.
 
->> [!NOTE]
->> Currently requires knowledge of [SDL's input event definitions](https://github.com/libsdl-org/SDL/blob/main/include/SDL3/SDL_events.h)
->> to set bindings correctly.
+> [!NOTE]
+> Currently requires knowledge of [SDL's input event definitions](https://github.com/libsdl-org/SDL/blob/main/include/SDL3/SDL_events.h)
+> to set bindings correctly.
 
 - Observer pattern implementation in the form of [ToyMaker Signals](https://raynmetal.github.io/toymaker/group__ToyMakerSignals.html),
 allowing decoupling of event data publishers and consumers.
@@ -158,12 +158,12 @@ Enter the project directory and generate the build configuration using CMake.  T
 the `FullBuild_Examples` preset (see the Presets section), that generates binaries both for the ToyMaker
 library as well as the example projects under `Examples/`.
 
->> [!IMPORTANT]
->> For now, the `toymaker_configure_executable` CMake script only picks up on created and removed
->> data files (JSON scene descriptions, images, models, etc.) when this command is run.
->>
->> Be sure to rerun it whenever making such a change if you use ToyMaker in a project of your own, or
->> when attempting to modify any of the examples.
+> [!IMPORTANT]
+> For now, the `toymaker_configure_executable` CMake script only picks up on created and removed
+> data files (JSON scene descriptions, images, models, etc.) when this command is run.
+>
+> Be sure to rerun it whenever making such a change if you use ToyMaker in a project of your own, or
+> when attempting to modify any of the examples.
 
 ```bash
 cd toymaker
@@ -192,16 +192,16 @@ Then simply run the generated executable (likely prefixed with `Example_`).
 ./Example_FillContainer
 ```
 
->> [!WARNING]
->> This will not work if you try running it while in a different directory from the executable, as in:
->>
->> ```bash
->> toymaker_build/Examples/FillContainer/Example_FillContainer
->> ```
->>
->> This will immediately lead to a crash, as the program won't be able to find the data files it expects
->> to find (in the directory where the command was invoked).  This is an issue and will be addressed in
->> a later update.
+> [!WARNING]
+> This will not work if you try running it while in a different directory from the executable, as in:
+>
+> ```bash
+> toymaker_build/Examples/FillContainer/Example_FillContainer
+> ```
+>
+> This will immediately lead to a crash, as the program won't be able to find the data files it expects
+> to find (in the directory where the command was invoked).  This is an issue and will be addressed in
+> a later update.
 
 ### Running Tests
 
