@@ -158,6 +158,7 @@ std::pair<uint8_t, std::pair<glm::vec3, glm::vec3>> ToyMaker::computeIntersectio
         case ToyMaker::ObjectBounds::TrueVolumeType::SPHERE:
             return getSphereIntersections(ray, bounds);
         default:
+            return { false, { glm::vec3{ std::numeric_limits<float>::infinity() }, glm::vec3{ std::numeric_limits<float>::infinity() } } };
             assert(false && "Unrecognized shape passed");
     }
 }
@@ -305,6 +306,7 @@ bool ToyMaker::contains(const glm::vec3& point, const ObjectBounds& bounds) {
         case ToyMaker::ObjectBounds::TrueVolumeType::SPHERE:
             return checkContainsPointSphere(point, bounds);
         default:
+            return false;
             assert(false && "Unrecognized shape passed");
     }
 }

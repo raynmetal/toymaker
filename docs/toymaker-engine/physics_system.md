@@ -25,8 +25,8 @@ Mainly, aside from setting object positions through ToyMaker::ObjectBounds rathe
 ToyMaker::Placement, one interacts with the physics system through the ToyMaker::PhysicsState component.
 
 
-- ToyMaker::PhysicsState::mTraits -- Which kind of physics updates(kinematic, dynamic) this object is
-subscribed to, and how it responds to collision events.
+- ToyMaker::PhysicsState::mTraits -- Which kind of physics updates this object is subscribed to, and how
+it responds to collision events.
 
     - ToyMaker::PhysicsState::MODE_DYNAMIC -- This object responds to both position updates derived from its
     velocity _and_ velocity updates derived from external forces.
