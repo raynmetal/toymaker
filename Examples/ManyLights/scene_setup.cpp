@@ -68,6 +68,7 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> SceneSetup::clone() const {
 
 
 void SceneSetup::onActivated() {
+    getSimObject().removeChildren();
     std::vector<std::shared_ptr<ToyMaker::SimObject>> toAdd {};
     const std::size_t iterations { 21 };
     const float spacing { 3.f };
