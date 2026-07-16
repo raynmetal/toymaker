@@ -1,0 +1,45 @@
+{
+    "resources": [],
+
+    "nodes": [
+        {
+            "name": "eagle",
+            "parent": "",
+            "type": "SimObject",
+            "aspects": [],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [1.0, 0.0, 0.0, 0.0],
+                    "position": [0.0, 0.0, 0.0, 1.0],
+                    "scale": [1, 1, 1]
+                },
+                { "resourceName": "UrEagleModel", "type": "StaticModel" }
+            ]
+        },
+        {
+            "name": "light",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [1.0, 0.0, 0.0, 0.0],
+                    "position": [0.0, 2.0, 0.0, 1.0],
+                    "scale": [1, 1, 1]
+                },
+                {
+                    "ambient": [ 0.00001, 0.00001, 0.00001 ],
+                    "diffuse": [ 0.5, 0.5, 0.5 ],
+                    "specular": [ 0.0001, 0.0001, 0.0001 ],
+                    "linearConst": 0.7,
+                    "quadraticConst": 1.8,
+                    "lightType": "point",
+                    "type": "LightEmissionData"
+                }
+            ]
+        }
+    ],
+
+    "connections": []
+}

@@ -242,8 +242,8 @@ void CollisionConstraint::applyConstraintPosition(
     // friction threshold per normal force
     if(
         !lagrangeDeltaFriction || (
-            glm::abs(lagrangeFriction)
-            >= glm::abs(combinedFrictionCoefficient * (lagrangeCollision + lagrangeDeltaCollision))
+            glm::abs(lagrangeDeltaFriction)
+            >= glm::abs(combinedFrictionCoefficient * lagrangeDeltaCollision)
         )
     ) {
         return;
