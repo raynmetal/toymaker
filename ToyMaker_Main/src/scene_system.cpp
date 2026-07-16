@@ -1040,24 +1040,6 @@ void SceneSystem::simulationStep(uint32_t simStepMillis, std::vector<std::pair<A
             viewportsToVisit.push(childViewport);
         }
     }
-
-    // transform updates
-    updateTransformsPlacements();
-    viewportsToVisit.push(mRootNode);
-    while(!viewportsToVisit.empty()) {
-        std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
-        viewportsToVisit.pop();
-
-        if(!viewport->isActive()) continue;
-
-        if(viewport->mOwnWorld) {
-            viewport->mOwnWorld->postTransformUpdate(simStepMillis);
-        }
-
-        for(auto& childViewport: viewport->mChildViewports) {
-            viewportsToVisit.push(childViewport);
-        }
-    }
 }
 
 void SceneSystem::variableStep(float simulationProgress, uint32_t simulationLagMillis, uint32_t variableStepMillis, std::vector<std::pair<ActionDefinition, ActionData>> triggeredActions) {
@@ -1079,10 +1061,12 @@ void SceneSystem::variableStep(float simulationProgress, uint32_t simulationLagM
             viewportsToVisit.push(childViewport);
         }
     }
+}
 
+void SceneSystem::transformStep(uint32_t timestepMillis) {
     updateTransformsPlacements();
 
-    viewportsToVisit.push({mRootNode});
+    std::queue<std::shared_ptr<ViewportNode>> viewportsToVisit { {mRootNode} };
     while(!viewportsToVisit.empty()) {
         std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
         viewportsToVisit.pop();
@@ -1090,14 +1074,13 @@ void SceneSystem::variableStep(float simulationProgress, uint32_t simulationLagM
         if(!viewport->isActive()) continue;
 
         if(viewport->mOwnWorld) {
-            viewport->mOwnWorld->postTransformUpdate(simulationLagMillis);
+            viewport->mOwnWorld->postTransformUpdate(timestepMillis);
         }
 
         for(auto& childViewport: viewport->mChildViewports) {
             viewportsToVisit.push(childViewport);
         }
     }
-    updateTransformsPlacements();
 }
 
 uint32_t SceneSystem::render(float simulationProgress, uint32_t variableStep) {
@@ -1408,7 +1391,6 @@ void SceneSystem::updateTransformsPlacements() {
         };
         currentNode->updateComponent<Placement>(newPlacement);
     }
-    mComputePlacementQueue.clear();
 
     // Apply transform updates to all subtrees present in the queue
     for(std::pair<WorldID, EntityID> entityWorldPair: mComputeTransformQueue) {
@@ -1424,7 +1406,9 @@ void SceneSystem::updateTransformsPlacements() {
             }
         }
     }
+
     mComputeTransformQueue.clear();
+    mComputePlacementQueue.clear();
 
     // Let reporters prepare for the next batch of updates
     for(auto world: getActiveWorlds()) {
@@ -1502,13 +1486,14 @@ Transform SceneSystem::getInheritedTransform(std::shared_ptr<const SceneNodeCore
     return parentTransform;
 }
 
-void SceneSystem::markDirtyTransform(UniversalEntityID UniversalEntityID) {
-    if(!isActive(UniversalEntityID)) return;
-    mComputeTransformQueue.insert(UniversalEntityID);
+void SceneSystem::markDirtyTransform(UniversalEntityID entity) {
+    if(!isActive(entity) || mComputePlacementQueue.find(entity) != mComputePlacementQueue.end()) return;
+
+    mComputeTransformQueue.insert(entity);
 }
 
 void SceneSystem::markDirtyPlacement(UniversalEntityID universalEntityID) {
-    if(!isActive(universalEntityID)) return;
+    if(!isActive(universalEntityID) || mComputeTransformQueue.find(universalEntityID) != mComputeTransformQueue.end()) return;
     mComputePlacementQueue.insert(universalEntityID);
 }
 
@@ -1531,21 +1516,7 @@ void SceneSystem::onApplicationInitialize(const ViewportNode::RenderConfiguratio
 
 void SceneSystem::onApplicationStart() {
     nodeActivationChanged(mRootNode, true);
-    updateTransformsPlacements();
-
-    // signal first post transform update to all active viewports
-    std::queue<std::shared_ptr<ViewportNode>> viewportsToVisit { {mRootNode} };
-    while(!viewportsToVisit.empty()) {
-        std::shared_ptr<ViewportNode> viewport { viewportsToVisit.front() };
-        viewportsToVisit.pop();
-        if(!viewport->isActive()) continue;
-        if(viewport->mOwnWorld) {
-            viewport->mOwnWorld->postTransformUpdate(0.f);
-        }
-        for(auto& childViewport: viewport->mChildViewports) {
-            viewportsToVisit.push(childViewport);
-        }
-    }
+    transformStep(0);
 }
 
 void SceneSystem::PlacementUpdateReporter::onEntityUpdated(EntityID entityID, ComponentType updatedComponent) {
@@ -1555,6 +1526,7 @@ void SceneSystem::PlacementUpdateReporter::onEntityUpdated(EntityID entityID, Co
         return;
     }
 
+    mReportedEntities.insert(entityID);
     mWorld.lock()->getSystem<SceneSystem>()->onWorldPlacementUpdate({mWorld.lock()->getID(), entityID});
 }
 
@@ -1565,6 +1537,7 @@ void SceneSystem::TransformUpdateReporter::onEntityUpdated(EntityID entityID, Co
         return;
     }
 
+    mReportedEntities.insert(entityID);
     mWorld.lock()->getSystem<SceneSystem>()->onWorldTransformUpdate({mWorld.lock()->getID(), entityID});
 }
 

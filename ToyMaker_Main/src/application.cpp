@@ -1,3 +1,4 @@
+#include <chrono>
 #include <fstream>
 #include <string>
 #include <iostream>
@@ -176,6 +177,7 @@ void Application::execute() {
         const uint64_t currentTicks { SDL_GetTicks() };
         const uint64_t variableStep { currentTicks - previousTicks };
         previousTicks = currentTicks;
+        const uint64_t simulationTicksPrevious { simulationTicks };
 
         // apply simulation updates, if possible
         while(currentTicks - simulationTicks >= mSimulationStep) {
@@ -183,12 +185,15 @@ void Application::execute() {
             sceneSystem->simulationStep(mSimulationStep, mInputManager.getTriggeredActions(updatedSimulationTicks));
             simulationTicks = updatedSimulationTicks;
         }
+        sceneSystem->transformStep(simulationTicks - simulationTicksPrevious);
+
         const uint64_t simulationLagMillis { currentTicks - simulationTicks};
         const uint64_t simulationTimeOffset { mSimulationStep - simulationLagMillis };
 
         // calculate progress towards the next simulation step, apply variable update
         const float simulationProgress { static_cast<float>(simulationLagMillis) / mSimulationStep};
         sceneSystem->variableStep(simulationProgress, simulationLagMillis, variableStep, mInputManager.getTriggeredActions(currentTicks));
+        sceneSystem->transformStep(simulationTicks - simulationTicksPrevious);
 
         // render a frame (or, well, leave it up to the root viewport configuration really)
         const uint64_t renderTimeOffset { sceneSystem->render(simulationProgress, variableStep) };

@@ -195,6 +195,7 @@ void GeometryRenderStage::execute() {
     glDepthFunc(GL_LESS);
     glDisable(GL_BLEND);
     glEnable(GL_FRAMEBUFFER_SRGB);
+    glCullFace(GL_BACK);
 
     mFramebufferHandle->bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -325,6 +326,7 @@ void LightingRenderStage::execute() {
     glEnable(GL_BLEND);
     glBlendEquation(GL_FUNC_ADD);
     glBlendFunc(GL_ONE, GL_ONE);
+    glCullFace(GL_FRONT);
 
     mFramebufferHandle->bind();
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
