@@ -193,15 +193,14 @@ Then simply run the generated executable (likely prefixed with `Example_`).
 ```
 
 > [!WARNING]
-> This will not work if you try running it while in a different directory from the executable, as in:
+> This command will not work if you try running it while in a different directory from the executable, as in:
 >
 > ```bash
 > toymaker_build/Examples/FillContainer/Example_FillContainer
 > ```
 >
-> This will immediately lead to a crash, as the program won't be able to find the data files it expects
-> to find (in the directory where the command was invoked).  This is an issue and will be addressed in
-> a later update.
+> Running the above will lead to an immediate crash, as the program won't be able to find the data files it expects
+> to find in the directory where the command was invoked.  This is an issue and will be addressed in a future update.
 
 ### Running Tests
 
