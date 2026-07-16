@@ -2,7 +2,7 @@
     "version": 4,
     "configurePresets": [
         {
-            "name": "LibraryRelease",
+            "name": "Library_Release",
             "displayName": "Build ToyMaker Engine",
             "description": "Build ToyMaker Engine.",
             "binaryDir": "${sourceDir}/../toymaker_build",
@@ -15,7 +15,7 @@
         },
 
         {
-            "name": "LibraryDebug",
+            "name": "Library_Debug",
             "displayName": "Build ToyMaker Engine (Debug)",
             "description": "Build ToyMaker Engine library with debug flags enabled.",
             "binaryDir": "${sourceDir}/../toymaker_build",
@@ -28,8 +28,22 @@
         },
 
         {
-            "name": "FullBuild_Examples",
-            "displayName": "Build Example Projects (with debug) from ToyMaker source",
+            "name": "Examples_FullBuild_Release",
+            "displayName": "Build Example Projects and ToyMaker Engine",
+            "description": "Build example projects from engine and project sources.  Demonstrates various ToyMaker features.",
+            "binaryDir": "${sourceDir}/../toymaker_build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "TOYMAKER_BUILD_EXAMPLES": "ON",
+                "TOYMAKER_USE_INSTALLED": "OFF",
+                "ZO_DUMB_DELAY": "OFF"
+            }
+        },
+
+        {
+            "name": "Examples_FullBuild_Debug",
+            "displayName": "Build Example Projects (Debug) and ToyMaker Engine",
             "description": "Build example projects with debug flags enabled from engine and project sources.  Demonstrates various ToyMaker features.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
@@ -42,9 +56,23 @@
         },
 
         {
-            "name": "AppBuild_Examples",
-            "displayName": "Build Example Projects (with debug) from local ToyMaker installation",
-            "description": "Build example projects with debug flags enabled from project sources and installed engine library.  Demonstrates various ToyMaker features.",
+            "name": "Examples_AppBuild_Release",
+            "displayName": "Build Example Projects Only",
+            "description": "Build example projects using the locally installed engine library.  Demonstrates various ToyMaker features.",
+            "binaryDir": "${sourceDir}/../toymaker_build",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "Release",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "TOYMAKER_BUILD_EXAMPLES": "ON",
+                "TOYMAKER_USE_INSTALLED": "ON",
+                "ZO_DUMB_DELAY": "OFF"
+            }
+        },
+
+        {
+            "name": "Examples_AppBuild_Debug",
+            "displayName": "Build Example Projects Only (Debug)",
+            "description": "Build example projects with debug flags enabled from example sources and the locally installed ToyMaker engine library.  Demonstrates various ToyMaker features.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
                 "CMAKE_BUILD_TYPE": "Debug",

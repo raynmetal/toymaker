@@ -396,6 +396,7 @@ namespace ToyMaker {
                 case MODE_STATIC:
                     return MODE_STATIC;
                 default:
+                    return MODE_STATIC;
                     assert(false && "Unrecognized physics type specified");
             }
         }
