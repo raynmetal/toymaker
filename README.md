@@ -159,8 +159,8 @@ the `FullBuild_Examples` preset (see the Presets section), that generates binari
 library as well as the example projects under `Examples/`.
 
 > [!IMPORTANT]
-> For now, the `toymaker_configure_executable` CMake script only picks up on created and removed
-> data files (JSON scene descriptions, images, models, etc.) when this command is run.
+> For now, the `toymaker_configure_executable` CMake script picks up created and removed
+> data files (JSON scene descriptions, images, models, etc.) only when this command is run.
 >
 > Be sure to rerun it whenever making such a change if you use ToyMaker in a project of your own, or
 > when attempting to modify any of the examples.
