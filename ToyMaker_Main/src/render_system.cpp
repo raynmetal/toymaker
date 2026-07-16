@@ -23,7 +23,7 @@ constexpr float MAX_EXPOSURE { 15.f };
 constexpr float MIN_EXPOSURE { 0.f };
 
 void RenderSystem::LightQueue::onInitialize() {
-    if(!ResourceDatabase::HasResourceDescription("sphereLight-10lat-5long")) {
+    if(!ResourceDatabase::HasResourceDescription("sphereLight-4lat-4long")) {
         nlohmann::json sphereLightDescription {
             {"name", "sphereLight-4lat-4long"},
             {"type", StaticMesh::getResourceTypeName()},
