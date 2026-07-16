@@ -9,7 +9,7 @@ and OpenGL.
 
 ![Fill Container 1](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExdGpmMGI1bWF0eHVpanplMGVmcXdyc2cybHpidDB0Z2l1eXQ4MmdxeiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/HLqkqke2YgdZUamEdI/giphy.gif)
 
-![Fill Container 2](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExMzZ5NGs2MndsaHA0MDNjNGJkeGNjcTZsZjhiejdtMmx1ZGZibGlrOCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/4utUlNi5IGvYh2UZ31/giphy.gif)
+![Fill Container 2](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZnVsNzU3c2QyOWtkamUxemNyOGR3Mml1YzJjMjRlaWFiZnB5ZzF1NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/YzVg8ozl9jqvc6I6c3/giphy.gif)
 
 `Examples/FillContainer` -- shows spheres spawning at a steady rate filling an invisible container, with several collision checks
 and corrections taking place every frame.
