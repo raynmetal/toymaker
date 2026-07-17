@@ -7,7 +7,7 @@ and [OpenGL.](https://www.opengl.org/)**  Scene data is described in JSON and ma
 tree APIs.  Demo projects using ToyMaker have been compiled successfully for Windows and Linux.
 
 ToyMaker is currently in very early alpha; all APIs seen here today are subject to change until an eventual 1.0 release.  It
-also does _not_ yet feature a level editor.
+also doesn't yet feature a level editor.
 
 ### Examples
 
