@@ -15,7 +15,7 @@ also does _not_ yet feature a level editor.
 
 ![Fill Container 2](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZnVsNzU3c2QyOWtkamUxemNyOGR3Mml1YzJjMjRlaWFiZnB5ZzF1NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/YzVg8ozl9jqvc6I6c3/giphy.gif)
 
-![Fill Container 3](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExaXI0cXhwc29zOWVjZDA4d3l6MHhvd3hndTQxMDl4c2kwa3d1Z2h4dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/1k08fjqesbcxVYGpgX/giphy.gif)
+![Fill Container 3](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExdDAyZmh5djV0NWo3Nm13OGVyaGp2dWFxOW5pNXBoM243NXBnc3NqcCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/oaH2X6j6iVvN1c4tIp/giphy.gif)
 
 `Examples/FillContainer` -- shows spheres spawning at a steady rate filling an invisible container, with several collision checks
 and corrections taking place every frame.
