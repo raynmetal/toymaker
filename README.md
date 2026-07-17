@@ -1,9 +1,13 @@
-# ToyMaker Project
+# ToyMaker
 
 ## About
 
-ToyMaker is an open source 3D game engine developed and maintained by Zoheb Shujauddin, primarily written in C++ on top of [SDL3](https://wiki.libsdl.org/SDL3/FrontPage)
-and [OpenGL.](https://www.opengl.org/)
+**ToyMaker is an open source, extensible, single-threaded 3D game engine written in C++ on top of [SDL3](https://wiki.libsdl.org/SDL3/FrontPage)
+and [OpenGL.](https://www.opengl.org/)**  Scene data is described in JSON and managed through a combination of ECS and scene
+tree APIs.  Demo projects using ToyMaker have been compiled successfully for Windows and Linux.
+
+ToyMaker is currently in very early alpha; all APIs seen here today are subject to change until an eventual 1.0 release.  It
+also does _not_ yet feature a level editor.
 
 ### Examples
 
@@ -11,14 +15,14 @@ and [OpenGL.](https://www.opengl.org/)
 
 ![Fill Container 2](https://media2.giphy.com/media/v1.Y2lkPTc5MGI3NjExZnVsNzU3c2QyOWtkamUxemNyOGR3Mml1YzJjMjRlaWFiZnB5ZzF1NiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/YzVg8ozl9jqvc6I6c3/giphy.gif)
 
-![Fill Container 3](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExYnc4dnYyYWNpN3Q5N2dvbTh0eXA3ajZwcnFpYjc2bzg0dTk2OW5tbSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3R94fLCZROaGHxnBJF/giphy.gif)
+![Fill Container 3](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExaXI0cXhwc29zOWVjZDA4d3l6MHhvd3hndTQxMDl4c2kwa3d1Z2h4dCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/1k08fjqesbcxVYGpgX/giphy.gif)
 
 `Examples/FillContainer` -- shows spheres spawning at a steady rate filling an invisible container, with several collision checks
 and corrections taking place every frame.
 
 ![Slope Friction](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZqZnZlZ2ZqNXYzeWsxZTNncDlrZGduOTBoYmNqd2E0NW5ib200cSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hB2tfGISPc9946Vr0v/giphy.gif)
 
-`Examples/SlopeFriction` -- demo of friction forces causing a moving block to slow and come to a stop sliding down a gentle
+`Examples/SlopeFriction` -- demos friction forces causing a moving block to slow and come to a stop sliding down a gentle
 incline.
 
 ![Many Lights](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExdTQ5MXlxMHprZzl3OGRmZnJvc2xuZzJvaGNsMWs3c201dGYycThmMyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hUsAyQAKHBP7KFUr2I/giphy.gif)
@@ -127,7 +131,7 @@ The project is bundled with a few CMake presets used with `cmake --preset ${PRES
 the ToyMaker library, with optimizations enabled and debug symbols disabled.
 
 - `Library_Release` -- Compiles only the engine library using sources found in
-`ToyMaker_Main/` and `ToyMaker_Builtins`, with optimizations enabled and debug symbols
+`ToyMaker_Main/` and `ToyMaker_Builtins/`, with optimizations enabled and debug symbols
 disabled.
 
 - `Examples_AppBuild_Release` -- Compiles a release version of the projects under
@@ -224,7 +228,7 @@ though!
 
 ## LICENSE
 
-raynmetal/toymaker is distributed under the terms of the [MIT License](LICENSE.txt).
+[raynmetal/toymaker](https://github.com/raynmetal/toymaker) is distributed under the terms of the [MIT License](LICENSE.txt).
 
 This program makes extensive use of the following libraries:
 
