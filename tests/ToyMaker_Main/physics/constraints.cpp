@@ -42,7 +42,7 @@ TEST_CASE("Head-On") {
         REQUIRE(collision.mCollided);
 
         ToyMaker::CollisionConstraint collisionConstraint {};
-        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
+        collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         CHECK(glm::abs(object1.getPositionWorld().x - (-5.f)) <= .002f);
@@ -55,7 +55,7 @@ TEST_CASE("Head-On") {
         REQUIRE(collision.mCollided);
 
         ToyMaker::CollisionConstraint collisionConstraint {};
-        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
+        collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
@@ -71,7 +71,7 @@ TEST_CASE("Head-On") {
         REQUIRE(collision.mCollided);
 
         ToyMaker::CollisionConstraint collisionConstraint {};
-        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
+        collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         const float centerSeparation { glm::abs(object1.getPositionWorld().x - object2.getPositionWorld().x) };
@@ -120,7 +120,7 @@ TEST_CASE("Offset") {
         REQUIRE(collision.mCollided);
 
         ToyMaker::CollisionConstraint collisionConstraint {};
-        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
+        collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching
@@ -152,7 +152,7 @@ TEST_CASE("Offset") {
         REQUIRE(collision.mCollided);
 
         ToyMaker::CollisionConstraint collisionConstraint {};
-        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
+        collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching
@@ -185,7 +185,7 @@ TEST_CASE("Offset") {
         REQUIRE(collision.mCollided);
 
         ToyMaker::CollisionConstraint collisionConstraint {};
-        collisionConstraint.updateCollisionData(collision, physics1, object1, physics2, object2);
+        collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
         // Check that both objects are no longer colliding, and are only barely touching

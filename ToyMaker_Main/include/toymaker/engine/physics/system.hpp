@@ -268,6 +268,7 @@ namespace ToyMaker {
         void updateCollisionEventQueue(
             std::map<CollisionPair, CollisionConstraint>& potentialCollisions,
             std::queue<CollisionReport>& queuedReports,
+            std::unordered_map<EntityID, PhysicsStateFull>& previousStates,
             std::unordered_map<EntityID, PhysicsStateFull>& currentStates,
             uint8_t nthSubstep
         );
@@ -325,6 +326,18 @@ namespace ToyMaker {
          *
          */
         std::set<EntityID> mEntitiesUninitialized {};
+
+        /**
+         * @brief Storage for local entity states prior to the integration step each substep
+         *
+         */
+        std::unordered_map<EntityID, PhysicsStateFull> mEntityStatePrevious {};
+
+        /**
+         * @brief Storage for current local entity states, eventually pushed to ECS component tables
+         *
+         */
+        std::unordered_map<EntityID, PhysicsStateFull> mEntityStateCurrent {};
 
         /**
          * @brief Associates each entity with its set of constraints, used to determine whether the constraint
