@@ -18,9 +18,9 @@
                     "type": "PhysicsState",
                     "mode": "dynamic",
                     "mass": 4.0,
-                    "coefficient_friction_static": 0.2,
+                    "coefficient_friction_static": 0.1,
                     "coefficient_friction_dynamic": 0.1,
-                    "velocity": [0.1, 0, 0.1]
+                    "velocity": [1.0, 0, 1.0]
                 },
                 {
                     "type": "ObjectBounds",
