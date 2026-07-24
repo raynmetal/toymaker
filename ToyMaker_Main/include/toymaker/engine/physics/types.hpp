@@ -684,10 +684,16 @@ namespace ToyMaker {
         bool mCollided { false };
 
         /**
-         * @brief The contact point of object A participating in this constraint in world space.
+         * @brief The projected last point of contact of object A participating in this constraint.
          *
          */
         glm::vec3 mLastPointContactA { 0.f };
+
+        /**
+         * @brief The contact point of object A participating in this constraint in world space.
+         *
+         */
+        glm::vec3 mCurrentPointContactA { 0.f };
 
         /**
          * @brief The contact point of object A relative to its own frame.
@@ -696,10 +702,16 @@ namespace ToyMaker {
         glm::vec3 mRelativePointContactA { 0.f };
 
         /**
-         * @brief The contact point of object B participating in this constraint in world space.
+         * @brief The projected last point of contact of object B participating in this constraint.
          *
          */
         glm::vec3 mLastPointContactB { 0.f };
+
+        /**
+         * @brief The contact point of object B participating in this constraint in world space.
+         *
+         */
+        glm::vec3 mCurrentPointContactB { 0.f };
 
         /**
          * @brief The contact point of object B relative to its own frame.
@@ -742,8 +754,10 @@ namespace ToyMaker {
             const Collision& collision,
             const PhysicsState& physicsA,
             const ObjectBounds& boundsA,
+            const ObjectBounds& boundsAPrev,
             const PhysicsState& physicsB,
-            const ObjectBounds& boundsB
+            const ObjectBounds& boundsB,
+            const ObjectBounds& boundsBPrev
         );
 
         /**

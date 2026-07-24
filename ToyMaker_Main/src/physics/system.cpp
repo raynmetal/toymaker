@@ -47,22 +47,22 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
         collisionConstraint.second.resetLagrange();
     }
 
-    std::unordered_map<EntityID, PhysicsStateFull> previousStates {};
-    std::unordered_map<EntityID, PhysicsStateFull> currentStates {};
+    mEntityStatePrevious.clear();
+    mEntityStateCurrent.clear();
     for(auto substep { 0 }; substep < mSubsteps; ++substep) {
-        integrateForces(substepInterval, previousStates, currentStates);
+        integrateForces(substepInterval, mEntityStatePrevious, mEntityStateCurrent);
 
-        updateCollisionEventQueue(mCollisionConstraints, mCollisionReports, currentStates, substep);
+        updateCollisionEventQueue(mCollisionConstraints, mCollisionReports, mEntityStatePrevious, mEntityStateCurrent, substep);
 
-        applyPositionConstraints(mCollisionConstraints, substepInterval, currentStates);
+        applyPositionConstraints(mCollisionConstraints, substepInterval, mEntityStateCurrent);
 
-        deriveVelocities(substepInterval, previousStates, currentStates);
+        deriveVelocities(substepInterval, mEntityStatePrevious, mEntityStateCurrent);
 
-        applyVelocityConstraints(mCollisionConstraints, substepInterval, currentStates);
+        applyVelocityConstraints(mCollisionConstraints, substepInterval, mEntityStateCurrent);
     }
 
     // clear forces (since they only apply for a single simulation frame) and upload new object states
-    for(auto& entityState: currentStates) {
+    for(auto& entityState: mEntityStateCurrent) {
         entityState.second.mPhysics.mForce = glm::vec3 { 0.f };
         entityState.second.mPhysics.mTorque = glm::vec3 { 0.f };
         updateComponent(entityState.first, entityState.second.mPhysics);
@@ -369,6 +369,7 @@ void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_
 void PhysicsSystem::updateCollisionEventQueue(
     std::map<CollisionPair, CollisionConstraint>& potentialCollisions,
     std::queue<CollisionReport>& queuedReports,
+    std::unordered_map<EntityID, PhysicsStateFull>& previousStates,
     std::unordered_map<EntityID, PhysicsStateFull>& currentStates,
     uint8_t nthSubstep
 ) {
@@ -386,7 +387,9 @@ void PhysicsSystem::updateCollisionEventQueue(
         const auto& physicsOne { currentStates[constraint.first.first()].mPhysics };
         const auto& physicsTwo { currentStates[constraint.first.second()].mPhysics };
         const auto& objectOne { currentStates[constraint.first.first()].mBounds };
+        const auto& objectOnePrev { previousStates[constraint.first.first()].mBounds };
         const auto& objectTwo { currentStates[constraint.first.second()].mBounds };
+        const auto& objectTwoPrev { previousStates[constraint.first.second()].mBounds };
 
         // guard: pruning shows no collision, so inform constraint and move to next step
         if(prunedCollisions.find(constraint.first) == prunedCollisions.end()) {
@@ -397,7 +400,10 @@ void PhysicsSystem::updateCollisionEventQueue(
 
         ++collisionsChecked;
         const auto collisionData { checkCollision(objectOne, objectTwo) };
-        constraint.second.updateCollisionData(collisionData, physicsOne, objectOne, physicsTwo, objectTwo);
+        constraint.second.updateCollisionData(collisionData,
+            physicsOne, objectOne, objectOnePrev,
+            physicsTwo, objectTwo, objectTwoPrev
+        );
         if(collisionData.mCollided) {
             onCollided(constraint.first, collisionData, queuedReports);
         }

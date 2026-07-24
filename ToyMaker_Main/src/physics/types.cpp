@@ -52,14 +52,18 @@ void CollisionConstraint::updateCollisionData(
     const Collision& collision,
     const PhysicsState& physicsA,
     const ObjectBounds& boundsA,
+    const ObjectBounds& boundsAPrev,
     const PhysicsState& physicsB,
-    const ObjectBounds& boundsB
+    const ObjectBounds& boundsB,
+    const ObjectBounds& boundsBPrev
 ) {
-    // rotations from local to global frame for each body
     mCollided = collision.mCollided;
     if(!mCollided) return;
-    mLastPointContactA = collision.mContactA.mPoint;
-    mLastPointContactB = collision.mContactB.mPoint;
+
+    // capture the current state, both relative and absolute, and projected previous state, of our
+    // contact points
+    mCurrentPointContactA = collision.mContactA.mPoint;
+    mCurrentPointContactB = collision.mContactB.mPoint;
     mRelativePointContactA = (
         glm::inverse(boundsA.getOrientationWorld()) * (
             collision.mContactA.mPoint - boundsA.getPositionWorld()
@@ -70,6 +74,16 @@ void CollisionConstraint::updateCollisionData(
             collision.mContactB.mPoint - boundsB.getPositionWorld()
         )
     );
+    mLastPointContactA = (
+        boundsAPrev.getPositionWorld()
+        + boundsAPrev.getOrientationWorld() * mRelativePointContactA
+    );
+    mLastPointContactB = (
+        boundsBPrev.getPositionWorld()
+        + boundsBPrev.getOrientationWorld() * mRelativePointContactB
+    );
+
+    // store terms common to both participants
     mContactNormal = collision.mContactB.mNormal;
     mPenetrationDepth = collision.mContactB.mPenetrationDepth;
 
@@ -77,11 +91,11 @@ void CollisionConstraint::updateCollisionData(
     // took place
     const glm::vec3 pointVelocityA { physicsA.mVelocity + glm::cross(
         physicsA.mAngularVelocity,
-        mLastPointContactA - boundsA.getPositionWorld()
+        mCurrentPointContactA - boundsA.getPositionWorld()
     ) };
     const glm::vec3 pointVelocityB { physicsB.mVelocity + glm::cross(
         physicsB.mAngularVelocity,
-        mLastPointContactB - boundsB.getPositionWorld()
+        mCurrentPointContactB - boundsB.getPositionWorld()
     ) };
     const glm::vec3 pointVelocityAB {
         pointVelocityA - pointVelocityB
@@ -101,9 +115,9 @@ void CollisionConstraint::updateCollisionDataPartial(
     const glm::quat orientationB { boundsB.getOrientationWorld() };
 
     // early exit if contact points have switched places along the normal
-    mLastPointContactA = positionA + orientationA * mRelativePointContactA;
-    mLastPointContactB = positionB + orientationB * mRelativePointContactB;
-    const glm::vec3 deltaAB { mLastPointContactA - mLastPointContactB };
+    mCurrentPointContactA = positionA + orientationA * mRelativePointContactA;
+    mCurrentPointContactB = positionB + orientationB * mRelativePointContactB;
+    const glm::vec3 deltaAB { mCurrentPointContactA - mCurrentPointContactB };
     mPenetrationDepth = glm::dot(deltaAB, mContactNormal);
     if(mPenetrationDepth <= 0.f) {
         mCollided = false;
@@ -111,11 +125,11 @@ void CollisionConstraint::updateCollisionDataPartial(
 
     const glm::vec3 pointVelocityA { physicsA.mVelocity + glm::cross(
         physicsA.mAngularVelocity,
-        mLastPointContactA - boundsA.getPositionWorld()
+        mCurrentPointContactA - boundsA.getPositionWorld()
     ) };
     const glm::vec3 pointVelocityB { physicsB.mVelocity + glm::cross(
         physicsB.mAngularVelocity,
-        mLastPointContactB - boundsB.getPositionWorld()
+        mCurrentPointContactB - boundsB.getPositionWorld()
     ) };
     const glm::vec3 pointVelocityAB {
         pointVelocityA - pointVelocityB
@@ -160,13 +174,13 @@ void CollisionConstraint::applyConstraintPosition(
     const float generalizedInverseA { computeGeneralizedInverseMassPositional(
         objectA,
         physicsA,
-        mLastPointContactA,
+        mCurrentPointContactA,
         mContactNormal
     ) };
     const float generalizedInverseB { computeGeneralizedInverseMassPositional(
         objectB,
         physicsB,
-        mLastPointContactB,
+        mCurrentPointContactB,
         mContactNormal
     ) };
 
@@ -197,13 +211,13 @@ void CollisionConstraint::applyConstraintPosition(
         objectA,
         physicsA,
         positionalImpulse,
-        mLastPointContactA
+        mCurrentPointContactA
     );
     objectB = applyImpulseObject(
         objectB,
         physicsB,
         -positionalImpulse,
-        mLastPointContactB
+        mCurrentPointContactB
     );
 
     // retrieve new placement data
@@ -215,6 +229,8 @@ void CollisionConstraint::applyConstraintPosition(
     // derive relative motion of point of contact
     const glm::vec3 pointContactANew { positionANew + orientationANew * mRelativePointContactA };
     const glm::vec3 pointContactBNew { positionBNew + orientationBNew * mRelativePointContactB };
+    const float separationAB { glm::dot(pointContactANew - pointContactBNew, mContactNormal) };
+
     const glm::vec3 deltaA { pointContactANew - mLastPointContactA };
     const glm::vec3 deltaB { pointContactBNew - mLastPointContactB };
     const glm::vec3 deltaAB { deltaA - deltaB };
@@ -350,12 +366,15 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
         );
     }
 
-    // Apply static friction if required
+    // apply dynamic friction if required
+    const float separationAB {
+        glm::dot(mContactNormal, (contactPositionA - contactPositionB))
+    };
     const float coefficientFrictionDynamic { glm::min(
         physicsA.mCoefficientFrictionDynamic,
         physicsB.mCoefficientFrictionDynamic
     ) };
-    if(coefficientFrictionDynamic > 0.f) {
+    if(separationAB < 0.f && coefficientFrictionDynamic > 0.f) {
         const glm::vec3 tangentialVelocity {
             pointVelocityAB - bounceVelocity * mContactNormal
         };
