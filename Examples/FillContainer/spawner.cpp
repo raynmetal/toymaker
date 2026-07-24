@@ -98,7 +98,7 @@ void BallSpawner::variableUpdate(uint32_t timestep) {
         ToyMaker::ObjectBounds bounds { getComponent<ToyMaker::ObjectBounds>() };
         const auto overlappingEntities {
             getWorld().lock()->getSystem<ToyMaker::SpatialQuerySystem>()->findEntitiesOverlappingCoarse(
-                ToyMaker::AxisAlignedBounds(bounds.getPositionWorld(), glm::vec3 { 1.05f }),
+                ToyMaker::AxisAlignedBounds(bounds.getPositionWorld(), glm::vec3 { 2.05f }),
                 0x1
             )
         };
