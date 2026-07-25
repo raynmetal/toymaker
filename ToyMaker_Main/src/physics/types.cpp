@@ -258,8 +258,8 @@ void CollisionConstraint::applyConstraintPosition(
     // friction threshold per normal force
     if(
         !lagrangeDeltaFriction || (
-            glm::abs(lagrangeDeltaFriction)
-            >= glm::abs(combinedFrictionCoefficient * lagrangeDeltaCollision)
+            glm::abs(lagrangeFriction + lagrangeDeltaFriction)
+            >= glm::abs(combinedFrictionCoefficient * (lagrangeCollision + lagrangeDeltaCollision))
         )
     ) {
         return;
@@ -367,20 +367,17 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
     }
 
     // apply dynamic friction if required
-    const float separationAB {
-        glm::dot(mContactNormal, (contactPositionA - contactPositionB))
-    };
     const float coefficientFrictionDynamic { glm::min(
         physicsA.mCoefficientFrictionDynamic,
         physicsB.mCoefficientFrictionDynamic
     ) };
-    if(separationAB < 0.f && coefficientFrictionDynamic > 0.f) {
+    if(coefficientFrictionDynamic > 0.f) {
         const glm::vec3 tangentialVelocity {
             pointVelocityAB - bounceVelocity * mContactNormal
         };
 
         // derive the impulse required to fix our velocities
-        const float lagrangeCollision { getLagrangeDelta().at(0) };
+        const float lagrangeCollision { getLagrange().at(0) };
         const float forceNormal { lagrangeCollision / (substepSeconds * substepSeconds) };
         const glm::vec3 velocityCorrection {
             -glm::normalize(tangentialVelocity) * glm::min(

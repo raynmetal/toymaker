@@ -39,14 +39,6 @@ void PhysicsSystem::onSimulationStep(uint32_t timestepMillis) {
     const float substepInterval { (static_cast<float>(timestepMillis) / static_cast<float>(mSubsteps)) / static_cast<float>(1e3) };
     collectPotentialCollisions(substepInterval, mCollisionReports);
 
-    // clear lagrange multipliers in preparation for this physics update
-    for(auto& constraint: mConstraints) {
-        constraint.first->resetLagrange();
-    }
-    for(auto& collisionConstraint: mCollisionConstraints) {
-        collisionConstraint.second.resetLagrange();
-    }
-
     mEntityStatePrevious.clear();
     mEntityStateCurrent.clear();
     for(auto substep { 0 }; substep < mSubsteps; ++substep) {
@@ -279,6 +271,18 @@ void PhysicsSystem::applyPositionCollisionConstraints(
 }
 
 void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, CollisionConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+    // TODO: (START) support iterative constraint solver by enabling equivalent of below
+    //
+    // for(std::size_t i { 0 }; i < mNPositionIterations; ++i) {
+
+    // clear lagrange multipliers in preparation for this position constraint solve
+    for(auto& constraint: mConstraints) {
+        constraint.first->resetLagrange();
+    }
+    for(auto& collisionConstraint: mCollisionConstraints) {
+        collisionConstraint.second.resetLagrange();
+    }
+
     for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
         // skip deleted or inactive constraints
         if(mConstraintsDeleted.find(constraint) != mConstraintsDeleted.end()) {
@@ -305,6 +309,10 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, CollisionCo
     }
 
     applyPositionCollisionConstraints(collisionConstraints, substepSeconds, currentStates);
+
+    // TODO: (END) support iterative constraint solver by enabling equivalent of below
+    //
+    // }
 }
 
 void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, CollisionConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
