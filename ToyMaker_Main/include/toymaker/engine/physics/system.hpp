@@ -238,25 +238,25 @@ namespace ToyMaker {
          * @brief Correctly applies collision position constraint for each potential collision detected.
          *
          */
-        void applyPositionCollisionConstraints(std::map<CollisionPair, CollisionConstraint>& potentialCollisions, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyPositionCollisionConstraints(std::map<CollisionPair, ContactConstraint>& potentialCollisions, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Correctly applies collision velocity constraint for each potential collision detected.
          *
          */
-        void applyVelocityCollisionConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyVelocityCollisionConstraints(std::map<CollisionPair, ContactConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Applies all active position constraints
          *
          */
-        void applyPositionConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyPositionConstraints(std::map<CollisionPair, ContactConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Applies all active velocity constraints
          *
          */
-        void applyVelocityConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyVelocityConstraints(std::map<CollisionPair, ContactConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Tests each pair of potential colliders for intersection, adds collision report to the queue if
@@ -266,7 +266,7 @@ namespace ToyMaker {
          * @param queuedReports All reports due to be signalled this frame.
          */
         void updateCollisionEventQueue(
-            std::map<CollisionPair, CollisionConstraint>& potentialCollisions,
+            std::map<CollisionPair, ContactConstraint>& potentialCollisions,
             std::queue<CollisionReport>& queuedReports,
             std::unordered_map<EntityID, PhysicsStateFull>& previousStates,
             std::unordered_map<EntityID, PhysicsStateFull>& currentStates,
@@ -382,7 +382,7 @@ namespace ToyMaker {
          * @brief Storage for pairs of entities that are likely to collide (or are colliding) this simulation frame.
          *
          */
-        std::map<CollisionPair, CollisionConstraint> mCollisionConstraints {};
+        std::map<CollisionPair, ContactConstraint> mCollisionConstraints {};
 
         /**
          * @brief A list of all constraints known to the physics system, evaluated every frame.

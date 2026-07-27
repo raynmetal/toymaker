@@ -1,9 +1,11 @@
 #include <glm/gtc/quaternion.hpp>
 
+#include "toymaker/engine/spatial_query/math.hpp"
 #include "toymaker/engine/physics/types.hpp"
 
 using namespace ToyMaker;
 
+const float kPersistentThresholdSquared { 1e-6 };
 
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     const glm::vec3 position { bounds.getPositionWorld() };
@@ -46,9 +48,9 @@ float BaseConstraint::getCompliance() const {
     return mCompliance;
 }
 
-CollisionConstraint::CollisionConstraint(): Constraint<2> { 0.f } {}
+ContactConstraint::ContactConstraint(): Constraint<2> { 0.f } {}
 
-void CollisionConstraint::updateCollisionData(
+void ContactConstraint::updateCollisionData(
     const Collision& collision,
     const PhysicsState& physicsA,
     const ObjectBounds& boundsA,
@@ -62,40 +64,40 @@ void CollisionConstraint::updateCollisionData(
 
     // capture the current state, both relative and absolute, and projected previous state, of our
     // contact points
-    mCurrentPointContactA = collision.mContactA.mPoint;
-    mCurrentPointContactB = collision.mContactB.mPoint;
-    mRelativePointContactA = (
+    mCurrentA = collision.mContactA.mPoint;
+    mCurrentB = collision.mContactB.mPoint;
+    mRelativeA = (
         glm::inverse(boundsA.getOrientationWorld()) * (
             collision.mContactA.mPoint - boundsA.getPositionWorld()
         )
     );
-    mRelativePointContactB = (
+    mRelativeB = (
         glm::inverse(boundsB.getOrientationWorld()) * (
             collision.mContactB.mPoint - boundsB.getPositionWorld()
         )
     );
-    mLastPointContactA = (
+    mPreviousA = (
         boundsAPrev.getPositionWorld()
-        + boundsAPrev.getOrientationWorld() * mRelativePointContactA
+        + boundsAPrev.getOrientationWorld() * mRelativeA
     );
-    mLastPointContactB = (
+    mPreviousB = (
         boundsBPrev.getPositionWorld()
-        + boundsBPrev.getOrientationWorld() * mRelativePointContactB
+        + boundsBPrev.getOrientationWorld() * mRelativeB
     );
 
     // store terms common to both participants
     mContactNormal = collision.mContactB.mNormal;
-    mPenetrationDepth = collision.mContactB.mPenetrationDepth;
+    mPenetration = collision.mContactB.mPenetrationDepth;
 
     // determine the speed at which the contact points were moving when the collision
     // took place
     const glm::vec3 pointVelocityA { physicsA.mVelocity + glm::cross(
         physicsA.mAngularVelocity,
-        mCurrentPointContactA - boundsA.getPositionWorld()
+        mCurrentA - boundsA.getPositionWorld()
     ) };
     const glm::vec3 pointVelocityB { physicsB.mVelocity + glm::cross(
         physicsB.mAngularVelocity,
-        mCurrentPointContactB - boundsB.getPositionWorld()
+        mCurrentB - boundsB.getPositionWorld()
     ) };
     const glm::vec3 pointVelocityAB {
         pointVelocityA - pointVelocityB
@@ -103,41 +105,7 @@ void CollisionConstraint::updateCollisionData(
     mCollisionVelocity = glm::dot(pointVelocityAB, mContactNormal);
 }
 
-void CollisionConstraint::updateCollisionDataPartial(
-    const PhysicsState& physicsA,
-    const ObjectBounds& boundsA,
-    const PhysicsState& physicsB,
-    const ObjectBounds& boundsB
-) {
-    const glm::vec3 positionA { boundsA.getPositionWorld() };
-    const glm::vec3 positionB { boundsB.getPositionWorld() };
-    const glm::quat orientationA { boundsA.getOrientationWorld() };
-    const glm::quat orientationB { boundsB.getOrientationWorld() };
-
-    // early exit if contact points have switched places along the normal
-    mCurrentPointContactA = positionA + orientationA * mRelativePointContactA;
-    mCurrentPointContactB = positionB + orientationB * mRelativePointContactB;
-    const glm::vec3 deltaAB { mCurrentPointContactA - mCurrentPointContactB };
-    mPenetrationDepth = glm::dot(deltaAB, mContactNormal);
-    if(mPenetrationDepth <= 0.f) {
-        mCollided = false;
-    }
-
-    const glm::vec3 pointVelocityA { physicsA.mVelocity + glm::cross(
-        physicsA.mAngularVelocity,
-        mCurrentPointContactA - boundsA.getPositionWorld()
-    ) };
-    const glm::vec3 pointVelocityB { physicsB.mVelocity + glm::cross(
-        physicsB.mAngularVelocity,
-        mCurrentPointContactB - boundsB.getPositionWorld()
-    ) };
-    const glm::vec3 pointVelocityAB {
-        pointVelocityA - pointVelocityB
-    };
-    mCollisionVelocity = glm::dot(pointVelocityAB, mContactNormal);
-}
-
-void CollisionConstraint::applyConstraintPosition(
+void ContactConstraint::applyConstraintPosition(
     const ParticipantTable& states,
     float substepSeconds
 ) {
@@ -174,13 +142,13 @@ void CollisionConstraint::applyConstraintPosition(
     const float generalizedInverseA { computeGeneralizedInverseMassPositional(
         objectA,
         physicsA,
-        mCurrentPointContactA,
+        mCurrentA,
         mContactNormal
     ) };
     const float generalizedInverseB { computeGeneralizedInverseMassPositional(
         objectB,
         physicsB,
-        mCurrentPointContactB,
+        mCurrentB,
         mContactNormal
     ) };
 
@@ -191,7 +159,7 @@ void CollisionConstraint::applyConstraintPosition(
     const float lagrangeCollision { getLagrange().at(0) };
     const float lagrangeDeltaCollision {
         -(
-            mPenetrationDepth + alphaDerivative2 * lagrangeCollision
+            mPenetration + alphaDerivative2 * lagrangeCollision
         ) / (
             generalizedInverseA + generalizedInverseB + alphaDerivative2
         )
@@ -211,13 +179,13 @@ void CollisionConstraint::applyConstraintPosition(
         objectA,
         physicsA,
         positionalImpulse,
-        mCurrentPointContactA
+        mCurrentA
     );
     objectB = applyImpulseObject(
         objectB,
         physicsB,
         -positionalImpulse,
-        mCurrentPointContactB
+        mCurrentB
     );
 
     // retrieve new placement data
@@ -227,12 +195,12 @@ void CollisionConstraint::applyConstraintPosition(
     const glm::quat orientationBNew { objectB.getOrientationWorld() };
 
     // derive relative motion of point of contact
-    const glm::vec3 pointContactANew { positionANew + orientationANew * mRelativePointContactA };
-    const glm::vec3 pointContactBNew { positionBNew + orientationBNew * mRelativePointContactB };
+    const glm::vec3 pointContactANew { positionANew + orientationANew * mRelativeA };
+    const glm::vec3 pointContactBNew { positionBNew + orientationBNew * mRelativeB };
     const float separationAB { glm::dot(pointContactANew - pointContactBNew, mContactNormal) };
 
-    const glm::vec3 deltaA { pointContactANew - mLastPointContactA };
-    const glm::vec3 deltaB { pointContactBNew - mLastPointContactB };
+    const glm::vec3 deltaA { pointContactANew - mPreviousA };
+    const glm::vec3 deltaB { pointContactBNew - mPreviousB };
     const glm::vec3 deltaAB { deltaA - deltaB };
     const glm::vec3 deltaABTangent {
         deltaAB - glm::dot(deltaAB, mContactNormal) * mContactNormal
@@ -287,7 +255,7 @@ void CollisionConstraint::applyConstraintPosition(
     );
 }
 
-void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     // guard: no collision, so nothing to do
     if(!mCollided) {
         return;
@@ -301,8 +269,8 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
     const glm::vec3 positionB { objectB.getPositionWorld() };
     const glm::quat orientationA { objectA.getOrientationWorld() };
     const glm::quat orientationB { objectB.getOrientationWorld() };
-    const glm::vec3 contactPositionA { positionA + orientationA * mRelativePointContactA };
-    const glm::vec3 contactPositionB { positionB + orientationB * mRelativePointContactB };
+    const glm::vec3 contactPositionA { positionA + orientationA * mRelativeA };
+    const glm::vec3 contactPositionB { positionB + orientationB * mRelativeB };
 
     // cache physics related stuff
     PhysicsState& physicsA { states.at(0).second.get() };
@@ -402,6 +370,207 @@ void CollisionConstraint::applyConstraintVelocity(const ParticipantTable& states
             -impulseFriction,
             contactPositionB
         );
+    }
+}
+
+void ContactManifold::resetLagrange() {
+    for(auto i { 0 }; i < mNContacts; ++i) {
+        mContacts[i].resetLagrange();
+    }
+}
+
+void ContactManifold::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+    for(auto i { 0 }; i < mNContacts; ++i) {
+        mContacts[i].applyConstraintVelocity(states, substepSeconds);
+    }
+}
+
+void ContactManifold::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
+    for(auto i { 0 }; i < mNContacts; ++i) {
+        mContacts[i].applyConstraintPosition(states, substepSeconds);
+    }
+}
+
+void ContactManifold::addContact(const Collision& collision,
+    const PhysicsState& physicsA, const ObjectBounds& boundsA, const ObjectBounds& boundsAPrev,
+    const PhysicsState& physicsB, const ObjectBounds& boundsB, const ObjectBounds& boundsBPrev
+) {
+    trim(boundsA, boundsB);
+
+    // guard: see whether this contact is a repeat of one we've already seen
+    for(std::size_t i { 0 }; i < 4; ++i) {
+        const glm::vec3 deltaA { collision.mContactA.mPoint - mContacts[i].mCurrentA };
+        const glm::vec3 deltaB { collision.mContactB.mPoint - mContacts[i].mCurrentB };
+        const bool isDifferentA { squareDistance(deltaA) > kPersistentThresholdSquared };
+        const bool isDifferentB { squareDistance(deltaB) > kPersistentThresholdSquared };
+        if(!(isDifferentA || isDifferentB)) {
+            return;
+        }
+    }
+
+    mContacts[mNContacts++] = ContactConstraint();
+    mContacts[mNContacts - 1].updateCollisionData(collision,
+        physicsA, boundsA, boundsAPrev,
+        physicsB, boundsB, boundsBPrev
+    );
+
+    assert(mNContacts >= 1 && mNContacts <= 5 && "Invalid number of points in intermediate contact manifold");
+
+    // 0th position for the deepest penetrating contact
+    if(mNContacts >= 2) {
+        std::size_t deepest { 0 };
+        for(std::size_t i { 0 }; i < mNContacts; ++i) {
+            if(mContacts[i].mPenetration > mContacts[deepest].mPenetration) {
+                deepest = i;
+            }
+        }
+        std::swap(mContacts[deepest], mContacts[0]);
+    }
+
+    // 1st position for the contact furthest from the deepest contact
+    if(mNContacts >= 3) {
+        std::size_t furthest { 1 };
+        float furthestDistanceSquared {
+            -std::numeric_limits<float>::infinity()
+        };
+        for(std::size_t i { 1 }; i < mNContacts; ++i) {
+            const float distanceSquared {
+                squareDistance(mContacts[i].mCurrentA - mContacts[0].mCurrentA)
+            };
+            if(distanceSquared > furthestDistanceSquared) {
+                furthest = i;
+                furthestDistanceSquared = distanceSquared;
+            }
+        }
+        std::swap(mContacts[furthest], mContacts[1]);
+    }
+
+    // 2nd position for the contact furthest from line segment formed by
+    // 0 and 1
+    if(mNContacts >= 4) {
+        std::size_t furthest { 2 };
+        float furthestDistanceSquared {
+            -std::numeric_limits<float>::infinity()
+        };
+        const glm::vec3 lineVector {
+            mContacts[1].mCurrentA - mContacts[0].mCurrentA
+        };
+        for(std::size_t i { 2 }; i < mNContacts; ++i) {
+            const float t { std::clamp(
+                glm::dot(
+                    mContacts[i].mCurrentA - mContacts[0].mCurrentA,
+                    lineVector
+                ),
+                0.f, 1.f
+            ) };
+            const glm::vec3 linePointClosest {
+                mContacts[i].mCurrentA + t * lineVector
+            };
+            const float distanceSquared {
+                squareDistance(mContacts[i].mCurrentA - linePointClosest)
+            };
+            if(distanceSquared > furthestDistanceSquared) {
+                furthest = i;
+                furthestDistanceSquared = distanceSquared;
+            }
+        }
+    }
+
+    // 3rd position for furthest contact from triangle
+    if(mNContacts >= 5) {
+        std::size_t furthest { 3 };
+        float furthestDistanceSquared {
+            -std::numeric_limits<float>::infinity()
+        };
+        const glm::mat3 barycentricSolver { computeBarycentricSolver({
+            .mPoints {{
+                mContacts[0].mCurrentA,
+                mContacts[1].mCurrentA,
+                mContacts[2].mCurrentA,
+            }}
+        }) };
+        const glm::mat3 barycentricToTrianglePoint {
+            mContacts[0].mCurrentA, mContacts[1].mCurrentA, mContacts[2].mCurrentA
+        };
+        for(std::size_t i { 3 }; i < mNContacts; ++i) {
+            const glm::vec3 barycentricCoordinates { glm::clamp(
+                barycentricSolver * mContacts[i].mCurrentA,
+                0.f, 1.f
+            ) };
+            const glm::vec3 closestPoint {
+                barycentricToTrianglePoint * barycentricCoordinates
+            };
+            const float distanceSquared {
+                squareDistance(mContacts[i].mCurrentA - closestPoint)
+            };
+            if(distanceSquared > furthestDistanceSquared) {
+                furthest = i;
+                furthestDistanceSquared = distanceSquared;
+            }
+        }
+        std::swap(mContacts[furthest], mContacts[3]);
+    }
+
+    // discard the point that ended up in the extra slot
+    if(mNContacts == 5) {
+        --mNContacts;
+    }
+
+    // we have a triangle and a point -- discard the point if it lies
+    // within the triangle
+    if(mNContacts == 4) {
+        const glm::mat3 barycentricSolver { computeBarycentricSolver({
+            .mPoints {{
+                mContacts[0].mCurrentA,
+                mContacts[1].mCurrentA,
+                mContacts[2].mCurrentA,
+            }}
+        }) };
+        const glm::mat3 barycentricToTrianglePoint {
+            mContacts[0].mCurrentA, mContacts[1].mCurrentA, mContacts[2].mCurrentA
+        };
+        const glm::vec3 barycentricCoordinates { glm::clamp(
+            barycentricSolver * mContacts[3].mCurrentA,
+            0.f, 1.f
+        ) };
+
+        // discard the 4th point if it lies anywhere on the triangle
+        if(isPositiveStrict(barycentricCoordinates)) {
+            --mNContacts;
+        }
+    }
+}
+
+void ContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boundsB) {
+    const glm::vec3 positionA { boundsA.getPositionWorld() };
+    const glm::vec3 positionB { boundsB.getPositionWorld() };
+    const glm::quat orientationA { boundsA.getOrientationWorld() };
+    const glm::quat orientationB { boundsB.getOrientationWorld() };
+
+    auto i { 0 };
+    while(i < mNContacts) {
+        const glm::vec3 newA { positionA + orientationA * mContacts[i].mRelativeA };
+        const glm::vec3 newB { positionB + orientationB * mContacts[i].mRelativeB };
+        const glm::vec3 newAB { positionA - positionB };
+
+        const glm::vec3 deltaA { newA - mContacts[i].mCurrentA };
+        const glm::vec3 deltaB { newB - mContacts[i].mCurrentB };
+
+        const bool isPenetrating { glm::dot(mContacts[i].mContactNormal, newAB) > 0.f };
+        const bool isSmallDeltaA { squareDistance(deltaA) < kPersistentThresholdSquared };
+        const bool isSmallDeltaB { squareDistance(deltaB) < kPersistentThresholdSquared };
+
+        // this contact can be kept, check the next one
+        if(isPenetrating && isSmallDeltaA && isSmallDeltaB) {
+            ++i;
+            continue;
+        }
+
+        // backshift all of the contacts after this one
+        for(auto j { i + 1 }; j < mNContacts; ++j) {
+            mContacts[j - 1] = mContacts[j];
+        }
+        --mNContacts;
     }
 }
 

@@ -139,7 +139,7 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
 void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<CollisionReport>& queuedReports) {
     const auto timeStartCollect { std::chrono::high_resolution_clock::now() };
     const std::set<EntityID>& enabledEntities { getEnabledEntities() };
-    std::map<CollisionPair, CollisionConstraint> potentialCollisions {};
+    std::map<CollisionPair, ContactConstraint> potentialCollisions {};
     std::unordered_set<EntityID> potentialColliders {};
     for(const EntityID entity: enabledEntities) {
         // find an AABB that can contain the object regardless of orientation, with some
@@ -205,7 +205,7 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
             potentialCollisions.insert({ link,
                 mCollisionConstraints.find(link) != mCollisionConstraints.end()?
                     mCollisionConstraints.at(link) :
-                    CollisionConstraint {}
+                    ContactConstraint {}
             });
         }
     }
@@ -249,7 +249,7 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
 }
 
 void PhysicsSystem::applyPositionCollisionConstraints(
-    std::map<CollisionPair, CollisionConstraint>& constraints,
+    std::map<CollisionPair, ContactConstraint>& constraints,
     float substepSeconds,
     std::unordered_map<EntityID, PhysicsStateFull>& currentStates
 ) {
@@ -270,7 +270,7 @@ void PhysicsSystem::applyPositionCollisionConstraints(
     }
 }
 
-void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, CollisionConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, ContactConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     // TODO: (START) support iterative constraint solver by enabling equivalent of below
     //
     // for(std::size_t i { 0 }; i < mNPositionIterations; ++i) {
@@ -315,13 +315,13 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, CollisionCo
     // }
 }
 
-void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, CollisionConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, ContactConstraint>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     // TODO: Add code to call registered and initialized velocity constraint providers
 
     applyVelocityCollisionConstraints(collisionConstraints, substepSeconds, currentStates);
 }
 
-void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, ContactConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     for(auto& linkConstraint: constraints) {
         // retrieve data
         auto& objectOne { currentStates[linkConstraint.first.first()].mBounds };
@@ -375,7 +375,7 @@ void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_
 }
 
 void PhysicsSystem::updateCollisionEventQueue(
-    std::map<CollisionPair, CollisionConstraint>& potentialCollisions,
+    std::map<CollisionPair, ContactConstraint>& potentialCollisions,
     std::queue<CollisionReport>& queuedReports,
     std::unordered_map<EntityID, PhysicsStateFull>& previousStates,
     std::unordered_map<EntityID, PhysicsStateFull>& currentStates,
