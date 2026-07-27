@@ -117,10 +117,8 @@ void ContactConstraint::applyConstraintPosition(
 
     // guards:
     if(
-        // no collision, so nothing to do
-        !mCollided
         // at least one object must be dynamic for the collision solver to work
-        || (
+        (
             physicsA.getMode() != PhysicsState::MODE_DYNAMIC
             && physicsB.getMode() != PhysicsState::MODE_DYNAMIC
         // both objects must be configured to separate on collision
@@ -132,23 +130,35 @@ void ContactConstraint::applyConstraintPosition(
         return;
     }
 
+    // compute current contact positions for A and B and determine whether to proceed with the
+    // rest of the position correction
     ObjectBounds& objectA { states.at(0).first.get() };
     ObjectBounds& objectB { states.at(1).first.get() };
     const glm::vec3 positionA { objectA.getPositionWorld() };
     const glm::vec3 positionB { objectB.getPositionWorld() };
+    const glm::quat orientationA { objectA.getOrientationWorld() };
+    const glm::quat orientationB { objectB.getOrientationWorld() };
+    const glm::vec3 currentA { positionA + orientationA * mRelativeA };
+    const glm::vec3 currentB { positionB + orientationB * mRelativeB };
+
+    // guard: contact points are currently separated, no correction needed
+    const float currentPenetration { glm::dot(currentA - currentB, mContactNormal) };
+    if(currentPenetration < 0.f) {
+        return;
+    }
 
     // compute generalized inverse masses for A and B -- these will
     // be recomputed each substep, so there's no point in storing them
     const float generalizedInverseA { computeGeneralizedInverseMassPositional(
         objectA,
         physicsA,
-        mCurrentA,
+        currentA,
         mContactNormal
     ) };
     const float generalizedInverseB { computeGeneralizedInverseMassPositional(
         objectB,
         physicsB,
-        mCurrentB,
+        currentB,
         mContactNormal
     ) };
 
@@ -170,22 +180,18 @@ void ContactConstraint::applyConstraintPosition(
         lagrangeDeltaCollision * mContactNormal
     };
 
-    // cache old placement data
-    const glm::quat orientationA { objectA.getOrientationWorld() };
-    const glm::quat orientationB { objectB.getOrientationWorld() };
-
     // apply corrections
     objectA = applyImpulseObject(
         objectA,
         physicsA,
         positionalImpulse,
-        mCurrentA
+        currentA
     );
     objectB = applyImpulseObject(
         objectB,
         physicsB,
         -positionalImpulse,
-        mCurrentB
+        currentB
     );
 
     // retrieve new placement data
@@ -256,10 +262,6 @@ void ContactConstraint::applyConstraintPosition(
 }
 
 void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
-    // guard: no collision, so nothing to do
-    if(!mCollided) {
-        return;
-    }
     assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
 
     // cache position related stuff
@@ -408,8 +410,7 @@ void ContactManifold::addContact(const Collision& collision,
         }
     }
 
-    mContacts[mNContacts++] = ContactConstraint();
-    mContacts[mNContacts - 1].updateCollisionData(collision,
+    mContacts[mNContacts++].updateCollisionData(collision,
         physicsA, boundsA, boundsAPrev,
         physicsB, boundsB, boundsBPrev
     );
@@ -443,36 +444,56 @@ void ContactManifold::addContact(const Collision& collision,
             }
         }
         std::swap(mContacts[furthest], mContacts[1]);
+
+        // if this point is colinear with the other two, discard it and all the points
+        // after it
+        //
+        const float distanceSquared {
+            squareDistance(mContacts[1].mCurrentA - mContacts[0].mCurrentA)
+        };
+        if(distanceSquared == 0.f) {
+            mNContacts = 1;
+            return;
+        }
     }
 
-    // 2nd position for the contact furthest from line segment formed by
+    // 2nd position for the contact furthest (perpendicular distance) from line segment formed by
     // 0 and 1
     if(mNContacts >= 4) {
         std::size_t furthest { 2 };
         float furthestDistanceSquared {
             -std::numeric_limits<float>::infinity()
         };
-        const glm::vec3 lineVector {
-            mContacts[1].mCurrentA - mContacts[0].mCurrentA
+        const glm::vec3 lineDir {
+            glm::normalize(mContacts[1].mCurrentA - mContacts[0].mCurrentA)
         };
         for(std::size_t i { 2 }; i < mNContacts; ++i) {
-            const float t { std::clamp(
-                glm::dot(
+            const float distanceSquared { squareDistance(
+                mContacts[i].mCurrentA - mContacts[0].mCurrentA
+                - glm::dot(
                     mContacts[i].mCurrentA - mContacts[0].mCurrentA,
-                    lineVector
-                ),
-                0.f, 1.f
-            ) };
-            const glm::vec3 linePointClosest {
-                mContacts[i].mCurrentA + t * lineVector
-            };
-            const float distanceSquared {
-                squareDistance(mContacts[i].mCurrentA - linePointClosest)
-            };
+                    lineDir
+                ) * lineDir
+            )};
             if(distanceSquared > furthestDistanceSquared) {
                 furthest = i;
                 furthestDistanceSquared = distanceSquared;
             }
+        }
+        std::swap(mContacts[furthest], mContacts[2]);
+        const float distanceSquared { squareDistance(
+            mContacts[2].mCurrentA - mContacts[0].mCurrentA
+            - glm::dot(
+                mContacts[2].mCurrentA - mContacts[0].mCurrentA,
+                lineDir
+            ) * lineDir
+        )};
+
+        // if this point is colinear with the other two, discard it and all the points
+        // after it
+        if(distanceSquared == 0.f) {
+            mNContacts = 2;
+            return;
         }
     }
 
@@ -509,30 +530,15 @@ void ContactManifold::addContact(const Collision& collision,
             }
         }
         std::swap(mContacts[furthest], mContacts[3]);
-    }
-
-    // discard the point that ended up in the extra slot
-    if(mNContacts == 5) {
-        --mNContacts;
-    }
-
-    // we have a triangle and a point -- discard the point if it lies
-    // within the triangle
-    if(mNContacts == 4) {
-        const glm::mat3 barycentricSolver { computeBarycentricSolver({
-            .mPoints {{
-                mContacts[0].mCurrentA,
-                mContacts[1].mCurrentA,
-                mContacts[2].mCurrentA,
-            }}
-        }) };
-        const glm::mat3 barycentricToTrianglePoint {
-            mContacts[0].mCurrentA, mContacts[1].mCurrentA, mContacts[2].mCurrentA
-        };
         const glm::vec3 barycentricCoordinates { glm::clamp(
             barycentricSolver * mContacts[3].mCurrentA,
             0.f, 1.f
         ) };
+
+        // discard the point that ended up in the extra slot
+        if(mNContacts == 5) {
+            --mNContacts;
+        }
 
         // discard the 4th point if it lies anywhere on the triangle
         if(isPositiveStrict(barycentricCoordinates)) {
@@ -556,13 +562,13 @@ void ContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boun
         const glm::vec3 deltaA { newA - mContacts[i].mCurrentA };
         const glm::vec3 deltaB { newB - mContacts[i].mCurrentB };
 
-        const bool isPenetrating { glm::dot(mContacts[i].mContactNormal, newAB) > 0.f };
-        const bool isSmallDeltaA { squareDistance(deltaA) < kPersistentThresholdSquared };
-        const bool isSmallDeltaB { squareDistance(deltaB) < kPersistentThresholdSquared };
+        const bool isSmallDeltaA { squareDistance(deltaA) <= kPersistentThresholdSquared };
+        const bool isSmallDeltaB { squareDistance(deltaB) <= kPersistentThresholdSquared };
 
         // this contact can be kept, check the next one
-        if(isPenetrating && isSmallDeltaA && isSmallDeltaB) {
-            ++i;
+        if(isSmallDeltaA && isSmallDeltaB) {
+            // retained contacts (should) have no velocity
+            mContacts[i++].mCollisionVelocity = 0.f;
             continue;
         }
 

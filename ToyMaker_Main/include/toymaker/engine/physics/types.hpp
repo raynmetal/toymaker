@@ -788,6 +788,12 @@ namespace ToyMaker {
     class ContactManifold: BaseConstraint {
     public:
         /**
+         * @brief Constraint constructor with a compliance of 0, since our collision constraints are perfectly stiff
+         *
+         */
+        ContactManifold(): BaseConstraint{ 0.f } {}
+
+        /**
          * @brief Attempts to add a contact to the manifold, succeeding when the new contact is not close to
          * any existing contact
          *

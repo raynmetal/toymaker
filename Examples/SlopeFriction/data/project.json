@@ -15,7 +15,7 @@
         "render_scale": 1.0
     },
 
-    "simulation_step": 33,
+    "simulation_step": 17,
 
     "input_map_path": "input_bindings.json",
     "root_scene_path": "root.json"
