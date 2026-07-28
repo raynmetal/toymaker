@@ -179,8 +179,8 @@
                     "collision_response": [ "separate", "signal" ],
                     "mass": 1.0,
                     "coefficient_friction_static": 0.75811,
-                    "coefficient_friction_dynamic": 0.61,
-                    "velocity": [4.0, 0.0, 0.0],
+                    "coefficient_friction_dynamic": 0.63,
+                    "velocity": [4.7, 0.0, 0.0],
                     "angular_velocity": [0.0, 0.0, 0.0]
                 },
                 {

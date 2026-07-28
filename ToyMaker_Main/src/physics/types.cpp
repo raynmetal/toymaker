@@ -5,7 +5,7 @@
 
 using namespace ToyMaker;
 
-const float kPersistentThresholdSquared { 1e-6 };
+const float kPersistentThresholdSquared { 2e-6 };
 
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     const glm::vec3 position { bounds.getPositionWorld() };
@@ -320,6 +320,9 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
         const glm::vec3 correctionRestitution {
             mContactNormal * bounceVelocityCorrection
         };
+        const double oneByInverseMasses {
+            1.f / (generalizedInverseA + generalizedInverseB)
+        };
         const glm::vec3 impulseRestitution {
             correctionRestitution / (generalizedInverseA + generalizedInverseB)
         };
@@ -624,7 +627,7 @@ ObjectBounds ToyMaker::applyImpulseObject(
     const glm::vec3& impulsePoint
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulsePositional == glm::vec3 { 0.f }) {
         return object;
     }
 
@@ -648,21 +651,27 @@ PhysicsState ToyMaker::applyImpulsePhysics(
     const glm::vec3& impulsePoint
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulsePositional == glm::vec3{ 0.f }) {
         return physics;
     }
 
     const glm::vec3 position { object.getPositionWorld() };
     const glm::vec3 impulsePointRelative { impulsePoint - object.getPositionWorld() };
-    const glm::vec3 toCenter { glm::normalize(-impulsePointRelative) };
+    const glm::vec3 toCenter { impulsePointRelative != glm::vec3{ 0.f }?
+        glm::normalize(-impulsePointRelative): glm::normalize(impulsePositional)
+    };
     const glm::vec3 impulseLinear { glm::dot(impulsePositional, toCenter) * toCenter };
     const glm::vec3 deltaVelocity { impulseLinear * physics.mMassInverse };
+    assert(isNumber(deltaVelocity) && "computed delta velocity must be a number");
     physics.mVelocity += deltaVelocity;
+    assert(isNumber(physics.mVelocity) && "resulting object velocity must be a number");
 
-    const glm::vec3 impulseRotational { glm::cross(
-        impulsePointRelative,
-        impulsePositional
-    ) };
+    const glm::vec3 impulseRotational { impulsePointRelative != glm::vec3{ 0.f }?
+        glm::cross(
+            impulsePointRelative,
+            impulsePositional
+        ): glm::vec3 { 0.f }
+    };
     physics = applyImpulsePhysics(object, physics, impulseRotational);
 
     return physics;
@@ -674,7 +683,7 @@ ObjectBounds ToyMaker::applyImpulseObject(
     const glm::vec3& impulseRotational
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulseRotational == glm::vec3 { 0.f }) {
         return object;
     }
 
@@ -694,14 +703,16 @@ PhysicsState ToyMaker::applyImpulsePhysics(
     const glm::vec3& impulseRotational
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulseRotational == glm::vec3{ 0.f }) {
         return physics;
     }
 
     const glm::quat orientation { object.getOrientationWorld() };
     const glm::vec3 impulseLocal { glm::inverse(orientation) * impulseRotational };
     const glm::vec3 deltaVelocityAngular { orientation * (physics.mRotationalInertiaInverse * impulseLocal) };
+    assert(isNumber(deltaVelocityAngular) && "computed change in angular velocity must be a number");
     physics.mAngularVelocity += deltaVelocityAngular;
+    assert(isNumber(physics.mAngularVelocity) && "resultant angular velocity must be a number");
     return physics;
 }
 
