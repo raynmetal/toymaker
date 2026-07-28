@@ -339,6 +339,7 @@ void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, Co
 }
 
 void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_map<EntityID, PhysicsStateFull>& previousStates, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+    const double oneBySubstep { 1.f / substepSeconds };
     // derive actual physics properties post constraint solve
     for(const auto entity: getEnabledEntities()) {
         // filter out uninitialized entities
@@ -358,18 +359,23 @@ void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_
         const auto orientationInverse { glm::inverse(bounds.getOrientationWorld()) };
 
         // update linear terms
-        physicsProps.mVelocity = (
-            (bounds.getPositionWorld() - previousState.mBounds.getPositionWorld())
-            / substepSeconds
-        );
+        const glm::vec3 deltaPosition {
+            bounds.getPositionWorld() - previousState.mBounds.getPositionWorld()
+        };
+        assert(isNumber(deltaPosition) && isFinite(deltaPosition) && "Invalid delta computed for position");
+        physicsProps.mVelocity = (static_cast<glm::dvec3>(deltaPosition) * oneBySubstep);
 
         // update angular terms
         const glm::quat deltaOrientation {
             (bounds.getOrientationWorld() * glm::inverse(previousState.mBounds.getOrientationWorld()))
         };
-        physicsProps.mAngularVelocity = (2.f * glm::vec3 {
+        assert(
+            isNumber(deltaOrientation.x) && isNumber(deltaOrientation.y) && isNumber(deltaOrientation.z)
+            && isNumber(deltaOrientation.w) && "Invalid delta computed for orientation"
+        );
+        physicsProps.mAngularVelocity = (2.0 * glm::dvec3 {
             deltaOrientation.x, deltaOrientation.y, deltaOrientation.z
-        } / substepSeconds);
+        } * oneBySubstep);
         physicsProps.mAngularVelocity *= deltaOrientation.w >= 0.f ? 1.f : -1.f;
     }
 }

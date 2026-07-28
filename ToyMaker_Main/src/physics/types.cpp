@@ -110,6 +110,7 @@ void ContactConstraint::applyConstraintPosition(
     float substepSeconds
 ) {
     assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
+    const double oneBySubstep { 1.f / substepSeconds };
 
     // fetch physics state
     const PhysicsState& physicsA { states.at(0).second.get() };
@@ -164,7 +165,7 @@ void ContactConstraint::applyConstraintPosition(
 
     // compute and update correction value
     const float alphaDerivative2 {
-        getCompliance() / (substepSeconds * substepSeconds)
+        static_cast<float>(getCompliance() * oneBySubstep * oneBySubstep)
     };
     const float lagrangeCollision { getLagrange().at(0) };
     const float lagrangeDeltaCollision {
@@ -264,6 +265,8 @@ void ContactConstraint::applyConstraintPosition(
 void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
 
+    const double oneBySubstep { 1.f / substepSeconds };
+
     // cache position related stuff
     const ObjectBounds& objectA { states.at(0).first.get() };
     const ObjectBounds& objectB { states.at(1).first.get() };
@@ -348,15 +351,16 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
 
         // derive the impulse required to fix our velocities
         const float lagrangeCollision { getLagrange().at(0) };
-        const float forceNormal { lagrangeCollision / (substepSeconds * substepSeconds) };
+        const float forceNormal { static_cast<float>(lagrangeCollision * oneBySubstep * oneBySubstep) };
         const glm::vec3 velocityCorrection {
             -glm::normalize(tangentialVelocity) * glm::min(
                 glm::abs(substepSeconds * coefficientFrictionDynamic * forceNormal),
                 glm::length(tangentialVelocity)
             )
         };
+        const double oneByInverseMassTotal { 1.f / (generalizedInverseA + generalizedInverseB) };
         const glm::vec3 impulseFriction {
-            velocityCorrection / (generalizedInverseA + generalizedInverseB)
+            static_cast<glm::dvec3>(velocityCorrection) * oneByInverseMassTotal
         };
 
         // apply the impulse
