@@ -25,12 +25,9 @@
 #include "../signals.hpp"
 #include "../spatial_query/types.hpp"
 #include "../spatial_query/sweep_prune.hpp"
-
 #include "types.hpp"
 
 namespace ToyMaker {
-
-
     /**
      * @ingroup ToyMakerPhysics ToyMakerECSSystem
      * @brief The physics system, an ECS system that tracks and updates the state of each physics
@@ -238,25 +235,25 @@ namespace ToyMaker {
          * @brief Correctly applies collision position constraint for each potential collision detected.
          *
          */
-        void applyPositionCollisionConstraints(std::map<CollisionPair, CollisionConstraint>& potentialCollisions, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyPositionCollisionConstraints(std::map<CollisionPair, ContactManifold>& potentialCollisions, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Correctly applies collision velocity constraint for each potential collision detected.
          *
          */
-        void applyVelocityCollisionConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyVelocityCollisionConstraints(std::map<CollisionPair, ContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Applies all active position constraints
          *
          */
-        void applyPositionConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyPositionConstraints(std::map<CollisionPair, ContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Applies all active velocity constraints
          *
          */
-        void applyVelocityConstraints(std::map<CollisionPair, CollisionConstraint>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyVelocityConstraints(std::map<CollisionPair, ContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Tests each pair of potential colliders for intersection, adds collision report to the queue if
@@ -266,7 +263,7 @@ namespace ToyMaker {
          * @param queuedReports All reports due to be signalled this frame.
          */
         void updateCollisionEventQueue(
-            std::map<CollisionPair, CollisionConstraint>& potentialCollisions,
+            std::map<CollisionPair, ContactManifold>& potentialCollisions,
             std::queue<CollisionReport>& queuedReports,
             std::unordered_map<EntityID, PhysicsStateFull>& previousStates,
             std::unordered_map<EntityID, PhysicsStateFull>& currentStates,
@@ -347,6 +344,26 @@ namespace ToyMaker {
         std::unordered_map<EntityID, std::set<ConstraintID>> mEntityConstraintMap {};
 
         /**
+         * @brief A list of all constraints known to the physics system, evaluated every frame.
+         *
+         * Constraints whose indices are found in mDeletedConstraints are inactive, and will not be evaluated.
+         *
+         */
+        std::vector<std::pair<std::unique_ptr<BaseConstraint>, std::vector<EntityID>>> mConstraints {};
+
+        /**
+         * @brief IDs of constraints that were deleted and which may be reused to define a new constraint
+         *
+         */
+        std::unordered_set<ConstraintID> mConstraintsDeleted {};
+
+        /**
+         * @brief Mapping of entities to their velocity damping constraints.
+         *
+         */
+        std::unordered_map<EntityID, ConstraintID> mEntityDamping {};
+
+        /**
          * @brief Representation of the structure/technique being used to detect likely collisions.
          *
          * For the time being, this is just sweep and prune.
@@ -382,21 +399,7 @@ namespace ToyMaker {
          * @brief Storage for pairs of entities that are likely to collide (or are colliding) this simulation frame.
          *
          */
-        std::map<CollisionPair, CollisionConstraint> mCollisionConstraints {};
-
-        /**
-         * @brief A list of all constraints known to the physics system, evaluated every frame.
-         *
-         * Constraints whose indices are found in mDeletedConstraints are inactive, and will not be evaluated.
-         *
-         */
-        std::vector<std::pair<std::unique_ptr<BaseConstraint>, std::vector<EntityID>>> mConstraints {};
-
-        /**
-         * @brief IDs of constraints that were deleted and which may be reused to define a new constraint
-         *
-         */
-        std::unordered_set<ConstraintID> mConstraintsDeleted {};
+        std::map<CollisionPair, ContactManifold> mCollisionConstraints {};
 
         /**
          * @brief The number of substeps used in the physics system's XPBD implementation.

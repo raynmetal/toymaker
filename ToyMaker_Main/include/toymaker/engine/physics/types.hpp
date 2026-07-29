@@ -632,14 +632,13 @@ namespace ToyMaker {
          */
         std::unordered_map<BaseConstraint::ParticipantID, TParameter> mParameters {};
 
-    protected:
+    public:
         /**
-         * @brief Initializes this constraint with some initial compliance value.
+         * @brief Initializes this constraint with some initial compliance value and constraint parameters
          *
          */
-        ParametrizedConstraint(float compliance): Constraint<LagrangeCount> { compliance } {}
+        ParametrizedConstraint(const std::vector<TParameter>& constraintParameters, float compliance);
 
-    public:
         /**
          * @brief Adds a parameter for this constraint.
          *
@@ -674,7 +673,7 @@ namespace ToyMaker {
      * Repositions objects such that they no longer intersect along the axis of collision.
      *
      */
-    struct CollisionConstraint: public Constraint<2> {
+    struct ContactConstraint: public Constraint<2> {
     public:
         /**
          * @brief Whether or not two objects are currently intersecting (and therefore whether
@@ -687,37 +686,37 @@ namespace ToyMaker {
          * @brief The projected last point of contact of object A participating in this constraint.
          *
          */
-        glm::vec3 mLastPointContactA { 0.f };
+        glm::vec3 mPreviousA { 0.f };
 
         /**
          * @brief The contact point of object A participating in this constraint in world space.
          *
          */
-        glm::vec3 mCurrentPointContactA { 0.f };
+        glm::vec3 mCurrentA { 0.f };
 
         /**
          * @brief The contact point of object A relative to its own frame.
          *
          */
-        glm::vec3 mRelativePointContactA { 0.f };
+        glm::vec3 mRelativeA { 0.f };
 
         /**
          * @brief The projected last point of contact of object B participating in this constraint.
          *
          */
-        glm::vec3 mLastPointContactB { 0.f };
+        glm::vec3 mPreviousB { 0.f };
 
         /**
          * @brief The contact point of object B participating in this constraint in world space.
          *
          */
-        glm::vec3 mCurrentPointContactB { 0.f };
+        glm::vec3 mCurrentB { 0.f };
 
         /**
          * @brief The contact point of object B relative to its own frame.
          *
          */
-        glm::vec3 mRelativePointContactB { 0.f };
+        glm::vec3 mRelativeB { 0.f };
 
         /**
          * @brief Upon collision, points in the direction object B would need to move in order to
@@ -738,13 +737,13 @@ namespace ToyMaker {
          * from the object it is intersecting with.
          *
          */
-        float mPenetrationDepth { 0.f };
+        float mPenetration { 0.f };
 
         /**
          * @brief Initializes constraint with collision data from two potentially intersecting objects
          *
          */
-        CollisionConstraint();
+        ContactConstraint();
 
         /**
          * @brief Caches collision related information shared across position and velocity corrections
@@ -758,18 +757,6 @@ namespace ToyMaker {
             const PhysicsState& physicsB,
             const ObjectBounds& boundsB,
             const ObjectBounds& boundsBPrev
-        );
-
-        /**
-         * @brief Performs a partial collision data update based on result from previous physics
-         * substep.
-         *
-         */
-        void updateCollisionDataPartial(
-            const PhysicsState& physicsA,
-            const ObjectBounds& boundsA,
-            const PhysicsState& physicsB,
-            const ObjectBounds& boundsB
         );
 
         /**
@@ -790,6 +777,114 @@ namespace ToyMaker {
             float substepSeconds
         ) override;
     };
+
+    /**
+     * @brief Special structure for handling collisions with multiple points of contact accumulated over several timesteps
+     * in order to improve stability.
+     *
+     * Tracks up to a maximum of 4 contacts -- temporarily 5 when a new contact is added.
+     */
+    class ContactManifold: public BaseConstraint {
+    public:
+        /**
+         * @brief Constraint constructor with a compliance of 0, since our collision constraints are perfectly stiff
+         *
+         */
+        ContactManifold(): BaseConstraint{ 0.f } {}
+
+        /**
+         * @brief Attempts to add a contact to the manifold, succeeding when the new contact is not close to
+         * any existing contact
+         *
+         */
+        void addContact(const Collision& collision,
+            const PhysicsState& physicsA, const ObjectBounds& boundsA, const ObjectBounds& boundsAPrev,
+            const PhysicsState& physicsB, const ObjectBounds& boundsB, const ObjectBounds& boundsBPrev
+        );
+
+        /**
+         * @brief Separates intersecting/colliding objects and applies static friction.
+         *
+         */
+        void applyConstraintPosition(
+            const ParticipantTable& states,
+            float substepSeconds
+        ) override;
+
+        /**
+         * @brief Applies dynamic friction
+         *
+         */
+        void applyConstraintVelocity(
+            const ParticipantTable& states,
+            float substepSeconds
+        ) override;
+
+        /**
+         * @brief Resets all lagrange values associated with this manifold
+         *
+         */
+        void resetLagrange() override;
+
+        /**
+         * @brief Returns the number of contacts currently held by this manifold.
+         *
+         */
+        inline uint8_t getNContacts() const { return mNContacts; }
+
+        /**
+         * @brief Clears all contacts
+         *
+         */
+        inline void clear() { mNContacts = 0; }
+
+    private:
+        /**
+         * @brief The number of contacts stored by this manifold.
+         *
+         */
+        uint8_t mNContacts { 0 };
+
+        /**
+         * @brief Collection of contact constraints tracked by this manifold.
+         *
+         */
+        std::array<ContactConstraint, 5> mContacts {};
+
+        /**
+         * @brief Culls contacts that are no longer considered colliding, or have moved too far from their
+         * original locations
+         *
+         */
+        void trim(const ObjectBounds& boundsA, const ObjectBounds& boundsB);
+    };
+
+    /**
+     * @brief The velocity constraint responsible for applying a velocity-dependent damping force on
+     * all dynamic objects in order to eventually bring them to a stop.
+     *
+     * The parameter here is the physics state of this object in the previous substep.
+     *
+     */
+    class DampingConstraint: public ParametrizedConstraint<PhysicsState, 1> {
+    public:
+        /**
+         * @brief Inherits ParametrizedConstraint's constructors
+         *
+         */
+        using ParametrizedConstraint<PhysicsState, 1>::ParametrizedConstraint;
+
+        /**
+         * @brief Slow down dynamic objects moving at a constant speed so that they eventually come to a stop.
+         *
+         */
+        void applyConstraintVelocity(
+            const ParticipantTable& states,
+            float substepSeconds
+        ) override;
+    private:
+    };
+
 
     NLOHMANN_JSON_SERIALIZE_ENUM(PhysicsState::Mode, {
         { PhysicsState::MODE_DYNAMIC, "dynamic" },
@@ -942,6 +1037,13 @@ namespace ToyMaker {
     template <typename TParameter, uint8_t LagrangeCount>
     inline const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& ParametrizedConstraint<TParameter, LagrangeCount>::getParameters() const {
         return mParameters;
+    }
+
+    template <typename TParameter, uint8_t LagrangeCount>
+    inline ParametrizedConstraint<TParameter, LagrangeCount>::ParametrizedConstraint(const std::vector<TParameter>& constraintParameters, float compliance): Constraint<LagrangeCount> { compliance } {
+        for(auto i { 0 }; i < constraintParameters.size(); ++i) {
+            setParameter(0, constraintParameters[i]);
+        }
     }
 }
 
