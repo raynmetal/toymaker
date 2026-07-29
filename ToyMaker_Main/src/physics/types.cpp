@@ -9,7 +9,7 @@ const float kPersistentThresholdSquared { 1.5e-6 };
 
 const float kFactorDamping { 8e-2 };
 
-const float kFactorCutoffVelocity { 5.f };
+const float kFactorCutoffVelocity { 5.2f };
 
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     const glm::vec3 position { bounds.getPositionWorld() };
