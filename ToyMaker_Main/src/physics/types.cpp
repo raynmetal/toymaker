@@ -348,10 +348,10 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
         physicsA.mCoefficientFrictionDynamic,
         physicsB.mCoefficientFrictionDynamic
     ) };
-    if(coefficientFrictionDynamic > 0.f) {
-        const glm::vec3 tangentialVelocity {
-            pointVelocityAB - bounceVelocity * mContactNormal
-        };
+    const glm::vec3 tangentialVelocity {
+        pointVelocityAB - bounceVelocity * mContactNormal
+    };
+    if(coefficientFrictionDynamic > 0.f && squareDistance(tangentialVelocity)) {
 
         // derive the impulse required to fix our velocities
         const float lagrangeCollision { getLagrange().at(0) };
@@ -631,7 +631,7 @@ void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, 
         physicsCurr,
         impulseAngular
     );
-    if(squareDistance(physicsCurr.mAngularVelocity) < 16.f * cutoffVelocity * cutoffVelocity) {
+    if(squareDistance(physicsCurr.mAngularVelocity) < 1.5f * cutoffVelocity * cutoffVelocity) {
         physicsCurr.mAngularVelocity = glm::vec3 { 0.f };
     }
 }
