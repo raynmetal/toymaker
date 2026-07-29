@@ -5,7 +5,7 @@
 
 using namespace ToyMaker;
 
-const float kPersistentThresholdSquared { 2e-6 };
+const float kPersistentThresholdSquared { 3e-6 };
 
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     const glm::vec3 position { bounds.getPositionWorld() };
@@ -59,9 +59,6 @@ void ContactConstraint::updateCollisionData(
     const ObjectBounds& boundsB,
     const ObjectBounds& boundsBPrev
 ) {
-    mCollided = collision.mCollided;
-    if(!mCollided) return;
-
     // capture the current state, both relative and absolute, and projected previous state, of our
     // contact points
     mCurrentA = collision.mContactA.mPoint;
@@ -405,6 +402,11 @@ void ContactManifold::addContact(const Collision& collision,
     const PhysicsState& physicsB, const ObjectBounds& boundsB, const ObjectBounds& boundsBPrev
 ) {
     trim(boundsA, boundsB);
+
+    // guard: the contact being added should be real
+    if(!collision.mCollided) {
+        return;
+    }
 
     // guard: see whether this contact is a repeat of one we've already seen
     for(std::size_t i { 0 }; i < 4; ++i) {

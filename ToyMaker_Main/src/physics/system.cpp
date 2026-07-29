@@ -418,7 +418,7 @@ void PhysicsSystem::updateCollisionEventQueue(
             physicsOne, objectOne, objectOnePrev,
             physicsTwo, objectTwo, objectTwoPrev
         );
-        if(collisionData.mCollided) {
+        if(constraint.second.getNContacts() > 0) {
             onCollided(constraint.first, collisionData, queuedReports);
         }
         else {
