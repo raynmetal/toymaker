@@ -90,6 +90,8 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
         };
         previousStates[entity] = physicsState;
         currentStates[entity] = physicsState;
+        static_cast<DampingConstraint&>(*mConstraints[mEntityDamping[entity]].first)
+            .setParameter(0, physicsState.mPhysics);
 
         // skip predictions for static bodies
         if(physics.getMode() == PhysicsState::MODE_STATIC) {
@@ -271,9 +273,6 @@ void PhysicsSystem::applyPositionCollisionConstraints(
 }
 
 void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, ContactManifold>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
-    // TODO: (START) support iterative constraint solver by enabling equivalent of below
-    //
-    // for(std::size_t i { 0 }; i < mNPositionIterations; ++i) {
 
     // clear lagrange multipliers in preparation for this position constraint solve
     for(auto& constraint: mConstraints) {
@@ -282,6 +281,10 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, ContactMani
     for(auto& collisionConstraint: mCollisionConstraints) {
         collisionConstraint.second.resetLagrange();
     }
+
+    // TODO: (START) support iterative constraint solver by enabling equivalent of below
+    //
+    // for(std::size_t i { 0 }; i < mNPositionIterations; ++i) {
 
     for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
         // skip deleted or inactive constraints
@@ -317,8 +320,32 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, ContactMani
 
 void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, ContactManifold>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     // TODO: Add code to call registered and initialized velocity constraint providers
-
     applyVelocityCollisionConstraints(collisionConstraints, substepSeconds, currentStates);
+
+    for(ConstraintID constraint { 0 }; constraint < mConstraints.size(); ++constraint) {
+        // skip deleted or inactive constraints
+        if(mConstraintsDeleted.find(constraint) != mConstraintsDeleted.end()) {
+            continue;
+        }
+
+        // gather current entity states and prepare them for consumption by
+        // constraint
+        BaseConstraint::ParticipantTable participants {};
+        std::unique_ptr<BaseConstraint>& solver { mConstraints[constraint].first };
+        BaseConstraint::ParticipantID participantID {0};
+        for(const EntityID entity: mConstraints[constraint].second) {
+            participants.insert({
+                participantID++,
+                {
+                    currentStates[entity].mBounds,
+                    currentStates[entity].mPhysics,
+                }
+            });
+        }
+
+        // apply constraints and update relevant entity component tables
+        solver->applyConstraintVelocity(participants, substepSeconds);
+    }
 }
 
 void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, ContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
@@ -429,10 +456,12 @@ void PhysicsSystem::updateCollisionEventQueue(
 
 void PhysicsSystem::onEntityEnabled(EntityID entityID) {
     updateProperties(entityID);
+    mEntityDamping[entityID] = registerConstraint<DampingConstraint, PhysicsState>({ {entityID, getComponent<PhysicsState>(entityID)} }, 0.f);
 }
 
 void PhysicsSystem::onEntityDisabled(EntityID entityID) {
     mEntitiesUninitialized.erase(entityID);
+    mEntityDamping.erase(entityID);
     const auto foundEntity { mEntityConstraintMap.find(entityID) };
     if(foundEntity != mEntityConstraintMap.end()) {
         const auto constraints { foundEntity->second };

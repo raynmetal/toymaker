@@ -5,7 +5,9 @@
 
 using namespace ToyMaker;
 
-const float kPersistentThresholdSquared { 3e-6 };
+const float kPersistentThresholdSquared { 1.5e-6 };
+
+const float kFactorDamping { 2e-1 };
 
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     const glm::vec3 position { bounds.getPositionWorld() };
@@ -305,7 +307,7 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
 
     // derive the current coefficient of restitution between this pair of objects, set
     // to 0 when small separation velocity detected
-    const float coefficientRestitution { (glm::abs(bounceVelocity) <= 20.f * substepSeconds)?
+    const float coefficientRestitution { (glm::abs(bounceVelocity) <= 2.f * 10.f * substepSeconds)?
         0.f :
         glm::max(physicsA.mCoefficientRestitution, physicsB.mCoefficientRestitution)
     };
@@ -589,6 +591,42 @@ void ContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boun
     }
 }
 
+void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+    // only dynamic objects have damping applied
+    PhysicsState& physicsCurr { states.at(0).second.get() };
+    if(physicsCurr.getMode() != PhysicsState::MODE_DYNAMIC) {
+        return;
+    }
+
+    const float factorDamping { glm::min(kFactorDamping * substepSeconds, 1.f) };
+    const float oneBySubstep { 1.f / substepSeconds };
+
+    const ObjectBounds& object { states.at(0).first.get() };
+    const PhysicsState physicsPrev { getParameter(0) };
+
+    // apply linear damping
+    const glm::vec3 deltaVelocityLinear { physicsCurr.mVelocity - physicsPrev.mVelocity };
+    const glm::vec3 correctionLinear { -factorDamping * deltaVelocityLinear };
+    const glm::vec3 impulseLinear { correctionLinear * physicsCurr.getMass() };
+    physicsCurr = applyImpulsePhysics(
+        object,
+        physicsCurr,
+        impulseLinear,
+        object.getPositionWorld()
+    );
+
+    // apply angular damping
+    const glm::quat orientation { object.getOrientationWorld() };
+    const glm::vec3 deltaVelocityAngularLocal { glm::inverse(orientation) * (physicsCurr.mAngularVelocity - physicsPrev.mAngularVelocity) };
+    const glm::vec3 correctionAngularLocal { -factorDamping * deltaVelocityAngularLocal };
+    const glm::vec3 impulseAngular { orientation * (correctionAngularLocal * physicsCurr.getRotationalInertia()) };
+    physicsCurr = applyImpulsePhysics(
+        object,
+        physicsCurr,
+        impulseAngular
+    );
+}
+
 float ToyMaker::computeGeneralizedInverseMassPositional(
     const ObjectBounds& object,
     const PhysicsState& physics,
@@ -717,4 +755,5 @@ PhysicsState ToyMaker::applyImpulsePhysics(
     assert(isNumber(physics.mAngularVelocity) && "resultant angular velocity must be a number");
     return physics;
 }
+
 

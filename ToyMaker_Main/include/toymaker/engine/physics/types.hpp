@@ -632,14 +632,13 @@ namespace ToyMaker {
          */
         std::unordered_map<BaseConstraint::ParticipantID, TParameter> mParameters {};
 
-    protected:
+    public:
         /**
-         * @brief Initializes this constraint with some initial compliance value.
+         * @brief Initializes this constraint with some initial compliance value and constraint parameters
          *
          */
-        ParametrizedConstraint(float compliance): Constraint<LagrangeCount> { compliance } {}
+        ParametrizedConstraint(const std::vector<TParameter>& constraintParameters, float compliance);
 
-    public:
         /**
          * @brief Adds a parameter for this constraint.
          *
@@ -785,7 +784,7 @@ namespace ToyMaker {
      *
      * Tracks up to a maximum of 4 contacts -- temporarily 5 when a new contact is added.
      */
-    class ContactManifold: BaseConstraint {
+    class ContactManifold: public BaseConstraint {
     public:
         /**
          * @brief Constraint constructor with a compliance of 0, since our collision constraints are perfectly stiff
@@ -859,6 +858,33 @@ namespace ToyMaker {
          */
         void trim(const ObjectBounds& boundsA, const ObjectBounds& boundsB);
     };
+
+    /**
+     * @brief The velocity constraint responsible for applying a velocity-dependent damping force on
+     * all dynamic objects in order to eventually bring them to a stop.
+     *
+     * The parameter here is the physics state of this object in the previous substep.
+     *
+     */
+    class DampingConstraint: public ParametrizedConstraint<PhysicsState, 1> {
+    public:
+        /**
+         * @brief Inherits ParametrizedConstraint's constructors
+         *
+         */
+        using ParametrizedConstraint<PhysicsState, 1>::ParametrizedConstraint;
+
+        /**
+         * @brief Slow down dynamic objects moving at a constant speed so that they eventually come to a stop.
+         *
+         */
+        void applyConstraintVelocity(
+            const ParticipantTable& states,
+            float substepSeconds
+        ) override;
+    private:
+    };
+
 
     NLOHMANN_JSON_SERIALIZE_ENUM(PhysicsState::Mode, {
         { PhysicsState::MODE_DYNAMIC, "dynamic" },
@@ -1011,6 +1037,13 @@ namespace ToyMaker {
     template <typename TParameter, uint8_t LagrangeCount>
     inline const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& ParametrizedConstraint<TParameter, LagrangeCount>::getParameters() const {
         return mParameters;
+    }
+
+    template <typename TParameter, uint8_t LagrangeCount>
+    inline ParametrizedConstraint<TParameter, LagrangeCount>::ParametrizedConstraint(const std::vector<TParameter>& constraintParameters, float compliance): Constraint<LagrangeCount> { compliance } {
+        for(auto i { 0 }; i < constraintParameters.size(); ++i) {
+            setParameter(0, constraintParameters[i]);
+        }
     }
 }
 

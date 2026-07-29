@@ -25,12 +25,9 @@
 #include "../signals.hpp"
 #include "../spatial_query/types.hpp"
 #include "../spatial_query/sweep_prune.hpp"
-
 #include "types.hpp"
 
 namespace ToyMaker {
-
-
     /**
      * @ingroup ToyMakerPhysics ToyMakerECSSystem
      * @brief The physics system, an ECS system that tracks and updates the state of each physics
@@ -347,6 +344,26 @@ namespace ToyMaker {
         std::unordered_map<EntityID, std::set<ConstraintID>> mEntityConstraintMap {};
 
         /**
+         * @brief A list of all constraints known to the physics system, evaluated every frame.
+         *
+         * Constraints whose indices are found in mDeletedConstraints are inactive, and will not be evaluated.
+         *
+         */
+        std::vector<std::pair<std::unique_ptr<BaseConstraint>, std::vector<EntityID>>> mConstraints {};
+
+        /**
+         * @brief IDs of constraints that were deleted and which may be reused to define a new constraint
+         *
+         */
+        std::unordered_set<ConstraintID> mConstraintsDeleted {};
+
+        /**
+         * @brief Mapping of entities to their velocity damping constraints.
+         *
+         */
+        std::unordered_map<EntityID, ConstraintID> mEntityDamping {};
+
+        /**
          * @brief Representation of the structure/technique being used to detect likely collisions.
          *
          * For the time being, this is just sweep and prune.
@@ -383,20 +400,6 @@ namespace ToyMaker {
          *
          */
         std::map<CollisionPair, ContactManifold> mCollisionConstraints {};
-
-        /**
-         * @brief A list of all constraints known to the physics system, evaluated every frame.
-         *
-         * Constraints whose indices are found in mDeletedConstraints are inactive, and will not be evaluated.
-         *
-         */
-        std::vector<std::pair<std::unique_ptr<BaseConstraint>, std::vector<EntityID>>> mConstraints {};
-
-        /**
-         * @brief IDs of constraints that were deleted and which may be reused to define a new constraint
-         *
-         */
-        std::unordered_set<ConstraintID> mConstraintsDeleted {};
 
         /**
          * @brief The number of substeps used in the physics system's XPBD implementation.
