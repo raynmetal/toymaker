@@ -7,7 +7,9 @@ using namespace ToyMaker;
 
 const float kPersistentThresholdSquared { 1.5e-6 };
 
-const float kFactorDamping { 2e-1 };
+const float kFactorDamping { 8e-2 };
+
+const float kFactorCutoffVelocity { 5.f };
 
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     const glm::vec3 position { bounds.getPositionWorld() };
@@ -307,7 +309,7 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
 
     // derive the current coefficient of restitution between this pair of objects, set
     // to 0 when small separation velocity detected
-    const float coefficientRestitution { (glm::abs(bounceVelocity) <= 2.f * 10.f * substepSeconds)?
+    const float coefficientRestitution { (glm::abs(bounceVelocity) <= 2.f * kFactorCutoffVelocity * substepSeconds)?
         0.f :
         glm::max(physicsA.mCoefficientRestitution, physicsB.mCoefficientRestitution)
     };
@@ -600,6 +602,7 @@ void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, 
 
     const float factorDamping { glm::min(kFactorDamping * substepSeconds, 1.f) };
     const float oneBySubstep { 1.f / substepSeconds };
+    const float cutoffVelocity { kFactorCutoffVelocity * substepSeconds };
 
     const ObjectBounds& object { states.at(0).first.get() };
     const PhysicsState physicsPrev { getParameter(0) };
@@ -614,6 +617,9 @@ void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, 
         impulseLinear,
         object.getPositionWorld()
     );
+    if(squareDistance(physicsCurr.mVelocity) < cutoffVelocity * cutoffVelocity) {
+        physicsCurr.mVelocity = glm::vec3 { 0.f };
+    }
 
     // apply angular damping
     const glm::quat orientation { object.getOrientationWorld() };
@@ -625,6 +631,9 @@ void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, 
         physicsCurr,
         impulseAngular
     );
+    if(squareDistance(physicsCurr.mAngularVelocity) < 16.f * cutoffVelocity * cutoffVelocity) {
+        physicsCurr.mAngularVelocity = glm::vec3 { 0.f };
+    }
 }
 
 float ToyMaker::computeGeneralizedInverseMassPositional(
@@ -755,5 +764,4 @@ PhysicsState ToyMaker::applyImpulsePhysics(
     assert(isNumber(physics.mAngularVelocity) && "resultant angular velocity must be a number");
     return physics;
 }
-
 
