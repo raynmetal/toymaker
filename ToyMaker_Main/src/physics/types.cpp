@@ -630,7 +630,7 @@ void ConstraintDampingRigidbody::applyConstraintVelocity(const ParticipantTable&
         physicsCurr,
         impulseAngular
     );
-    if(squareDistance(physicsCurr.mAngularVelocity) <= 1.5f * cutoffVelocity * cutoffVelocity) {
+    if(squareDistance(physicsCurr.mAngularVelocity) <= cutoffVelocity * cutoffVelocity) {
         physicsCurr.mAngularVelocity = glm::vec3 { 0.f };
     }
 }
