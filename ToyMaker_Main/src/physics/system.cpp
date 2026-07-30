@@ -9,6 +9,8 @@
 
 using namespace ToyMaker;
 
+const float kFactorVelocityDamping { 8e-2f };
+
 glm::vec3 computeRotationalInertiaBox(float mass, const ObjectBounds& cuboid);
 glm::vec3 computeRotationalInertiaCapsule(float mass, const ObjectBounds& capsule);
 glm::vec3 computeRotationalInertiaSphere(float mass, const ObjectBounds& sphere);
@@ -90,8 +92,7 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
         };
         previousStates[entity] = physicsState;
         currentStates[entity] = physicsState;
-        static_cast<DampingConstraint&>(*mConstraints[mEntityDamping[entity]].first)
-            .setParameter(0, physicsState.mPhysics);
+        mEntityDamping.at(entity).setParameter(0, physicsState.mPhysics);
 
         // skip predictions for static bodies
         if(physics.getMode() == PhysicsState::MODE_STATIC) {
@@ -141,7 +142,7 @@ void PhysicsSystem::integrateForces(float substepSeconds, std::unordered_map<Ent
 void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<CollisionReport>& queuedReports) {
     const auto timeStartCollect { std::chrono::high_resolution_clock::now() };
     const std::set<EntityID>& enabledEntities { getEnabledEntities() };
-    std::map<CollisionPair, ContactManifold> potentialCollisions {};
+    std::map<CollisionPair, ConstraintContactManifold> potentialCollisions {};
     std::unordered_set<EntityID> potentialColliders {};
     for(const EntityID entity: enabledEntities) {
         // find an AABB that can contain the object regardless of orientation, with some
@@ -207,7 +208,7 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
             potentialCollisions.insert({ link,
                 mCollisionConstraints.find(link) != mCollisionConstraints.end()?
                     mCollisionConstraints.at(link) :
-                    ContactManifold()
+                    ConstraintContactManifold()
             });
         }
     }
@@ -251,7 +252,7 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
 }
 
 void PhysicsSystem::applyPositionCollisionConstraints(
-    std::map<CollisionPair, ContactManifold>& constraints,
+    std::map<CollisionPair, ConstraintContactManifold>& constraints,
     float substepSeconds,
     std::unordered_map<EntityID, PhysicsStateFull>& currentStates
 ) {
@@ -272,7 +273,7 @@ void PhysicsSystem::applyPositionCollisionConstraints(
     }
 }
 
-void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, ContactManifold>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, ConstraintContactManifold>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
 
     // clear lagrange multipliers in preparation for this position constraint solve
     for(auto& constraint: mConstraints) {
@@ -318,7 +319,7 @@ void PhysicsSystem::applyPositionConstraints(std::map<CollisionPair, ContactMani
     // }
 }
 
-void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, ContactManifold>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, ConstraintContactManifold>& collisionConstraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     // TODO: Add code to call registered and initialized velocity constraint providers
     applyVelocityCollisionConstraints(collisionConstraints, substepSeconds, currentStates);
 
@@ -346,9 +347,22 @@ void PhysicsSystem::applyVelocityConstraints(std::map<CollisionPair, ContactMani
         // apply constraints and update relevant entity component tables
         solver->applyConstraintVelocity(participants, substepSeconds);
     }
+
+    // apply rigid body damping to all dynamic entities
+    for(auto& entityDamping: mEntityDamping) {
+        entityDamping.second.applyConstraintVelocity(
+            { {
+                0, {
+                    currentStates[entityDamping.first].mBounds,
+                    currentStates[entityDamping.first].mPhysics
+                }
+            }, },
+            substepSeconds
+        );
+    }
 }
 
-void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, ContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
+void PhysicsSystem::applyVelocityCollisionConstraints(std::map<CollisionPair, ConstraintContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentStates) {
     for(auto& linkConstraint: constraints) {
         // retrieve data
         auto& objectOne { currentStates[linkConstraint.first.first()].mBounds };
@@ -408,7 +422,7 @@ void PhysicsSystem::deriveVelocities(float substepSeconds, const std::unordered_
 }
 
 void PhysicsSystem::updateCollisionEventQueue(
-    std::map<CollisionPair, ContactManifold>& potentialCollisions,
+    std::map<CollisionPair, ConstraintContactManifold>& potentialCollisions,
     std::queue<CollisionReport>& queuedReports,
     std::unordered_map<EntityID, PhysicsStateFull>& previousStates,
     std::unordered_map<EntityID, PhysicsStateFull>& currentStates,
@@ -456,7 +470,7 @@ void PhysicsSystem::updateCollisionEventQueue(
 
 void PhysicsSystem::onEntityEnabled(EntityID entityID) {
     updateProperties(entityID);
-    mEntityDamping[entityID] = registerConstraint<DampingConstraint, PhysicsState>({ {entityID, getComponent<PhysicsState>(entityID)} }, 0.f);
+    mEntityDamping.insert({ entityID, ConstraintDampingRigidbody(kFactorVelocityDamping, { { getComponent<PhysicsState>(entityID) } }, 0.f) });
 }
 
 void PhysicsSystem::onEntityDisabled(EntityID entityID) {

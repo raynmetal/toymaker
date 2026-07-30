@@ -25,6 +25,7 @@
 #include "../signals.hpp"
 #include "../spatial_query/types.hpp"
 #include "../spatial_query/sweep_prune.hpp"
+
 #include "types.hpp"
 
 namespace ToyMaker {
@@ -125,9 +126,39 @@ namespace ToyMaker {
         /**
          * @brief Registers a constraint for the physics system to evaluate every substep.
          *
+         * TODO: Why am I doing all this overcomplicated template nonsense here?  Review, and simplify.
+         *
          */
-        template<typename TConstraint, typename TConstraintData>
-        ConstraintID registerConstraint(const std::vector<std::pair<EntityID, TConstraintData>>& constraintData, float compliance);
+        template<typename TConstraint,
+            std::enable_if_t<
+                std::is_base_of<
+                    ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                    TConstraint
+                >::value, bool
+            > = true
+        >
+        ConstraintID registerConstraint(
+            const typename TConstraint::Config& config,
+            const std::vector<std::pair<EntityID, typename TConstraint::Parameter>>& parameters,
+            float compliance
+        );
+
+        /**
+         * @brief Returns a mutable reference to a constraint for viewing and modification.
+         *
+         * @warning Avoid storing this reference as it may be invalidated in the future.
+         *
+         */
+        template<typename TConstraint>
+        TConstraint& getConstraint(ConstraintID constraint);
+
+        /**
+         * @brief Returns a const reference to a constraint for viewing
+         *
+         * @warning Avoid storing this reference as it may be invalidated in the future.
+         */
+        template<typename TConstraint>
+        const TConstraint& getConstraint(ConstraintID constraint) const;
 
         /**
          * @brief Removes a constraint.
@@ -235,25 +266,25 @@ namespace ToyMaker {
          * @brief Correctly applies collision position constraint for each potential collision detected.
          *
          */
-        void applyPositionCollisionConstraints(std::map<CollisionPair, ContactManifold>& potentialCollisions, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyPositionCollisionConstraints(std::map<CollisionPair, ConstraintContactManifold>& potentialCollisions, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Correctly applies collision velocity constraint for each potential collision detected.
          *
          */
-        void applyVelocityCollisionConstraints(std::map<CollisionPair, ContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyVelocityCollisionConstraints(std::map<CollisionPair, ConstraintContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Applies all active position constraints
          *
          */
-        void applyPositionConstraints(std::map<CollisionPair, ContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyPositionConstraints(std::map<CollisionPair, ConstraintContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Applies all active velocity constraints
          *
          */
-        void applyVelocityConstraints(std::map<CollisionPair, ContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
+        void applyVelocityConstraints(std::map<CollisionPair, ConstraintContactManifold>& constraints, float substepSeconds, std::unordered_map<EntityID, PhysicsStateFull>& currentState);
 
         /**
          * @brief Tests each pair of potential colliders for intersection, adds collision report to the queue if
@@ -263,7 +294,7 @@ namespace ToyMaker {
          * @param queuedReports All reports due to be signalled this frame.
          */
         void updateCollisionEventQueue(
-            std::map<CollisionPair, ContactManifold>& potentialCollisions,
+            std::map<CollisionPair, ConstraintContactManifold>& potentialCollisions,
             std::queue<CollisionReport>& queuedReports,
             std::unordered_map<EntityID, PhysicsStateFull>& previousStates,
             std::unordered_map<EntityID, PhysicsStateFull>& currentStates,
@@ -361,7 +392,7 @@ namespace ToyMaker {
          * @brief Mapping of entities to their velocity damping constraints.
          *
          */
-        std::unordered_map<EntityID, ConstraintID> mEntityDamping {};
+        std::unordered_map<EntityID, ConstraintDampingRigidbody> mEntityDamping {};
 
         /**
          * @brief Representation of the structure/technique being used to detect likely collisions.
@@ -399,7 +430,7 @@ namespace ToyMaker {
          * @brief Storage for pairs of entities that are likely to collide (or are colliding) this simulation frame.
          *
          */
-        std::map<CollisionPair, ContactManifold> mCollisionConstraints {};
+        std::map<CollisionPair, ConstraintContactManifold> mCollisionConstraints {};
 
         /**
          * @brief The number of substeps used in the physics system's XPBD implementation.
@@ -428,8 +459,19 @@ namespace ToyMaker {
     inline const std::string PhysicsSystem::SignalCollidedPrefix { "collided_" };
     inline const std::string PhysicsSystem::SignalSeparatedPrefix { "separated_" };
 
-    template<typename TConstraint, typename TConstraintData>
-    PhysicsSystem::ConstraintID PhysicsSystem::registerConstraint(const std::vector<std::pair<EntityID, TConstraintData>>& participants, float compliance) {
+    template<typename TConstraint,
+        std::enable_if_t<
+            std::is_base_of<
+                ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                TConstraint
+            >::value, bool
+        >
+    >
+    PhysicsSystem::ConstraintID PhysicsSystem::registerConstraint(
+        const typename TConstraint::Config& config,
+        const std::vector<std::pair<EntityID, typename TConstraint::Parameter>>& participants,
+        float compliance
+    ) {
         // reclaim a deleted constraint id if possible
         ConstraintID newConstraint { mConstraints.size() };
         if(!mConstraintsDeleted.empty()) {
@@ -438,22 +480,28 @@ namespace ToyMaker {
         }
 
         // get separate constraint parameter and participating entity lists
+        std::unordered_set<EntityID> registeredEntities {};
         std::vector<EntityID> entities {};
-        std::vector<TConstraintData> constraintData {};
-        for(const std::pair<EntityID, TConstraintData>& participant: participants) {
+        std::vector<typename TConstraint::Parameter> constraintData {};
+        for(const std::pair<EntityID, typename TConstraint::Parameter>& participant: participants) {
+            const bool alreadyRegistered {
+                registeredEntities.find(participant.first) != registeredEntities.end()
+            };
+            assert(!alreadyRegistered && "An entity has appeared twice in the constraint registration list, which is invalid.");
             constraintData.push_back(participant.second);
             entities.push_back(participant.first);
+            registeredEntities.insert(participant.first);
         }
 
         // create constraint
         if(newConstraint == mConstraints.size()) {
             mConstraints.push_back({
-                std::make_unique<TConstraint>(constraintData, compliance),
+                std::make_unique<TConstraint>(config, constraintData, compliance),
                 entities
             });
         } else {
             mConstraints[newConstraint] = {
-                std::make_unique<TConstraint>(constraintData, compliance),
+                std::make_unique<TConstraint>(config, constraintData, compliance),
                 entities
             };
         }
@@ -463,6 +511,16 @@ namespace ToyMaker {
         }
 
         return newConstraint;
+    }
+
+    template<typename TConstraint>
+    TConstraint& PhysicsSystem::getConstraint(ConstraintID constraint) {
+        return static_cast<TConstraint>(*mConstraints.at(constraint).first);
+    }
+
+    template<typename TConstraint>
+    const TConstraint& PhysicsSystem::getConstraint(ConstraintID constraint) const {
+        return static_cast<TConstraint>(*mConstraints.at(constraint).first);
     }
 }
 

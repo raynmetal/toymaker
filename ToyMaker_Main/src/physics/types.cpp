@@ -7,8 +7,6 @@ using namespace ToyMaker;
 
 const float kPersistentThresholdSquared { 1.5e-6 };
 
-const float kFactorDamping { 8e-2 };
-
 const float kFactorCutoffVelocity { 5.2f };
 
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
@@ -52,9 +50,9 @@ float BaseConstraint::getCompliance() const {
     return mCompliance;
 }
 
-ContactConstraint::ContactConstraint(): Constraint<2> { 0.f } {}
+ConstraintContact::ConstraintContact(): Constraint<2> { 0.f } {}
 
-void ContactConstraint::updateCollisionData(
+void ConstraintContact::updateCollisionData(
     const Collision& collision,
     const PhysicsState& physicsA,
     const ObjectBounds& boundsA,
@@ -106,7 +104,7 @@ void ContactConstraint::updateCollisionData(
     mCollisionVelocity = glm::dot(pointVelocityAB, mContactNormal);
 }
 
-void ContactConstraint::applyConstraintPosition(
+void ConstraintContact::applyConstraintPosition(
     const ParticipantTable& states,
     float substepSeconds
 ) {
@@ -263,7 +261,7 @@ void ContactConstraint::applyConstraintPosition(
     );
 }
 
-void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+void ConstraintContact::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
 
     const double oneBySubstep { 1.f / substepSeconds };
@@ -383,25 +381,25 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
     }
 }
 
-void ContactManifold::resetLagrange() {
+void ConstraintContactManifold::resetLagrange() {
     for(auto i { 0 }; i < mNContacts; ++i) {
         mContacts[i].resetLagrange();
     }
 }
 
-void ContactManifold::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+void ConstraintContactManifold::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     for(auto i { 0 }; i < mNContacts; ++i) {
         mContacts[i].applyConstraintVelocity(states, substepSeconds);
     }
 }
 
-void ContactManifold::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
+void ConstraintContactManifold::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
     for(auto i { 0 }; i < mNContacts; ++i) {
         mContacts[i].applyConstraintPosition(states, substepSeconds);
     }
 }
 
-void ContactManifold::addContact(const Collision& collision,
+void ConstraintContactManifold::addContact(const Collision& collision,
     const PhysicsState& physicsA, const ObjectBounds& boundsA, const ObjectBounds& boundsAPrev,
     const PhysicsState& physicsB, const ObjectBounds& boundsB, const ObjectBounds& boundsBPrev
 ) {
@@ -560,7 +558,7 @@ void ContactManifold::addContact(const Collision& collision,
     }
 }
 
-void ContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boundsB) {
+void ConstraintContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boundsB) {
     const glm::vec3 positionA { boundsA.getPositionWorld() };
     const glm::vec3 positionB { boundsB.getPositionWorld() };
     const glm::quat orientationA { boundsA.getOrientationWorld() };
@@ -593,14 +591,15 @@ void ContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boun
     }
 }
 
-void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+void ConstraintDampingRigidbody::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     // only dynamic objects have damping applied
     PhysicsState& physicsCurr { states.at(0).second.get() };
     if(physicsCurr.getMode() != PhysicsState::MODE_DYNAMIC) {
         return;
     }
 
-    const float factorDamping { glm::min(kFactorDamping * substepSeconds, 1.f) };
+    const float factorDamping { glm::min(getConfig() * substepSeconds, 1.f) };
+    assert(factorDamping >= 0.f && "A negative damping value is invalid");
     const float oneBySubstep { 1.f / substepSeconds };
     const float cutoffVelocity { kFactorCutoffVelocity * substepSeconds };
 
@@ -617,7 +616,7 @@ void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, 
         impulseLinear,
         object.getPositionWorld()
     );
-    if(squareDistance(physicsCurr.mVelocity) < cutoffVelocity * cutoffVelocity) {
+    if(squareDistance(physicsCurr.mVelocity) <= cutoffVelocity * cutoffVelocity) {
         physicsCurr.mVelocity = glm::vec3 { 0.f };
     }
 
@@ -631,7 +630,7 @@ void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, 
         physicsCurr,
         impulseAngular
     );
-    if(squareDistance(physicsCurr.mAngularVelocity) < 1.5f * cutoffVelocity * cutoffVelocity) {
+    if(squareDistance(physicsCurr.mAngularVelocity) <= 1.5f * cutoffVelocity * cutoffVelocity) {
         physicsCurr.mAngularVelocity = glm::vec3 { 0.f };
     }
 }

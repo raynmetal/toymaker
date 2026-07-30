@@ -463,6 +463,12 @@ namespace ToyMaker {
     inline const PhysicsState::Traits PhysicsState::MaskMode { 0x3 };
     inline const PhysicsState::Traits PhysicsState::MaskCollisionResponse { 0xC };
 
+    template<uint8_t LagrangeCount>
+    class Constraint;
+
+    template <typename TConfig, typename TParameter, uint8_t LagrangeCount>
+    class ConstraintParametrized;
+
     /**
      * @ingroup ToyMakerPhysics
      * @brief Base class for constraints
@@ -494,6 +500,7 @@ namespace ToyMaker {
 
     public:
         using ParticipantID = std::size_t;
+
         using ParticipantTable = std::unordered_map<
             ParticipantID,
             std::pair<
@@ -545,9 +552,65 @@ namespace ToyMaker {
          */
         void setCompliance(float newCompliance);
 
+        /**
+         * @brief Sets a parameter belonging to a particular constraint participant.
+         *
+         */
+        template <typename TConstraint,
+            std::enable_if_t<
+                std::is_base_of<
+                    ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                    TConstraint
+                >::value, bool
+            > = true
+        >
+        void setParameter(ParticipantID participant, const typename TConstraint::Parameter& parameter);
+
+        /**
+         * @brief Gets a parameter associated with a particular constraint participant.
+         *
+         */
+        template <typename TConstraint,
+            std::enable_if_t<
+                std::is_base_of<
+                    ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                    TConstraint
+                >::value, bool
+            > = true
+        >
+        typename TConstraint::Parameter getParameter(ParticipantID participant) const;
+
+        /**
+         * @brief Sets the configuration of a constraint.
+         *
+         */
+        template <typename TConstraint,
+
+            std::enable_if_t<
+                std::is_base_of<
+                    ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                    TConstraint
+                >::value, bool
+            > = true
+        >
+        void setConfig(const typename TConstraint::Config& config);
+
+        /**
+         * @brief Gets the configuration of a constraint
+         *
+         */
+        template <typename TConstraint,
+            std::enable_if_t<
+                std::is_base_of<
+                    ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                    TConstraint
+                >::value, bool
+            > = true
+        >
+        typename TConstraint::Config getConfig() const;
+
         virtual ~BaseConstraint() {};
     };
-
 
     /**
      * @brief Any constraint storing LagrangeCount correction multipliers.
@@ -617,12 +680,15 @@ namespace ToyMaker {
     /**
      * @brief Subclass implementation for any constraint which takes data of type TParameter
      *
-     * @tparam TParameter A parameter specific to this constraint.
+     * @tparam TConfig The configuration data for the constraint as a whole
+     * @tparam TParameter A per-entity parameter specific to this constraint.
      * @tparam LagrangeCount The number of Lagrange multipliers used by this constraint
      *
+     * TODO: Why am I doing all this overcomplicated template nonsense here?  Review and simplify.
+     *
      */
-    template <typename TParameter, uint8_t LagrangeCount>
-    class ParametrizedConstraint: public Constraint<LagrangeCount> {
+    template <typename TConfig, typename TParameter, uint8_t LagrangeCount>
+    class ConstraintParametrized: public Constraint<LagrangeCount> {
     private:
         /**
          * @brief A set of parameters associated with each entity
@@ -632,12 +698,38 @@ namespace ToyMaker {
          */
         std::unordered_map<BaseConstraint::ParticipantID, TParameter> mParameters {};
 
+        /**
+         * @brief The configuration of the constraint as a whole, specific to this constraint.
+         *
+         */
+        TConfig mConfig {};
+
     public:
+        using Config = TConfig;
+        using Parameter = TParameter;
+        static const uint8_t NLagrange = LagrangeCount;
+
         /**
          * @brief Initializes this constraint with some initial compliance value and constraint parameters
          *
          */
-        ParametrizedConstraint(const std::vector<TParameter>& constraintParameters, float compliance);
+        explicit ConstraintParametrized(
+            const TConfig& config,
+            const std::vector<TParameter>& constraintParameters,
+            float compliance
+        );
+
+        /**
+         * @brief Sets configuration for this constraint.
+         *
+         */
+        void setConfig(const TConfig& config);
+
+        /**
+         * @brief Gets the current configuration of this constraint.
+         *
+         */
+        TConfig getConfig() const;
 
         /**
          * @brief Adds a parameter for this constraint.
@@ -673,7 +765,7 @@ namespace ToyMaker {
      * Repositions objects such that they no longer intersect along the axis of collision.
      *
      */
-    struct ContactConstraint: public Constraint<2> {
+    struct ConstraintContact: public Constraint<2> {
     public:
         /**
          * @brief Whether or not two objects are currently intersecting (and therefore whether
@@ -743,7 +835,7 @@ namespace ToyMaker {
          * @brief Initializes constraint with collision data from two potentially intersecting objects
          *
          */
-        ContactConstraint();
+        ConstraintContact();
 
         /**
          * @brief Caches collision related information shared across position and velocity corrections
@@ -784,13 +876,13 @@ namespace ToyMaker {
      *
      * Tracks up to a maximum of 4 contacts -- temporarily 5 when a new contact is added.
      */
-    class ContactManifold: public BaseConstraint {
+    class ConstraintContactManifold: public BaseConstraint {
     public:
         /**
          * @brief Constraint constructor with a compliance of 0, since our collision constraints are perfectly stiff
          *
          */
-        ContactManifold(): BaseConstraint{ 0.f } {}
+        ConstraintContactManifold(): BaseConstraint{ 0.f } {}
 
         /**
          * @brief Attempts to add a contact to the manifold, succeeding when the new contact is not close to
@@ -849,7 +941,7 @@ namespace ToyMaker {
          * @brief Collection of contact constraints tracked by this manifold.
          *
          */
-        std::array<ContactConstraint, 5> mContacts {};
+        std::array<ConstraintContact, 5> mContacts {};
 
         /**
          * @brief Culls contacts that are no longer considered colliding, or have moved too far from their
@@ -863,16 +955,17 @@ namespace ToyMaker {
      * @brief The velocity constraint responsible for applying a velocity-dependent damping force on
      * all dynamic objects in order to eventually bring them to a stop.
      *
-     * The parameter here is the physics state of this object in the previous substep.
+     * The parameter here is the physics state of this object in the previous substep.  This is filled
+     * automatically each substep by the physics system.
      *
      */
-    class DampingConstraint: public ParametrizedConstraint<PhysicsState, 1> {
+    class ConstraintDampingRigidbody: public ConstraintParametrized<float, PhysicsState, 1> {
     public:
         /**
-         * @brief Inherits ParametrizedConstraint's constructors
+         * @brief Inherits ConstraintParametrized's constructors
          *
          */
-        using ParametrizedConstraint<PhysicsState, 1>::ParametrizedConstraint;
+        using ConstraintParametrized<float, PhysicsState, 1>::ConstraintParametrized;
 
         /**
          * @brief Slow down dynamic objects moving at a constant speed so that they eventually come to a stop.
@@ -882,9 +975,34 @@ namespace ToyMaker {
             const ParticipantTable& states,
             float substepSeconds
         ) override;
-    private:
     };
 
+    /**
+     * @brief Keeps fixed points each relative to its parent object at fixed distances
+     * from each other.
+     *
+     * For each object in the constraint, takes a parameter indicating the point relative to the object
+     * which must be kept at a fixed distance from the other object's point.
+     *
+     */
+    class DistanceConstraint: public ConstraintParametrized<float, glm::vec3, 1> {
+    public:
+        /**
+         * @brief Inherit superclass constructors.
+         *
+         */
+        using ConstraintParametrized<float, glm::vec3, 1>::ConstraintParametrized;
+
+        /**
+         * @brief Correct any distance deviations in between the two points of the two
+         * objects participating in the constraint.
+         *
+         */
+        void applyConstraintPosition(
+            const ParticipantTable& states,
+            float substepSeconds
+        ) override;
+    };
 
     NLOHMANN_JSON_SERIALIZE_ENUM(PhysicsState::Mode, {
         { PhysicsState::MODE_DYNAMIC, "dynamic" },
@@ -1024,23 +1142,83 @@ namespace ToyMaker {
         ((mLagrangeMultipliers[indices] = mLagrangeDeltas[indices] = 0.f), ...);
     }
 
-    template<typename TParameter, uint8_t LagrangeCount>
-    inline void ParametrizedConstraint<TParameter, LagrangeCount>::setParameter(BaseConstraint::ParticipantID participant, const TParameter& parameter) {
+    template<typename TConfig, typename TParameter, uint8_t LagrangeCount>
+    inline void ConstraintParametrized<TConfig, TParameter, LagrangeCount>::setParameter(BaseConstraint::ParticipantID participant, const TParameter& parameter) {
         mParameters[participant] = parameter;
     }
 
-    template<typename TParameter, uint8_t LagrangeCount>
-    inline void ParametrizedConstraint<TParameter, LagrangeCount>::removeParameter(BaseConstraint::ParticipantID participant) {
+    template <typename TConstraint,
+        std::enable_if_t<
+            std::is_base_of<
+                ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                TConstraint
+            >::value, bool
+        >
+    >
+    inline void BaseConstraint::setParameter(ParticipantID participant, const typename TConstraint::Parameter& parameter) {
+        static_cast<TConstraint&>(*this).setParameter(participant, parameter);
+    }
+
+    template <typename TConstraint,
+        std::enable_if_t<
+            std::is_base_of<
+                ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                TConstraint
+            >::value, bool
+        >
+    >
+    inline typename TConstraint::Parameter BaseConstraint::getParameter(ParticipantID participant) const {
+        return static_cast<TConstraint&>(*this).getParameter(participant);
+    }
+
+
+    template<typename TConfig, typename TParameter, uint8_t LagrangeCount>
+    inline void ConstraintParametrized<TConfig, TParameter, LagrangeCount>::setConfig(const TConfig& config) {
+        mConfig = config;
+    }
+
+
+    template<typename TConfig, typename TParameter, uint8_t LagrangeCount>
+    inline TConfig ConstraintParametrized<TConfig, TParameter, LagrangeCount>::getConfig() const {
+        return mConfig;
+    }
+
+    template <typename TConstraint,
+        std::enable_if_t<
+            std::is_base_of<
+                ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                TConstraint
+            >::value, bool
+        >
+    >
+    inline void BaseConstraint::setConfig(const typename TConstraint::Config& config) {
+        static_cast<TConstraint&>(*this).setConfig(config);
+    }
+
+    template <typename TConstraint,
+        std::enable_if_t<
+            std::is_base_of<
+                ConstraintParametrized<typename TConstraint::Config, typename TConstraint::Parameter, TConstraint::NLagrange>,
+                TConstraint
+            >::value, bool
+        >
+    >
+    inline typename TConstraint::Config BaseConstraint::getConfig() const {
+        return static_cast<TConstraint&>(*this).getConfig();
+    }
+
+    template<typename TConfig, typename TParameter, uint8_t LagrangeCount>
+    inline void ConstraintParametrized<TConfig, TParameter, LagrangeCount>::removeParameter(BaseConstraint::ParticipantID participant) {
         mParameters.erase(participant);
     }
 
-    template <typename TParameter, uint8_t LagrangeCount>
-    inline const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& ParametrizedConstraint<TParameter, LagrangeCount>::getParameters() const {
+    template <typename TConfig, typename TParameter, uint8_t LagrangeCount>
+    inline const std::unordered_map<BaseConstraint::ParticipantID, TParameter>& ConstraintParametrized<TConfig, TParameter, LagrangeCount>::getParameters() const {
         return mParameters;
     }
 
-    template <typename TParameter, uint8_t LagrangeCount>
-    inline ParametrizedConstraint<TParameter, LagrangeCount>::ParametrizedConstraint(const std::vector<TParameter>& constraintParameters, float compliance): Constraint<LagrangeCount> { compliance } {
+    template <typename TConfig, typename TParameter, uint8_t LagrangeCount>
+    inline ConstraintParametrized<TConfig, TParameter, LagrangeCount>::ConstraintParametrized(const TConfig& config, const std::vector<TParameter>& constraintParameters, float compliance): Constraint<LagrangeCount> { compliance }, mConfig { config } {
         for(auto i { 0 }; i < constraintParameters.size(); ++i) {
             setParameter(0, constraintParameters[i]);
         }
