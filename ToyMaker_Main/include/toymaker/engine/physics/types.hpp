@@ -977,31 +977,76 @@ namespace ToyMaker {
         ) override;
     };
 
+
     /**
-     * @brief Keeps fixed points each relative to its parent object at fixed distances
-     * from each other.
-     *
-     * For each object in the constraint, takes a parameter indicating the point relative to the object
-     * which must be kept at a fixed distance from the other object's point.
+     * @brief A collection of values defining an orientation or position constraint for a single degree of freedom.
      *
      */
-    class DistanceConstraint: public ConstraintParametrized<float, glm::vec3, 1> {
-    public:
+    struct Constraint1DOFConfig {
         /**
-         * @brief Inherit superclass constructors.
+         * @brief An axis, relative to participant 0, about which rotation or position is constrained for both participants.
          *
+         * Must be normalized.
          */
-        using ConstraintParametrized<float, glm::vec3, 1>::ConstraintParametrized;
+        glm::vec3 mAxis { 1.f, 0.f, 0.f };
 
         /**
-         * @brief Correct any distance deviations in between the two points of the two
-         * objects participating in the constraint.
+         * @brief The lowest permissible angle or distance between the pair of vectors or points from participants 0 and 1.
+         *
+         * For rotations, can be any value in the range [-Pi, Pi], in radians.
+         *
+         * Must be lower than or equal to mBoundUpper.
          *
          */
-        void applyConstraintPosition(
-            const ParticipantTable& states,
-            float substepSeconds
-        ) override;
+        float mBoundLower { 0.f };
+
+        /**
+         * @brief The highest permissible angle between the pair of vectors from participant 0 and 1.
+         *
+         * For rotations, can be any value in the range [-Pi, Pi], in radians.
+         *
+         * Must be greater than or equal to mBoundLower.
+         *
+         */
+        float mBoundUpper { 0.f };
+
+        /**
+         * @brief Tests invariants for the constraint this block of data is associated with.
+         *
+         */
+        inline bool isSensible(bool isRotation=false) const {
+            return (
+                mBoundUpper >= mBoundLower
+                && squareDistance(mAxis) == 1.f
+                && isFinite(mBoundUpper) && isFinite(mBoundLower)
+                && (!isRotation || (
+                    mBoundLower <= glm::pi<float>() && mBoundUpper <= glm::pi<float>()
+                    && mBoundLower >= -glm::pi<float>() && mBoundUpper >= glm::pi<float>()
+                ))
+            );
+        }
+    };
+
+    /**
+     * @brief Restricts angle between 2 vectors from 2 participants around an axis defined relative
+     * to participant 0 to a certain range.
+     *
+     */
+    class ConstraintRotation1D: public ConstraintParametrized<Constraint1DOFConfig, glm::vec3, 1> {
+    public:
+        using ConstraintParametrized<Constraint1DOFConfig, glm::vec3, 1>::ConstraintParametrized;
+        void applyConstraintPosition(const ParticipantTable& states, float substepSeconds);
+    };
+
+    /**
+     * @brief Constraint where the distance between a pair of points, one from each participant, is restricted along an axis
+     * defined relative to participant 0 to a certain range.
+     *
+     */
+    class ConstraintDistance1D: public ConstraintParametrized<Constraint1DOFConfig, glm::vec3, 1> {
+    public:
+        using ConstraintParametrized<Constraint1DOFConfig, glm::vec3, 1>::ConstraintParametrized;
+        void applyConstraintPosition(const ParticipantTable& states, float substepSeconds);
     };
 
     NLOHMANN_JSON_SERIALIZE_ENUM(PhysicsState::Mode, {

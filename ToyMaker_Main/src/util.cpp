@@ -64,3 +64,39 @@ glm::mat4 ToyMaker::getTranslationMatrix(const glm::mat4& fromTransform) {
     };
 }
 
+glm::quat ToyMaker::getRotation(const glm::vec3& from, const glm::vec3& to) {
+    // implementation taken from [here.](https://stackoverflow.com/a/11741520/5677302)
+
+    assert(isFinite(from) && isFinite(to) && "One or both of the input vectors is not finite.");
+    assert(squareDistance(from) && squareDistance(to) && "One or both input vectors is a zero vector.");
+    const float scaledCos { glm::dot(from, to) };
+    const float sumLengths { glm::sqrt(squareDistance(from) + squareDistance(to)) };
+
+    // 180 degree rotation where `from + to` gives us 0, which can't be normalized
+    if(scaledCos / sumLengths == -1) {
+        return glm::quat { 0.f, glm::normalize(getOrthogonal(from)) };
+    }
+
+    return glm::normalize(glm::quat { scaledCos + sumLengths, glm::cross(from, to) });
+}
+
+glm::vec3 ToyMaker::getOrthogonal(const glm::vec3& from) {
+    assert(isFinite(from) && "Vector must be finite");
+    assert(squareDistance(from) && "Zero vectors are invalid as basis for tangents");
+
+    return getTangents(from).first;
+}
+
+std::pair<glm::vec3, glm::vec3> ToyMaker::getTangents(const glm::vec3& vector) {
+    assert(isFinite(vector) && "Vector must be finite");
+    assert(squareDistance(vector) && "Zero vectors are invalid as basis for tangents");
+    const auto normalized { glm::normalize(vector) };
+    const glm::vec3 tangentPrelim { ((glm::abs(normalized.x) >= .57735f) ?
+        glm::vec3{ normalized.y, -normalized.x, 0.f } : glm::vec3{ 0.f, normalized.z, -normalized.y }
+    ) };
+    const glm::vec3 tangent2 {
+        glm::normalize(glm::cross(tangentPrelim, normalized))
+    };
+
+    return { glm::normalize(glm::cross(normalized, tangent2)), tangent2 };
+}
