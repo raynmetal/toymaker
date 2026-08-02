@@ -80,6 +80,37 @@ glm::quat ToyMaker::getRotation(const glm::vec3& from, const glm::vec3& to) {
     return glm::normalize(glm::quat { scaledCos + sumLengths, glm::cross(from, to) });
 }
 
+float ToyMaker::getAngle(const glm::vec3 &from, const glm::vec3 &to, const glm::vec3 &axis) {
+    if(
+        !squareDistance(from) || !squareDistance(to) || !squareDistance(axis)
+        || !isFinite(from) || !isFinite(to) || !isFinite(axis)
+    ) {
+        return std::numeric_limits<float>::quiet_NaN();
+    }
+
+    constexpr float pi { glm::pi<float>() };
+    const glm::vec3 axisNormalized { glm::normalize(axis) };
+    const glm::vec3 fromNormalized { glm::normalize(from) };
+    const glm::vec3 toNormalized { glm::normalize(to) };
+    float angle { std::asin(
+        glm::dot(glm::cross(fromNormalized, toNormalized), axisNormalized)
+    ) };
+    // fix angle if we are in one of the left 2 quadrants
+    if(glm::dot(from, to) < 0.f) {
+        angle = pi - angle;
+    }
+    // fix angle if we're in bottom 2 quadrants going anti-clockwise
+    if(angle > pi) {
+        angle -= 2.f * pi;
+    }
+    // fix angle if we're in top 2 quadrants going clockwise
+    if(angle < -pi) {
+        angle += 2.f * pi;
+    }
+
+    return angle;
+}
+
 glm::vec3 ToyMaker::getOrthogonal(const glm::vec3& from) {
     assert(isFinite(from) && "Vector must be finite");
     assert(squareDistance(from) && "Zero vectors are invalid as basis for tangents");

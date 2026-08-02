@@ -635,6 +635,159 @@ void ConstraintDampingRigidbody::applyConstraintVelocity(const ParticipantTable&
     }
 }
 
+void ConstraintRotation1D::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
+    assert(getConfig().isSensible(true) && "Invalid rotation constraint config");
+    assert(states.find(0) != states.end() && "Entry for participant 0 not found");
+    assert(states.find(1) != states.end() && "Entry for participant 1 not found");
+    assert(squareDistance(getParameter(0)) != 0.f && isNumber(getParameter(0)) && isFinite(getParameter(0))  && "Invalid vector relative to participant 0 specified");
+    assert(squareDistance(getParameter(1)) != 0.f && isNumber(getParameter(1)) && isFinite(getParameter(1))  && "Invalid vector relative to participant 1 specified");
+    assert(glm::dot(getParameter(0), getConfig().mAxis) == 0.f && "Axis of rotation and participant 0 relative vector must be orthogonal");
+
+    // guard: config must be active
+    const Constraint1DOFConfig config { getConfig() };
+    if(!config.isActive) {
+        return;
+    }
+
+    // guard: at least _one_ of the participants must be dynamic, otherwise no corrections can
+    // be made.
+    const PhysicsState& physicsA { states.at(0).second.get() };
+    const PhysicsState& physicsB { states.at(1).second.get() };
+    if(
+        physicsA.getMode() != PhysicsState::MODE_DYNAMIC
+        && physicsB.getMode() != PhysicsState::MODE_DYNAMIC
+    ) {
+        return;
+    }
+
+    // find the globally oriented vectors of participants 0 and 1 and the axis of rotation
+    ObjectBounds& boundsA { states.at(0).first.get() };
+    ObjectBounds& boundsB { states.at(1).first.get() };
+    const glm::quat orientationA { boundsA.getOrientationWorld() };
+    const glm::quat orientationB { boundsB.getOrientationWorld() };
+    const glm::vec3 axisLocal { config.mAxis };
+    const glm::vec3 vectorLocalA { getParameter(0) };
+    const glm::vec3 vectorLocalB { getParameter(1) };
+    const glm::vec3 axis { glm::normalize(orientationA * axisLocal) };
+    const glm::vec3 vectorA { orientationA * vectorLocalA };
+    const glm::vec3 vectorB { orientationB * vectorLocalB };
+
+    // find the angle between our vectors in range [-Pi, Pi]
+    const float angle { getAngle(vectorA, vectorB, axis) };
+
+    // guard: only apply corrections when necessary
+    if(angle >= config.mBoundLower && angle <= config.mBoundUpper) {
+        return;
+    }
+
+    // find generalized inverse masses for both bodies
+    const float generalizedInverseA { computeGeneralizedInverseMassRotational(
+        boundsA, physicsA, axis
+    ) };
+    const float generalizedInverseB { computeGeneralizedInverseMassRotational(
+        boundsB, physicsB, axis
+    ) };
+
+    // find correctional impulse
+    const float oneBySubstep { 1.f / substepSeconds };
+    const float alphaDerivative2 { getCompliance() * oneBySubstep * oneBySubstep };
+    const float lagrangeDenominator {
+        1.f / (generalizedInverseA + generalizedInverseB + alphaDerivative2)
+    };
+    const float error { -(angle - ((angle > config.mBoundUpper)?
+        config.mBoundUpper : config.mBoundLower
+    )) };
+    const float lagrangePrevious { getLagrange().at(0) };
+    const float lagrangeDelta { -(error + alphaDerivative2 * lagrangePrevious)
+        * lagrangeDenominator
+    };
+    const glm::vec3 impulseCorrection {
+        lagrangeDelta * axis
+    };
+    applyLagrangeDelta(0, lagrangeDelta);
+
+    // distribute correction amongst the bodies
+    boundsA = applyImpulseObject(boundsA, physicsA, impulseCorrection);
+    boundsB = applyImpulseObject(boundsB, physicsB, -impulseCorrection);
+}
+
+void ConstraintDistance1D::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
+    assert(getConfig().isSensible(false) && "Invalid position constraint config");
+    assert(states.find(0) != states.end() && "Entry for participant 0 not found");
+    assert(states.find(1) != states.end() && "Entry for participant 1 not found");
+    assert(isNumber(getParameter(0)) && isFinite(getParameter(0))  && "Invalid point relative to participant 0 specified");
+    assert(isNumber(getParameter(1)) && isFinite(getParameter(1))  && "Invalid point relative to participant 1 specified");
+
+    // guard: config must be active
+    const Constraint1DOFConfig config { getConfig() };
+    if(!config.isActive) {
+        return;
+    }
+
+    // guard: at least _one_ of the participants must be dynamic, otherwise no corrections can
+    // be made.
+    const PhysicsState& physicsA { states.at(0).second.get() };
+    const PhysicsState& physicsB { states.at(1).second.get() };
+    if(
+        physicsA.getMode() != PhysicsState::MODE_DYNAMIC
+        && physicsB.getMode() != PhysicsState::MODE_DYNAMIC
+    ) {
+        return;
+    }
+
+    // find the global position vectors of participants 0 and 1 and the globally oriented constrained axis
+    ObjectBounds& boundsA { states.at(0).first.get() };
+    ObjectBounds& boundsB { states.at(1).first.get() };
+    const glm::quat orientationA { boundsA.getOrientationWorld() };
+    const glm::quat orientationB { boundsB.getOrientationWorld() };
+    const glm::vec3 positionA { boundsA.getPositionWorld() };
+    const glm::vec3 positionB { boundsB.getPositionWorld() };
+    const glm::vec3 axisLocal { config.mAxis };
+    const glm::vec3 pointLocalA { getParameter(0) };
+    const glm::vec3 pointLocalB { getParameter(1) };
+    const glm::vec3 axis { glm::normalize(orientationA * axisLocal) };
+    const glm::vec3 pointA { positionA + orientationA * pointLocalA };
+    const glm::vec3 pointB { positionB + orientationB * pointLocalB };
+
+    // find the projected difference between A and B along the contrained axis
+    const float projectedA { glm::dot(axis, pointA) };
+    const float projectedB { glm::dot(axis, pointB) };
+    const float deltaAB { projectedB - projectedA };
+
+    // guard: apply correction only when configured limits are exceeded
+    if(deltaAB <= config.mBoundUpper && deltaAB >= config.mBoundLower) {
+        return;
+    }
+
+    // find generalized inverse masses of A and B
+    const float generalizedInverseA { computeGeneralizedInverseMassPositional(
+        boundsA, physicsA, pointA, axis
+    ) };
+    const float generalizedInverseB { computeGeneralizedInverseMassPositional(
+        boundsB, physicsB, pointB, axis
+    ) };
+
+    // find and correctional impulse
+    const float error { -(deltaAB - ((deltaAB > config.mBoundUpper)?
+        config.mBoundUpper : config.mBoundLower
+    )) };
+    const float lagrangePrevious { getLagrange().at(0) };
+    const float oneBySubstep { 1.f / substepSeconds };
+    const float alphaDerivative2 { getCompliance() * oneBySubstep * oneBySubstep };
+    const float lagrangeDenominator { 1.f / (
+        generalizedInverseA + generalizedInverseB + alphaDerivative2
+    ) };
+    const float lagrangeDelta { -(error + alphaDerivative2 * lagrangePrevious)
+        * lagrangeDenominator
+    };
+    const glm::vec3 impulseCorrection { lagrangeDelta * axis };
+    applyLagrangeDelta(0, lagrangeDelta);
+
+    // apply the impulse
+    boundsA = applyImpulseObject(boundsA, physicsA, pointA, impulseCorrection);
+    boundsB = applyImpulseObject(boundsB, physicsB, pointB, -impulseCorrection);
+}
+
 float ToyMaker::computeGeneralizedInverseMassPositional(
     const ObjectBounds& object,
     const PhysicsState& physics,

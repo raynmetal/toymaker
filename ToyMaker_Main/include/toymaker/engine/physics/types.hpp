@@ -981,19 +981,21 @@ namespace ToyMaker {
     /**
      * @brief A collection of values defining an orientation or position constraint for a single degree of freedom.
      *
+     * @TODO: Learn how to handle constraints beyond 360 degrees for rotation limits.
+     *
      */
     struct Constraint1DOFConfig {
         /**
-         * @brief An axis, relative to participant 0, about which rotation or position is constrained for both participants.
+         * @brief A non-zero vector relative to participant 0 along or about which rotation or position
+         * is constrained for both constraint participants.
          *
-         * Must be normalized.
          */
         glm::vec3 mAxis { 1.f, 0.f, 0.f };
 
         /**
          * @brief The lowest permissible angle or distance between the pair of vectors or points from participants 0 and 1.
          *
-         * For rotations, can be any value in the range [-Pi, Pi], in radians.
+         * For rotations, can be any value in the range (-Pi, Pi), in radians.
          *
          * Must be lower than or equal to mBoundUpper.
          *
@@ -1003,7 +1005,7 @@ namespace ToyMaker {
         /**
          * @brief The highest permissible angle between the pair of vectors from participant 0 and 1.
          *
-         * For rotations, can be any value in the range [-Pi, Pi], in radians.
+         * For rotations, can be any value in the range (-Pi, Pi), in radians.
          *
          * Must be greater than or equal to mBoundLower.
          *
@@ -1011,17 +1013,26 @@ namespace ToyMaker {
         float mBoundUpper { 0.f };
 
         /**
+         * @brief Whether the constraint associated with this configuration is in effect.
+         *
+         */
+        bool isActive { true };
+
+        /**
          * @brief Tests invariants for the constraint this block of data is associated with.
          *
          */
         inline bool isSensible(bool isRotation=false) const {
             return (
-                mBoundUpper >= mBoundLower
-                && squareDistance(mAxis) == 1.f
+                isFinite(mAxis)
+                && isNumber(mAxis)
+                && squareDistance(mAxis) != 0.f
                 && isFinite(mBoundUpper) && isFinite(mBoundLower)
+                && isNumber(mBoundUpper) && isNumber(mBoundLower)
+                && mBoundUpper >= mBoundLower
                 && (!isRotation || (
-                    mBoundLower <= glm::pi<float>() && mBoundUpper <= glm::pi<float>()
-                    && mBoundLower >= -glm::pi<float>() && mBoundUpper >= glm::pi<float>()
+                    mBoundLower < glm::pi<float>() && mBoundUpper < glm::pi<float>()
+                    && mBoundLower > -glm::pi<float>() && mBoundUpper > -glm::pi<float>()
                 ))
             );
         }

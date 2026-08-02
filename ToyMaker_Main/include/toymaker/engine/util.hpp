@@ -16,7 +16,7 @@
 
 namespace ToyMaker {
     /**
-     * @ingroup ToyMakerCore ToyMakerSceneSystem
+     * @ingroup ToyMakerCore
      * @brief Converts a position, orientation and scale into its model matrix equivalent.
      *
      * @param position The position offset to apply to a mesh.
@@ -135,6 +135,12 @@ namespace ToyMaker {
     glm::quat getRotation(const glm::vec3& from, const glm::vec3& to);
 
     /**
+     * @brief Gets angle between two vectors about an axis vector in the range [-Pi, Pi].
+     *
+     */
+    float getAngle(const glm::vec3& from, const glm::vec3& to, const glm::vec3& axis);
+
+    /**
      * @brief Given some arbitrary non-zero vector, returns a normalized vector that is orthogonal
      * to it.
      *
@@ -159,7 +165,7 @@ namespace ToyMaker {
     bool isSensible(const glm::mat3& matrix);
 
     /**
-     * @ingroup ToyMakerCore ToyMakerSceneSystem
+     * @ingroup ToyMakerCore
      * @brief Given a transform, returns scale matrix that was used to compose the transform
      *
      * @warning This only works for transforms with positive scale values.
@@ -167,7 +173,7 @@ namespace ToyMaker {
     glm::mat4 getScaleMatrix(const glm::mat4& fromTransform);
 
     /**
-     * @ingroup ToyMakerCore ToyMakerSceneSystem
+     * @ingroup ToyMakerCore
      * @brief Given a transform, returns rotation matrix that was used to compose the transform
      *
      * @warning This only works for scene objects with positive scale values.
@@ -175,7 +181,7 @@ namespace ToyMaker {
     glm::mat4 getRotationMatrix(const glm::mat4& fromTransform);
 
     /**
-     * @ingroup ToyMakerCore ToyMakerSceneSystem
+     * @ingroup ToyMakerCore
      * @brief Given a transform, returns translation matrix that was used to compose the transform
      *
      */
