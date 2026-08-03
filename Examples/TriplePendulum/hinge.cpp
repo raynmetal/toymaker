@@ -6,6 +6,7 @@
 #include <toymaker/engine/signals.hpp>
 #include <toymaker/engine/sim_system.hpp>
 #include <toymaker/engine/physics/system.hpp>
+#include <toymaker/engine/util.hpp>
 
 /**
  * @ingroup Examples
@@ -15,16 +16,6 @@
  */
 class Hinge: public ToyMaker::SimObjectAspect<Hinge> {
 public:
-
-    /**
-     * @brief The possible planes of rotation relative to this body, enumerated.
-     *
-     */
-    enum Plane: uint8_t {
-        XY,
-        XZ,
-        YZ,
-    };
 
     /**
      * @brief Gets the aspect type string associated with this class
@@ -73,16 +64,28 @@ private:
     glm::vec3 mAttachmentPointOther { 0.f };
 
     /**
+     * @brief Rotation taking vector from constraint space to this object's local space
+     *
+     */
+    glm::quat mOrientation { 1.f, 0.f, 0.f, 0.f };
+
+    /**
+     * @brief Rotation taking vector from constraint space to attached object's local space.
+     *
+     */
+    glm::quat mOrientationOther { 1.f, 0.f, 0.f, 0.f };
+
+    /**
      * @brief Distance offsets of the other object's attachment point relative to this object's attachment point.
      *
      */
     glm::vec3 mOffsets { 0.f };
 
     /**
-     * @brief The plane, relative to this object's orientation, that permits free rotation.
+     * @brief The direction vector relative to this object to be brought into alignment with the other object's vector.
      *
      */
-    Plane mFreePlane { XY };
+    glm::vec3 mAxis { 0.f, 0.f, 1.f };
 
     /**
      * @brief The (path to the) other participant's scene node in this constraint, relative to this node's parent viewport.
@@ -115,12 +118,6 @@ private:
     void onDeactivated() override;
 };
 
-NLOHMANN_JSON_SERIALIZE_ENUM(Hinge::Plane, {
-    { Hinge::Plane::XY, "xy" },
-    { Hinge::Plane::XZ, "xz" },
-    { Hinge::Plane::YZ, "yz" },
-});
-
 std::shared_ptr<ToyMaker::BaseSimObjectAspect> Hinge::create(const nlohmann::json& jsonAspectProperties) {
     std::shared_ptr<Hinge> newHinge(new Hinge{});
     newHinge->mAttachmentPoint = {
@@ -133,7 +130,27 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> Hinge::create(const nlohmann::jso
         jsonAspectProperties.at("attachment_other")[1],
         jsonAspectProperties.at("attachment_other")[2],
     };
-    jsonAspectProperties.at("free_plane").get_to(newHinge->mFreePlane);
+    newHinge->mOrientation = {
+        jsonAspectProperties.at("orientation")[0],
+        jsonAspectProperties.at("orientation")[1],
+        jsonAspectProperties.at("orientation")[2],
+        jsonAspectProperties.at("orientation")[3],
+    };
+    // invert to find constraint->local rotation
+    newHinge->mOrientation = glm::inverse(glm::normalize(newHinge->mOrientation));
+    newHinge->mOrientationOther = {
+        jsonAspectProperties.at("orientation_other")[0],
+        jsonAspectProperties.at("orientation_other")[1],
+        jsonAspectProperties.at("orientation_other")[2],
+        jsonAspectProperties.at("orientation_other")[3],
+    };
+    // invert to find constraint->local rotation
+    newHinge->mOrientationOther = glm::inverse(glm::normalize(newHinge->mOrientationOther));
+    newHinge->mAxis = {
+        jsonAspectProperties.at("axis")[0],
+        jsonAspectProperties.at("axis")[1],
+        jsonAspectProperties.at("axis")[2],
+    };
     newHinge->mOther = jsonAspectProperties.at("other");
     newHinge->mOffsets = {
         jsonAspectProperties.at("offsets")[0],
@@ -147,7 +164,9 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> Hinge::clone() const {
     std::shared_ptr<Hinge> newHinge(new Hinge{});
     newHinge->mAttachmentPoint = mAttachmentPoint;
     newHinge->mAttachmentPointOther = mAttachmentPointOther;
-    newHinge->mFreePlane = mFreePlane;
+    newHinge->mOrientation = mOrientation;
+    newHinge->mOrientationOther = mOrientation;
+    newHinge->mAxis = mAxis;
     newHinge->mOther = mOther;
     newHinge->mOffsets = mOffsets;
     return newHinge;
@@ -158,18 +177,120 @@ void Hinge::onActivated() {
         getSimObject().getLocalViewport()->getNode(mOther)
     };
 
-    // const ToyMaker::Constraint1DOFConfig configDistanceX {
-    // };
-    // const ToyMaker::Constraint1DOFConfig configDistanceY {
-    // };
-    // const ToyMaker::Constraint1DOFConfig configDistanceZ {
-    // };
-    //
-    // const ToyMaker::Constraint1DOFConfig configRotation0 {
-    // };
-    // const ToyMaker::Constraint1DOFConfig configRotation1 {
-    // };
+    const ToyMaker::Constraint1DOFConfig configDistanceX {
+        .mAxis { 1.f, 0.f, 0.f },
+        .mBoundLower { mOffsets.x },
+        .mBoundUpper { mOffsets.x },
+    };
+    const ToyMaker::Constraint1DOFConfig configDistanceY {
+        .mAxis { 0.f, 1.f, 0.f },
+        .mBoundLower { mOffsets.y },
+        .mBoundUpper { mOffsets.y },
+    };
+    const ToyMaker::Constraint1DOFConfig configDistanceZ {
+        .mAxis { 0.f, 0.f, 1.f },
+        .mBoundLower { mOffsets.z },
+        .mBoundUpper { mOffsets.z },
+    };
 
+    const auto tangents { ToyMaker::getTangents(mAxis) };
+    const ToyMaker::Constraint1DOFConfig configRotation0 {
+        .mAxis { tangents.first },
+        .mBoundLower { 0.f },
+        .mBoundUpper { 0.f },
+    };
+    const ToyMaker::Constraint1DOFConfig configRotation1 {
+        .mAxis { tangents.second },
+        .mBoundLower { 0.f },
+        .mBoundUpper { 0.f },
+    };
+
+    // register distance constraints
+    auto physics { getSimObject().getWorld().lock()->getSystem<ToyMaker::PhysicsSystem>() };
+    const auto entityThis { getSimObject().getEntityID() };
+    const auto entityOther { other->getEntityID() };
+    mConstraints.insert(
+        physics->registerConstraint<ToyMaker::ConstraintDistance1D>(
+            configDistanceX,
+            {
+                { entityThis, {
+                    mOrientation,
+                    mAttachmentPoint
+                } },
+                { entityOther, {
+                    mOrientationOther,
+                    mAttachmentPointOther
+                } },
+            },
+            0.f
+        )
+    );
+    mConstraints.insert(
+        physics->registerConstraint<ToyMaker::ConstraintDistance1D>(
+            configDistanceY,
+            {
+                { entityThis, {
+                    mOrientation,
+                    mAttachmentPoint
+                } },
+                { entityOther, {
+                    mOrientationOther,
+                    mAttachmentPointOther
+                } },
+            },
+            0.f
+        )
+    );
+    mConstraints.insert(
+        physics->registerConstraint<ToyMaker::ConstraintDistance1D>(
+            configDistanceZ,
+            {
+                { entityThis, {
+                    mOrientation,
+                    mAttachmentPoint
+                } },
+                { entityOther, {
+                    mOrientationOther,
+                    mAttachmentPointOther
+                } },
+            },
+            0.f
+        )
+    );
+
+    // register rotation constraints
+    mConstraints.insert(
+        physics->registerConstraint<ToyMaker::ConstraintRotation1D>(
+            configRotation0,
+            {
+                { entityThis, {
+                    mOrientation,
+                    mAxis
+                } },
+                { entityOther, {
+                    mOrientationOther,
+                    mAxis
+                } },
+            },
+            0.f
+        )
+    );
+    mConstraints.insert(
+        physics->registerConstraint<ToyMaker::ConstraintRotation1D>(
+            configRotation1,
+            {
+                { entityThis, {
+                    mOrientation,
+                    mAxis
+                } },
+                { entityOther, {
+                    mOrientationOther,
+                    mAxis
+                } },
+            },
+            0.f
+        )
+    );
     std::cout << "Hinge activated!\n";
 }
 

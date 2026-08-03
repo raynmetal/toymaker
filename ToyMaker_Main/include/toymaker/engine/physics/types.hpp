@@ -1039,13 +1039,40 @@ namespace ToyMaker {
     };
 
     /**
+     * @brief Parameters defining a body participating in a 2-body constraint.
+     *
+     */
+    struct Constraint1DOFParam {
+        /**
+         * @brief The rotation taking the parameter from constraint local space to object-local space.
+         *
+         */
+        glm::quat mOrientation { 1.f, 0.f, 0.f, 0.f };
+
+        /**
+         * @brief The constrained vector representing a position for a distance constraints, and a direction
+         * for a rotation constraint.
+         *
+         */
+        glm::vec3 mVector { 0.f, 0.f, 1.f };
+
+        inline bool isSensible(bool isRotation=false) const {
+            return (
+                isFinite(mVector) && isNumber(mVector)
+                && glm::length(mOrientation) == 1.f
+            );
+        }
+    };
+
+
+    /**
      * @brief Restricts angle between 2 vectors from 2 participants around an axis defined relative
      * to participant 0 to a certain range.
      *
      */
-    class ConstraintRotation1D: public ConstraintParametrized<Constraint1DOFConfig, glm::vec3, 1> {
+    class ConstraintRotation1D: public ConstraintParametrized<Constraint1DOFConfig, Constraint1DOFParam, 1> {
     public:
-        using ConstraintParametrized<Constraint1DOFConfig, glm::vec3, 1>::ConstraintParametrized;
+        using ConstraintParametrized<Constraint1DOFConfig, Constraint1DOFParam, 1>::ConstraintParametrized;
         void applyConstraintPosition(const ParticipantTable& states, float substepSeconds);
     };
 
@@ -1054,9 +1081,9 @@ namespace ToyMaker {
      * defined relative to participant 0 to a certain range.
      *
      */
-    class ConstraintDistance1D: public ConstraintParametrized<Constraint1DOFConfig, glm::vec3, 1> {
+    class ConstraintDistance1D: public ConstraintParametrized<Constraint1DOFConfig, Constraint1DOFParam, 1> {
     public:
-        using ConstraintParametrized<Constraint1DOFConfig, glm::vec3, 1>::ConstraintParametrized;
+        using ConstraintParametrized<Constraint1DOFConfig, Constraint1DOFParam, 1>::ConstraintParametrized;
         void applyConstraintPosition(const ParticipantTable& states, float substepSeconds);
     };
 
@@ -1276,7 +1303,7 @@ namespace ToyMaker {
     template <typename TConfig, typename TParameter, uint8_t LagrangeCount>
     inline ConstraintParametrized<TConfig, TParameter, LagrangeCount>::ConstraintParametrized(const TConfig& config, const std::vector<TParameter>& constraintParameters, float compliance): Constraint<LagrangeCount> { compliance }, mConfig { config } {
         for(auto i { 0 }; i < constraintParameters.size(); ++i) {
-            setParameter(0, constraintParameters[i]);
+            setParameter(i, constraintParameters[i]);
         }
     }
 }

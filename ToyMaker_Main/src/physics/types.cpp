@@ -639,9 +639,12 @@ void ConstraintRotation1D::applyConstraintPosition(const ParticipantTable& state
     assert(getConfig().isSensible(true) && "Invalid rotation constraint config");
     assert(states.find(0) != states.end() && "Entry for participant 0 not found");
     assert(states.find(1) != states.end() && "Entry for participant 1 not found");
-    assert(squareDistance(getParameter(0)) != 0.f && isNumber(getParameter(0)) && isFinite(getParameter(0))  && "Invalid vector relative to participant 0 specified");
-    assert(squareDistance(getParameter(1)) != 0.f && isNumber(getParameter(1)) && isFinite(getParameter(1))  && "Invalid vector relative to participant 1 specified");
-    assert(glm::dot(getParameter(0), getConfig().mAxis) == 0.f && "Axis of rotation and participant 0 relative vector must be orthogonal");
+    assert(getParameter(0).isSensible() && "Invalid rotation parameter for participant 0");
+    assert(getParameter(1).isSensible() && "Invalid rotation parameter for participant 1");
+    assert(squareDistance(getParameter(0).mVector) != 0.f && isNumber(getParameter(0).mVector) && isFinite(getParameter(0).mVector)  && "Invalid vector relative to participant 0 specified");
+    assert(squareDistance(getParameter(1).mVector) != 0.f && isNumber(getParameter(1).mVector) && isFinite(getParameter(1).mVector)  && "Invalid vector relative to participant 1 specified");
+    assert(glm::dot(getParameter(0).mVector, getConfig().mAxis) == 0.f && "Axis of rotation and participant 0 relative vector must be orthogonal");
+    assert(glm::dot(getParameter(1).mVector, getConfig().mAxis) == 0.f && "Axis of rotation and participant 1 relative vector must be orthogonal");
 
     // guard: config must be active
     const Constraint1DOFConfig config { getConfig() };
@@ -664,13 +667,15 @@ void ConstraintRotation1D::applyConstraintPosition(const ParticipantTable& state
     ObjectBounds& boundsA { states.at(0).first.get() };
     ObjectBounds& boundsB { states.at(1).first.get() };
     const glm::quat orientationA { boundsA.getOrientationWorld() };
+    const glm::quat orientationConstraintA { getParameter(0).mOrientation };
     const glm::quat orientationB { boundsB.getOrientationWorld() };
+    const glm::quat orientationConstraintB { getParameter(1).mOrientation };
     const glm::vec3 axisLocal { config.mAxis };
-    const glm::vec3 vectorLocalA { getParameter(0) };
-    const glm::vec3 vectorLocalB { getParameter(1) };
-    const glm::vec3 axis { glm::normalize(orientationA * axisLocal) };
-    const glm::vec3 vectorA { orientationA * vectorLocalA };
-    const glm::vec3 vectorB { orientationB * vectorLocalB };
+    const glm::vec3 vectorLocalA { getParameter(0).mVector };
+    const glm::vec3 vectorLocalB { getParameter(1).mVector };
+    const glm::vec3 axis { glm::normalize(orientationA * orientationConstraintA * axisLocal) };
+    const glm::vec3 vectorA { orientationA * orientationConstraintA * vectorLocalA };
+    const glm::vec3 vectorB { orientationB * orientationConstraintB * vectorLocalB };
 
     // find the angle between our vectors in range [-Pi, Pi]
     const float angle { getAngle(vectorA, vectorB, axis) };
@@ -704,7 +709,7 @@ void ConstraintRotation1D::applyConstraintPosition(const ParticipantTable& state
     const glm::vec3 impulseCorrection {
         lagrangeDelta * axis
     };
-    applyLagrangeDelta(0, lagrangeDelta);
+    applyLagrangeDelta(lagrangeDelta, 0);
 
     // distribute correction amongst the bodies
     boundsA = applyImpulseObject(boundsA, physicsA, impulseCorrection);
@@ -713,10 +718,12 @@ void ConstraintRotation1D::applyConstraintPosition(const ParticipantTable& state
 
 void ConstraintDistance1D::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
     assert(getConfig().isSensible(false) && "Invalid position constraint config");
+    assert(getParameter(0).isSensible() && "Invalid position parameter for participant 0");
+    assert(getParameter(1).isSensible() && "Invalid position parameter for participant 1");
     assert(states.find(0) != states.end() && "Entry for participant 0 not found");
     assert(states.find(1) != states.end() && "Entry for participant 1 not found");
-    assert(isNumber(getParameter(0)) && isFinite(getParameter(0))  && "Invalid point relative to participant 0 specified");
-    assert(isNumber(getParameter(1)) && isFinite(getParameter(1))  && "Invalid point relative to participant 1 specified");
+    assert(isNumber(getParameter(0).mVector) && isFinite(getParameter(0).mVector)  && "Invalid point relative to participant 0 specified");
+    assert(isNumber(getParameter(1).mVector) && isFinite(getParameter(1).mVector)  && "Invalid point relative to participant 1 specified");
 
     // guard: config must be active
     const Constraint1DOFConfig config { getConfig() };
@@ -739,15 +746,17 @@ void ConstraintDistance1D::applyConstraintPosition(const ParticipantTable& state
     ObjectBounds& boundsA { states.at(0).first.get() };
     ObjectBounds& boundsB { states.at(1).first.get() };
     const glm::quat orientationA { boundsA.getOrientationWorld() };
+    const glm::quat orientationConstraintA { getParameter(0).mOrientation };
     const glm::quat orientationB { boundsB.getOrientationWorld() };
+    const glm::quat orientationConstraintB { getParameter(1).mOrientation };
     const glm::vec3 positionA { boundsA.getPositionWorld() };
     const glm::vec3 positionB { boundsB.getPositionWorld() };
     const glm::vec3 axisLocal { config.mAxis };
-    const glm::vec3 pointLocalA { getParameter(0) };
-    const glm::vec3 pointLocalB { getParameter(1) };
-    const glm::vec3 axis { glm::normalize(orientationA * axisLocal) };
-    const glm::vec3 pointA { positionA + orientationA * pointLocalA };
-    const glm::vec3 pointB { positionB + orientationB * pointLocalB };
+    const glm::vec3 pointLocalA { getParameter(0).mVector };
+    const glm::vec3 pointLocalB { getParameter(1).mVector };
+    const glm::vec3 axis { glm::normalize(orientationA * orientationConstraintA * axisLocal) };
+    const glm::vec3 pointA { positionA + orientationA * orientationConstraintA * pointLocalA };
+    const glm::vec3 pointB { positionB + orientationB * orientationConstraintB * pointLocalB };
 
     // find the projected difference between A and B along the contrained axis
     const float projectedA { glm::dot(axis, pointA) };
@@ -781,11 +790,11 @@ void ConstraintDistance1D::applyConstraintPosition(const ParticipantTable& state
         * lagrangeDenominator
     };
     const glm::vec3 impulseCorrection { lagrangeDelta * axis };
-    applyLagrangeDelta(0, lagrangeDelta);
+    applyLagrangeDelta(lagrangeDelta, 0);
 
     // apply the impulse
-    boundsA = applyImpulseObject(boundsA, physicsA, pointA, impulseCorrection);
-    boundsB = applyImpulseObject(boundsB, physicsB, pointB, -impulseCorrection);
+    boundsA = applyImpulseObject(boundsA, physicsA, impulseCorrection, pointA);
+    boundsB = applyImpulseObject(boundsB, physicsB, -impulseCorrection, pointB);
 }
 
 float ToyMaker::computeGeneralizedInverseMassPositional(
@@ -828,7 +837,7 @@ ObjectBounds ToyMaker::applyImpulseObject(
     const glm::vec3& impulsePoint
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulsePositional == glm::vec3 { 0.f }) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || squareDistance(impulsePositional) == 0.f) {
         return object;
     }
 
@@ -852,7 +861,7 @@ PhysicsState ToyMaker::applyImpulsePhysics(
     const glm::vec3& impulsePoint
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulsePositional == glm::vec3{ 0.f }) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || squareDistance(impulsePositional) == 0.f) {
         return physics;
     }
 
@@ -884,7 +893,7 @@ ObjectBounds ToyMaker::applyImpulseObject(
     const glm::vec3& impulseRotational
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulseRotational == glm::vec3 { 0.f }) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || squareDistance(impulseRotational) == 0.f ) {
         return object;
     }
 
@@ -904,7 +913,7 @@ PhysicsState ToyMaker::applyImpulsePhysics(
     const glm::vec3& impulseRotational
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulseRotational == glm::vec3{ 0.f }) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || squareDistance(impulseRotational) == 0.f) {
         return physics;
     }
 

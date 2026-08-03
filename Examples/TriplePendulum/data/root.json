@@ -136,8 +136,10 @@
                     "other": "/root/bob/",
                     "attachment": [0, 0, 0],
                     "attachment_other": [0, 0, 0],
-                    "free_plane": "xy",
-                    "offsets": [0, 5, 1]
+                    "axis": [0, 0, 1],
+                    "orientation": [1, 0, 0, 0],
+                    "orientation_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 2]
                 }
             ],
             "components": [
@@ -192,7 +194,7 @@
                     "coefficient_friction_static": 0.75811,
                     "coefficient_friction_dynamic": 0.63,
                     "velocity": [4.7, 0.0, 0.0],
-                    "angular_velocity": [0.0, 0.0, 0.0]
+                    "angular_velocity": [100.0, 100.0, 100.0]
                 },
                 {
                     "type": "ObjectBounds",
