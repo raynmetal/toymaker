@@ -13,6 +13,7 @@
 #ifndef TOYMAKERENGINE_SPATIALQUERYMATH_H
 #define TOYMAKERENGINE_SPATIALQUERYMATH_H
 
+#include <iostream>
 #include <glm/glm.hpp>
 
 #include "../util.hpp"
@@ -292,9 +293,10 @@ namespace ToyMaker {
 
         glm::vec3 searchDirection { two.getPositionWorld() - one.getPositionWorld() };
 
-        // Two non-degenerate objects share the same origin, obviously they overlap
+        // avoid handling cases where 2 objects overlap at their origin
         if(squareDistance(searchDirection) == 0.f) {
-            return { true, Simplex {} };
+            std::cerr << "Invalid overlap where 2 objects share same origin detected.\n";
+            return { false, Simplex {} };
         }
 
         Simplex simplex {};
