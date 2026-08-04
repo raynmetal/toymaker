@@ -40,7 +40,7 @@
     "nodes": [
         {
             "name": "root",
-            "aspects": [],
+            "aspects": [ { "type": "SetSubsteps" } ],
             "components": [
                 {
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
@@ -119,7 +119,7 @@
                 },
                 {
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, 0.0, 20.0, 1.0 ],
+                    "position": [ 0.0, 0.0, 15.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ],
                     "type": "Placement"
                 }
@@ -200,11 +200,15 @@
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 0.1,
+                    "mass": 0.03,
                     "mode": "dynamic",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
-                    "collision_response": []
+                    "collision_response": [],
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
                 },
                 {
                     "type": "ObjectBounds",
@@ -253,7 +257,12 @@
                     "collision_response": [],
                     "mass": 0.3,
                     "coefficient_friction_static": 0.75811,
-                    "coefficient_friction_dynamic": 0.63
+                    "coefficient_friction_dynamic": 0.63,
+                    "velocity": [70, 0, 0],
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
                 },
                 {
                     "type": "ObjectBounds",
@@ -294,11 +303,15 @@
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 0.1,
+                    "mass": 0.03,
                     "mode": "dynamic",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
-                    "collision_response": []
+                    "collision_response": [],
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
                 },
                 {
                     "type": "ObjectBounds",
@@ -345,9 +358,13 @@
                     "type": "PhysicsState",
                     "mode": "dynamic",
                     "collision_response": [],
-                    "mass": 0.3,
+                    "mass": 0.15,
                     "coefficient_friction_static": 0.75811,
-                    "coefficient_friction_dynamic": 0.63
+                    "coefficient_friction_dynamic": 0.63,
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
                 },
                 {
                     "type": "ObjectBounds",
@@ -387,11 +404,15 @@
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 0.1,
+                    "mass": 0.03,
                     "mode": "dynamic",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
-                    "collision_response": []
+                    "collision_response": [],
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
                 },
                 {
                     "type": "ObjectBounds",
@@ -425,9 +446,13 @@
                     "type": "PhysicsState",
                     "mode": "dynamic",
                     "collision_response": [],
-                    "mass": 0.3,
+                    "mass": 0.075,
                     "coefficient_friction_static": 0.75811,
-                    "coefficient_friction_dynamic": 0.63
+                    "coefficient_friction_dynamic": 0.63,
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
                 },
                 {
                     "type": "ObjectBounds",

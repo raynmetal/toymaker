@@ -14,6 +14,7 @@ target_sources(Example_TriplePendulum
     PRIVATE
         gravity.cpp
         hinge.cpp
+        set_substeps.cpp
     PRIVATE
 )
 
