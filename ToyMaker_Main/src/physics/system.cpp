@@ -192,14 +192,23 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
                 continue;
             }
 
-            // skip static-static object collisions
+            // skip static-static object collisions and collisions where neither reporting nor
+            // separation is required
             const PhysicsState physicsCandidate { getComponent<PhysicsState>(candidate.first) };
             if(
-                physicsCandidate.getMode() == PhysicsState::MODE_STATIC
-                && physics.getMode() == PhysicsState::MODE_STATIC
+                (
+                    physicsCandidate.getMode() == PhysicsState::MODE_STATIC
+                    && physics.getMode() == PhysicsState::MODE_STATIC
+                ) || !(
+                    physicsCandidate.signalsOnCollision()
+                    || physicsCandidate.separatesOnCollision()
+                    || physics.signalsOnCollision()
+                    || physics.separatesOnCollision()
+                )
             ) {
                 continue;
             }
+
 
             potentialColliders.insert(candidate.first);
             potentialColliders.insert(entity);
@@ -213,8 +222,6 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
     mCollisionConstraints = potentialCollisions;
     const auto timeEndCollect { std::chrono::high_resolution_clock::now() };
     const std::chrono::duration<float, std::milli> timeCollect { timeEndCollect - timeStartCollect };
-
-    // update potential colliders tracked by physics broad phase
 
     // see which entities are no longer in danger of colliding with anything and remove them
     std::vector<EntityID> removedEntities {};

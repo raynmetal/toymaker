@@ -289,8 +289,33 @@ namespace ToyMaker {
         float mCoefficientRestitution { .8f };
 
         /**
-         * @brief Defines a set of flags that determines how this object responds to physics updates
+         * @brief The approximate fraction (as a number in range [0, 1]) of velocity lost by a moving object not experiencing
+         * any external forces every second.
          *
+         */
+        float mVelocityBleed { 0.01f };
+
+        /**
+         * @brief The approximate fraction (as a number in range [0, 1]) of angular velocity lost by a rotating object not
+         * experiencing any external forces every second.
+         *
+         */
+        float mVelocityBleedAngular { 0.01f };
+
+        /**
+         * @brief The linear velocity below which the object's velocity is set to 0, bringing it to a stop.
+         *
+         */
+        float mVelocityCutoff { 0.001f };
+
+        /**
+         * @brief The angular velocity below which the object's velocity is set to 0, bringing it to a stop.
+         *
+         */
+        float mVelocityCutoffAngular { 0.0005f };
+
+        /**
+         * @brief Defines a set of flags that determines how this object responds to physics updates
          *
          */
         Traits mTraits { static_cast<Traits>(COLLISION_SEPARATE) | static_cast<Traits>(MODE_DYNAMIC) };
@@ -1130,6 +1155,24 @@ namespace ToyMaker {
             };
             assert(isNumber(physics.mVelocity) && isFinite(physics.mVelocity) && "Velocity must be sensible");
         }
+        if(json.find("velocity_bleed") != json.end()) {
+            physics.mVelocityBleed = json.at("velocity_bleed");
+            assert(
+                isNumber(physics.mVelocityBleed)
+                && physics.mVelocityBleed >= 0.f
+                && physics.mVelocityBleed <= 1.f
+                &&"Velocity bleed must be a finite positive number in range [0, 1]."
+            );
+        }
+        if(json.find("velocity_cutoff") != json.end()) {
+            physics.mVelocityCutoff = json.at("velocity_cutoff");
+            assert(
+                isNumber(physics.mVelocityCutoff)
+                && isFinite(physics.mVelocityCutoff)
+                && isNonNegative(physics.mVelocityCutoff)
+                && "Velocity cutoff must be a finite non-negative number"
+            );
+        }
 
         if(json.find("angular_velocity") != json.end()) {
             physics.mAngularVelocity = glm::vec3 {
@@ -1138,6 +1181,24 @@ namespace ToyMaker {
                 json.at("angular_velocity")[2],
             };
             assert(isNumber(physics.mAngularVelocity) && isFinite(physics.mAngularVelocity) && "Angular velocity must be sensible");
+        }
+        if(json.find("angular_velocity_bleed") != json.end()) {
+            physics.mVelocityBleedAngular = json.at("angular_velocity_bleed");
+            assert(
+                isNumber(physics.mVelocityBleedAngular)
+                && physics.mVelocityBleedAngular >= 0.f
+                && physics.mVelocityBleedAngular <= 1.f
+                && "Velocity bleed must be a finite positive number in range [0, 1]."
+            );
+        }
+        if(json.find("angular_velocity_cutoff") != json.end()) {
+            physics.mVelocityCutoffAngular = json.at("angular_velocity_cutoff");
+            assert(
+                isNumber(physics.mVelocityCutoffAngular)
+                && isFinite(physics.mVelocityCutoffAngular)
+                && isNonNegative(physics.mVelocityCutoffAngular)
+                && "Velocity cutoff must be a finite positive number"
+            );
         }
 
         if(json.find("force") != json.end()) {
@@ -1195,6 +1256,10 @@ namespace ToyMaker {
             { "coefficient_friction_static", physics.mCoefficientFrictionStatic },
             { "coefficient_friction_dynamic", physics.mCoefficientFrictionDynamic },
             { "coefficient_restitution", physics.mCoefficientRestitution },
+            { "velocity_bleed", physics.mVelocityBleed },
+            { "angular_velocity_bleed", physics.mVelocityBleedAngular },
+            { "velocity_cutoff", physics.mVelocityCutoff },
+            { "velocity_cutoff_angular", physics.mVelocityCutoffAngular },
         };
     }
 

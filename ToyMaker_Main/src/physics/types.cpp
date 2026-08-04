@@ -7,8 +7,6 @@ using namespace ToyMaker;
 
 const float kPersistentThresholdSquared { 1.5e-6 };
 
-const float kFactorCutoffVelocity { 2.f };
-
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     const glm::vec3 position { bounds.getPositionWorld() };
     const glm::quat orientation { bounds.getOrientationWorld() };
@@ -319,10 +317,11 @@ void ConstraintContact::applyConstraintVelocity(const ParticipantTable& states, 
     ) };
     const glm::vec3 pointVelocityAB { pointVelocityA - pointVelocityB };
     const float bounceVelocity { glm::dot(pointVelocityAB, mContactNormal) };
+    const float cutoffVelocity { physicsA.mVelocityCutoff + physicsB.mVelocityCutoff };
 
     // derive the current coefficient of restitution between this pair of objects, set
     // to 0 when small separation velocity detected
-    const float coefficientRestitution { (glm::abs(bounceVelocity) <= 2.f * kFactorCutoffVelocity * substepSeconds)?
+    const float coefficientRestitution { (glm::abs(bounceVelocity) <= cutoffVelocity)?
         0.f :
         glm::max(physicsA.mCoefficientRestitution, physicsB.mCoefficientRestitution)
     };
@@ -613,10 +612,17 @@ void ConstraintDampingRigidbody::applyConstraintVelocity(const ParticipantTable&
         return;
     }
 
-    const float factorDamping { glm::min(getConfig() * substepSeconds, 1.f) };
+    const float factorDamping { glm::min(physicsCurr.mVelocityBleed * substepSeconds, 1.f) };
+    const float factorDampingAngular { glm::min(physicsCurr.mVelocityBleedAngular * substepSeconds, 1.f) };
     assert(factorDamping >= 0.f && "A negative damping value is invalid");
+    assert(factorDampingAngular >= 0.f && "A negative damping value is invalid");
+    assert(physicsCurr.mVelocityBleed <= 1.f && "A velocity bleed greater than one is invalid");
+    assert(physicsCurr.mVelocityBleedAngular <= 1.f && "A velocity bleed greater than one is invalid");
     const float oneBySubstep { 1.f / substepSeconds };
-    const float cutoffVelocity { kFactorCutoffVelocity * substepSeconds };
+    const float cutoffVelocity { physicsCurr.mVelocityCutoff };
+    const float cutoffVelocityAngular { physicsCurr.mVelocityCutoffAngular };
+    assert(cutoffVelocity >= 0.f && "A negative cutoff value is invalid");
+    assert(cutoffVelocityAngular >= 0.f && "A negative cutoff value is invalid");
 
     const ObjectBounds& object { states.at(0).first.get() };
     const PhysicsState physicsPrev { getParameter(0) };
@@ -638,14 +644,14 @@ void ConstraintDampingRigidbody::applyConstraintVelocity(const ParticipantTable&
     // apply angular damping
     const glm::quat orientation { object.getOrientationWorld() };
     const glm::vec3 deltaVelocityAngularLocal { glm::inverse(orientation) * (physicsCurr.mAngularVelocity - physicsPrev.mAngularVelocity) };
-    const glm::vec3 correctionAngularLocal { -factorDamping * deltaVelocityAngularLocal };
+    const glm::vec3 correctionAngularLocal { -factorDampingAngular * deltaVelocityAngularLocal };
     const glm::vec3 impulseAngular { orientation * (correctionAngularLocal * physicsCurr.getRotationalInertia()) };
     physicsCurr = applyImpulsePhysics(
         object,
         physicsCurr,
         impulseAngular
     );
-    if(squareDistance(physicsCurr.mAngularVelocity) <= cutoffVelocity * cutoffVelocity) {
+    if(squareDistance(physicsCurr.mAngularVelocity) <= cutoffVelocityAngular * cutoffVelocityAngular) {
         physicsCurr.mAngularVelocity = glm::vec3 { 0.f };
     }
 }
