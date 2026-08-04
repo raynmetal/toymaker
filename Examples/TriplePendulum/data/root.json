@@ -14,7 +14,7 @@
             "method": "cuboidDimensions",
             "type": "StaticModel",
             "parameters": {
-                "height": 5.0, "width": 0.5, "depth": 0.5,
+                "height": 2.5, "width": 0.5, "depth": 0.5,
                 "material_properties": [
                     { "name": "colorMultiplier", "type": "vec4", "value": [1.2, 0.2, 0.4, 1.0] },
                     { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
@@ -119,7 +119,7 @@
                 },
                 {
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, 0.0, 25.0, 1.0 ],
+                    "position": [ 0.0, 0.0, 20.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ],
                     "type": "Placement"
                 }
@@ -135,7 +135,7 @@
                     "type": "Hinge",
                     "other": "/root/bar_0/",
                     "attachment": [0, 0, 0],
-                    "attachment_other": [0, 2.5, 0],
+                    "attachment_other": [0, 1.25, 0],
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
@@ -183,7 +183,7 @@
                 {
                     "type": "Hinge",
                     "other": "/root/hinge_1/",
-                    "attachment": [0, -2.5, 0],
+                    "attachment": [0, -1.25, 0],
                     "attachment_other": [0, 0.0, 0],
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
@@ -194,13 +194,13 @@
             "components": [
                 {
                     "type": "Placement",
-                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, -2.5, 2.0, 1.0 ],
+                    "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
+                    "position": [ 0.0, 1.25, 2.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 0.5,
+                    "mass": 0.1,
                     "mode": "dynamic",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
@@ -214,7 +214,7 @@
                     "volume_properties": {
                         "width": 0.5,
                         "depth": 0.5,
-                        "height": 5.0
+                        "height": 2.5
                     },
                     "interaction_layers": 1,
                     "interaction_mask": 1
@@ -233,7 +233,7 @@
                     "type": "Hinge",
                     "other": "/root/bar_1/",
                     "attachment": [0, 0.0, 0],
-                    "attachment_other": [0, 2.5, 0],
+                    "attachment_other": [0, 1.25, 0],
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
@@ -243,15 +243,15 @@
             "components": [
                 {
                     "type": "Placement",
-                    "orientation": [1, 0, 0, 0],
-                    "position": [ 0.0, -5.0, 2.0, 1.0 ],
+                    "orientation": [ 1.0, 0.0, 0.0, 0.8939967 ],
+                    "position": [ 0.0, 2.5, 2.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
                     "mode": "dynamic",
                     "collision_response": [],
-                    "mass": 1.0,
+                    "mass": 0.3,
                     "coefficient_friction_static": 0.75811,
                     "coefficient_friction_dynamic": 0.63
                 },
@@ -277,7 +277,7 @@
                 {
                     "type": "Hinge",
                     "other": "/root/hinge_2/",
-                    "attachment": [0, -2.5, 0],
+                    "attachment": [0, -1.25, 0],
                     "attachment_other": [0, 0.0, 0],
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
@@ -288,13 +288,13 @@
             "components": [
                 {
                     "type": "Placement",
-                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, -7.5, 2.0, 1.0 ],
+                    "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
+                    "position": [ 0.0, 3.75, 2.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 0.5,
+                    "mass": 0.1,
                     "mode": "dynamic",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
@@ -308,7 +308,7 @@
                     "volume_properties": {
                         "width": 0.5,
                         "depth": 0.5,
-                        "height": 5.0
+                        "height": 2.5
                     },
                     "interaction_layers": 1,
                     "interaction_mask": 1
@@ -327,7 +327,7 @@
                     "type": "Hinge",
                     "other": "/root/bar_2/",
                     "attachment": [0, 0.0, 0],
-                    "attachment_other": [0, 2.5, 0],
+                    "attachment_other": [0, 1.25, 0],
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
@@ -337,15 +337,15 @@
             "components": [
                 {
                     "type": "Placement",
-                    "orientation": [1, 0, 0, 0],
-                    "position": [ 0.0, -10.0, 2.0, 1.0 ],
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 5.0, 2.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
                     "mode": "dynamic",
                     "collision_response": [],
-                    "mass": 1.0,
+                    "mass": 0.3,
                     "coefficient_friction_static": 0.75811,
                     "coefficient_friction_dynamic": 0.63
                 },
@@ -370,7 +370,7 @@
                 {
                     "type": "Hinge",
                     "other": "/root/bob/",
-                    "attachment": [0, -2.5, 0],
+                    "attachment": [0, -1.25, 0],
                     "attachment_other": [0, 0, 0],
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
@@ -381,13 +381,13 @@
             "components": [
                 {
                     "type": "Placement",
-                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, -12.5, 2.0, 1.0 ],
+                    "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
+                    "position": [ 0.0, 6.25, 2.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 0.5,
+                    "mass": 0.1,
                     "mode": "dynamic",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
@@ -401,7 +401,7 @@
                     "volume_properties": {
                         "width": 0.5,
                         "depth": 0.5,
-                        "height": 5.0
+                        "height": 1.25
                     },
                     "interaction_layers": 1,
                     "interaction_mask": 1
@@ -417,15 +417,15 @@
             "components": [
                 {
                     "type": "Placement",
-                    "orientation": [1, 0, 0, 0],
-                    "position": [ 0.0, -15.0, 2.0, 1.0 ],
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 7.5, 2.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
                     "mode": "dynamic",
                     "collision_response": [],
-                    "mass": 1.0,
+                    "mass": 0.3,
                     "coefficient_friction_static": 0.75811,
                     "coefficient_friction_dynamic": 0.63
                 },

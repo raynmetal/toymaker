@@ -188,9 +188,7 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
 
             // skip already discovered collision constraints
             const CollisionPair link { entity, candidate.first };
-            if(
-                potentialCollisions.find(link) != potentialCollisions.cend()
-            ) {
+            if(potentialCollisions.find(link) != potentialCollisions.cend()) {
                 continue;
             }
 
@@ -198,7 +196,7 @@ void PhysicsSystem::collectPotentialCollisions(float substepSeconds, std::queue<
             const PhysicsState physicsCandidate { getComponent<PhysicsState>(candidate.first) };
             if(
                 physicsCandidate.getMode() == PhysicsState::MODE_STATIC
-                && physicsCandidate.getMode() == PhysicsState::MODE_STATIC
+                && physics.getMode() == PhysicsState::MODE_STATIC
             ) {
                 continue;
             }

@@ -263,6 +263,23 @@ void ConstraintContact::applyConstraintPosition(
 
 void ConstraintContact::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
+    PhysicsState& physicsA { states.at(0).second.get() };
+    PhysicsState& physicsB { states.at(1).second.get() };
+
+    // guards:
+    if(
+        // at least one object must be dynamic for the collision solver to work
+        (
+            physicsA.getMode() != PhysicsState::MODE_DYNAMIC
+            && physicsB.getMode() != PhysicsState::MODE_DYNAMIC
+        // both objects must be configured to separate on collision
+        ) || !(
+            physicsA.separatesOnCollision()
+            && physicsB.separatesOnCollision()
+        )
+    ) {
+        return;
+    }
 
     const double oneBySubstep { 1.f / substepSeconds };
 
@@ -277,8 +294,6 @@ void ConstraintContact::applyConstraintVelocity(const ParticipantTable& states, 
     const glm::vec3 contactPositionB { positionB + orientationB * mRelativeB };
 
     // cache physics related stuff
-    PhysicsState& physicsA { states.at(0).second.get() };
-    PhysicsState& physicsB { states.at(1).second.get() };
     const float generalizedInverseA { computeGeneralizedInverseMassPositional(
         objectA,
         physicsA,

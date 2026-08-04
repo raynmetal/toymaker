@@ -541,13 +541,13 @@ std::shared_ptr<OctreeNode> OctreeNode::GrowTreeAndCreateRoot (
     // edge case: maximum depth reached before integration of the old tree
     // became possible. Hand over all old octree's member entities to the leafmost
     // node of the new Octree
-    if(currentDepth == kMaxDepthInclusive) {
+    if(currentDepth > kMaxDepthInclusive) {
         for(std::pair<EntityID, AxisAlignedBounds> memberEntity: oldRoot->findAllMemberEntities()) {
             parentNode->mEntities.insert(memberEntity);
         }
         return newRootNode;
     }
-    assert(currentDepth < kMaxDepthInclusive && "Current depth cannot have reached or exceeded the maximum allowable depth beyond this point");
+    assert(currentDepth <= kMaxDepthInclusive && "Current depth cannot have reached or exceeded the maximum allowable depth beyond this point");
     assert(growthSteps.size() == 1 && "Growth steps vector should have exactly one element remaining corresponding to the growth direction \
         from the old Octree root node");
 
@@ -582,7 +582,7 @@ std::shared_ptr<OctreeNode> OctreeNode::GrowTreeAndCreateRoot (
         currentNode->mAddress = MakeAddress(currentNode->getOctant(), currentNode->mParent.lock()->getAddress());
     }
 
-    // max depth reached . Put all descendant owned entities into leaf 
+    // max depth reached . Put all descendant owned entities into leaf
     // nodes, i.e., the nodes remaining in `toVisit`
     while(!toVisit.empty()) {
         std::shared_ptr<OctreeNode> currentNode { toVisit.front() };
