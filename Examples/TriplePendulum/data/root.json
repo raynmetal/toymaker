@@ -14,7 +14,7 @@
             "method": "cuboidDimensions",
             "type": "StaticModel",
             "parameters": {
-                "height": 5.0, "width": 0.2, "depth": 0.2,
+                "height": 5.0, "width": 0.5, "depth": 0.5,
                 "material_properties": [
                     { "name": "colorMultiplier", "type": "vec4", "value": [1.2, 0.2, 0.4, 1.0] },
                     { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
@@ -27,7 +27,7 @@
             "method": "cuboidDimensions",
             "type": "StaticModel",
             "parameters": {
-                "height": 1.0, "width": 1.0, "depth": 1.0,
+                "height": 2.0, "width": 2.0, "depth": 2.0,
                 "material_properties": [
                     { "name": "colorMultiplier", "type": "vec4", "value": [0.2, 0.2, 1.4, 1.0] },
                     { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
@@ -119,7 +119,7 @@
                 },
                 {
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, 0.0, 10.0, 1.0 ],
+                    "position": [ 0.0, 0.0, 25.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ],
                     "type": "Placement"
                 }
@@ -155,8 +155,7 @@
                     "mode": "static",
                     "collision_response": [],
                     "coefficient_friction_static": 1.0,
-                    "coefficient_friction_dynamic": 1.0,
-                    "velocity": [0.0, 0.0, 0.0]
+                    "coefficient_friction_dynamic": 1.0
                 },
                 {
                     "type": "ObjectBounds",
@@ -183,9 +182,9 @@
                 { "type": "Gravity" },
                 {
                     "type": "Hinge",
-                    "other": "/root/bob/",
+                    "other": "/root/hinge_1/",
                     "attachment": [0, -2.5, 0],
-                    "attachment_other": [0, 0, 0],
+                    "attachment_other": [0, 0.0, 0],
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
@@ -201,7 +200,7 @@
                 },
                 {
                     "type": "PhysicsState",
-                    "mass": 0.2,
+                    "mass": 0.5,
                     "mode": "dynamic",
                     "coefficient_friction_static": 1.0,
                     "coefficient_friction_dynamic": 1.0,
@@ -213,8 +212,8 @@
                     "position_offset": [0, 0, 0],
                     "orientation_offset": [1, 0, 0, 0],
                     "volume_properties": {
-                        "width": 0.2,
-                        "depth": 0.2,
+                        "width": 0.5,
+                        "depth": 0.5,
                         "height": 5.0
                     },
                     "interaction_layers": 1,
@@ -225,6 +224,192 @@
         },
 
         {
+            "name": "hinge_1",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                {"type": "Gravity"},
+                {
+                    "type": "Hinge",
+                    "other": "/root/bar_1/",
+                    "attachment": [0, 0.0, 0],
+                    "attachment_other": [0, 2.5, 0],
+                    "axis": [0, 0, 1],
+                    "orientation": [1, 0, 0, 0],
+                    "orientation_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [1, 0, 0, 0],
+                    "position": [ 0.0, -5.0, 2.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "dynamic",
+                    "collision_response": [],
+                    "mass": 1.0,
+                    "coefficient_friction_static": 0.75811,
+                    "coefficient_friction_dynamic": 0.63
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": { "width": 2.0, "depth": 2.0, "height": 2.0 },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BoxModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "bar_1",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                { "type": "Gravity" },
+                {
+                    "type": "Hinge",
+                    "other": "/root/hinge_2/",
+                    "attachment": [0, -2.5, 0],
+                    "attachment_other": [0, 0.0, 0],
+                    "axis": [0, 0, 1],
+                    "orientation": [1, 0, 0, 0],
+                    "orientation_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, -7.5, 2.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": 0.5,
+                    "mode": "dynamic",
+                    "coefficient_friction_static": 1.0,
+                    "coefficient_friction_dynamic": 1.0,
+                    "collision_response": []
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 0.5,
+                        "depth": 0.5,
+                        "height": 5.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BarModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "hinge_2",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                {"type": "Gravity"},
+                {
+                    "type": "Hinge",
+                    "other": "/root/bar_2/",
+                    "attachment": [0, 0.0, 0],
+                    "attachment_other": [0, 2.5, 0],
+                    "axis": [0, 0, 1],
+                    "orientation": [1, 0, 0, 0],
+                    "orientation_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [1, 0, 0, 0],
+                    "position": [ 0.0, -10.0, 2.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "dynamic",
+                    "collision_response": [],
+                    "mass": 1.0,
+                    "coefficient_friction_static": 0.75811,
+                    "coefficient_friction_dynamic": 0.63
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": { "width": 2.0, "depth": 2.0, "height": 2.0 },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BoxModel", "type": "StaticModel" }
+            ]
+        },
+        {
+            "name": "bar_2",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                { "type": "Gravity" },
+                {
+                    "type": "Hinge",
+                    "other": "/root/bob/",
+                    "attachment": [0, -2.5, 0],
+                    "attachment_other": [0, 0, 0],
+                    "axis": [0, 0, 1],
+                    "orientation": [1, 0, 0, 0],
+                    "orientation_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, -12.5, 2.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": 0.5,
+                    "mode": "dynamic",
+                    "coefficient_friction_static": 1.0,
+                    "coefficient_friction_dynamic": 1.0,
+                    "collision_response": []
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 0.5,
+                        "depth": 0.5,
+                        "height": 5.0
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BarModel", "type": "StaticModel" }
+            ]
+        },
+        {
             "name": "bob",
             "parent": "/",
             "type": "SimObject",
@@ -233,25 +418,23 @@
                 {
                     "type": "Placement",
                     "orientation": [1, 0, 0, 0],
-                    "position": [ -5.0, 0.0, 2.0, 1.0 ],
+                    "position": [ 0.0, -15.0, 2.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
                     "mode": "dynamic",
                     "collision_response": [],
-                    "mass": 2.0,
+                    "mass": 1.0,
                     "coefficient_friction_static": 0.75811,
-                    "coefficient_friction_dynamic": 0.63,
-                    "velocity": [ 10.0, 0.0, 0.0 ],
-                    "angular_velocity": [0.0, 0.0, 30.0]
+                    "coefficient_friction_dynamic": 0.63
                 },
                 {
                     "type": "ObjectBounds",
                     "volume_type": "box",
                     "position_offset": [0, 0, 0],
                     "orientation_offset": [1, 0, 0, 0],
-                    "volume_properties": { "width": 1.0, "depth": 1.0, "height": 1.0 },
+                    "volume_properties": { "width": 2.0, "depth": 2.0, "height": 2.0 },
                     "interaction_layers": 1,
                     "interaction_mask": 1
                 },
