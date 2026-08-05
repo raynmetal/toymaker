@@ -20,6 +20,11 @@ also doesn't yet feature a level editor.
 `Examples/FillContainer` -- shows spheres spawning at a steady rate filling an invisible container, with several collision checks
 and corrections taking place every frame.
 
+![Triple Pendulum](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExdnI2Ymd5cXptNTV1cGd5ZWs0NmRudzE2OTZ6OGQ5YTJnamhoY2NvYSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/2oSky4S3RpywDDpsu0/giphy.gif)
+
+`Examples/TriplePendulum` -- shows set of granular single degree of freedom position constraints being used to model the behaviour of
+a hinge joint in a triple pendulum.
+
 ![Slope Friction](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExbXZqZnZlZ2ZqNXYzeWsxZTNncDlrZGduOTBoYmNqd2E0NW5ib200cSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/hB2tfGISPc9946Vr0v/giphy.gif)
 
 `Examples/SlopeFriction` -- demos friction forces causing a moving block to slow and come to a stop sliding down a gentle

@@ -192,8 +192,8 @@
                     "attachment": [0, 0, 0],
                     "attachment_other": [0, 1.25, 0],
                     "axis": [0, 0, 1],
-                    "orientation": [1, 0, 0, 0],
-                    "orientation_other": [1, 0, 0, 0],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
                     "offsets": [0, 0, 0.5]
                 }
             ],
@@ -241,8 +241,8 @@
                     "attachment": [0, -1.25, 0],
                     "attachment_other": [0, 0.0, 0],
                     "axis": [0, 0, 1],
-                    "orientation": [1, 0, 0, 0],
-                    "orientation_other": [1, 0, 0, 0],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
                     "offsets": [0, 0, 0.5]
                 }
             ],
@@ -294,8 +294,8 @@
                     "attachment": [0, 0.0, 0],
                     "attachment_other": [0, 1.25, 0],
                     "axis": [0, 0, 1],
-                    "orientation": [1, 0, 0, 0],
-                    "orientation_other": [1, 0, 0, 0],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
                     "offsets": [0, 0, 0.5]
                 }
             ],
@@ -344,8 +344,8 @@
                     "attachment": [0, -1.25, 0],
                     "attachment_other": [0, 0.0, 0],
                     "axis": [0, 0, 1],
-                    "orientation": [1, 0, 0, 0],
-                    "orientation_other": [1, 0, 0, 0],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
                     "offsets": [0, 0, 0.5]
                 }
             ],
@@ -397,8 +397,8 @@
                     "attachment": [0, 0.0, 0],
                     "attachment_other": [0, 1.25, 0],
                     "axis": [0, 0, 1],
-                    "orientation": [1, 0, 0, 0],
-                    "orientation_other": [1, 0, 0, 0],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
                     "offsets": [0, 0, 0.5]
                 }
             ],
@@ -445,8 +445,8 @@
                     "attachment": [0, -1.25, 0],
                     "attachment_other": [0, 0, 0],
                     "axis": [0, 0, 1],
-                    "orientation": [1, 0, 0, 0],
-                    "orientation_other": [1, 0, 0, 0],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
                     "offsets": [0, 0, 0.5]
                 }
             ],

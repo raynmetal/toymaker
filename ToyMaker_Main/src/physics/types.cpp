@@ -688,9 +688,9 @@ void ConstraintRotation1D::applyConstraintPosition(const ParticipantTable& state
     ObjectBounds& boundsA { states.at(0).first.get() };
     ObjectBounds& boundsB { states.at(1).first.get() };
     const glm::quat orientationA { boundsA.getOrientationWorld() };
-    const glm::quat orientationConstraintA { getParameter(0).mOrientation };
+    const glm::quat orientationConstraintA { getParameter(0).mRotateToLocal };
     const glm::quat orientationB { boundsB.getOrientationWorld() };
-    const glm::quat orientationConstraintB { getParameter(1).mOrientation };
+    const glm::quat orientationConstraintB { getParameter(1).mRotateToLocal };
     const glm::vec3 axisLocal { config.mAxis };
     const glm::vec3 vectorLocalA { getParameter(0).mVector };
     const glm::vec3 vectorLocalB { getParameter(1).mVector };
@@ -767,9 +767,9 @@ void ConstraintDistance1D::applyConstraintPosition(const ParticipantTable& state
     ObjectBounds& boundsA { states.at(0).first.get() };
     ObjectBounds& boundsB { states.at(1).first.get() };
     const glm::quat orientationA { boundsA.getOrientationWorld() };
-    const glm::quat orientationConstraintA { getParameter(0).mOrientation };
+    const glm::quat orientationConstraintA { getParameter(0).mRotateToLocal };
     const glm::quat orientationB { boundsB.getOrientationWorld() };
-    const glm::quat orientationConstraintB { getParameter(1).mOrientation };
+    const glm::quat orientationConstraintB { getParameter(1).mRotateToLocal };
     const glm::vec3 positionA { boundsA.getPositionWorld() };
     const glm::vec3 positionB { boundsB.getPositionWorld() };
     const glm::vec3 axisLocal { config.mAxis };

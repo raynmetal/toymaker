@@ -67,13 +67,13 @@ private:
      * @brief Rotation taking vector from constraint space to this object's local space
      *
      */
-    glm::quat mOrientation { 1.f, 0.f, 0.f, 0.f };
+    glm::quat mConstraintToLocal { 1.f, 0.f, 0.f, 0.f };
 
     /**
      * @brief Rotation taking vector from constraint space to attached object's local space.
      *
      */
-    glm::quat mOrientationOther { 1.f, 0.f, 0.f, 0.f };
+    glm::quat mConstraintToLocalOther { 1.f, 0.f, 0.f, 0.f };
 
     /**
      * @brief Distance offsets of the other object's attachment point relative to this object's attachment point.
@@ -130,22 +130,18 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> Hinge::create(const nlohmann::jso
         jsonAspectProperties.at("attachment_other")[1],
         jsonAspectProperties.at("attachment_other")[2],
     };
-    newHinge->mOrientation = {
-        jsonAspectProperties.at("orientation")[0],
-        jsonAspectProperties.at("orientation")[1],
-        jsonAspectProperties.at("orientation")[2],
-        jsonAspectProperties.at("orientation")[3],
-    };
-    // invert to find constraint->local rotation
-    newHinge->mOrientation = glm::inverse(glm::normalize(newHinge->mOrientation));
-    newHinge->mOrientationOther = {
-        jsonAspectProperties.at("orientation_other")[0],
-        jsonAspectProperties.at("orientation_other")[1],
-        jsonAspectProperties.at("orientation_other")[2],
-        jsonAspectProperties.at("orientation_other")[3],
-    };
-    // invert to find constraint->local rotation
-    newHinge->mOrientationOther = glm::inverse(glm::normalize(newHinge->mOrientationOther));
+    newHinge->mConstraintToLocal = { glm::normalize(glm::quat {
+        jsonAspectProperties.at("constraint_to_local")[0],
+        jsonAspectProperties.at("constraint_to_local")[1],
+        jsonAspectProperties.at("constraint_to_local")[2],
+        jsonAspectProperties.at("constraint_to_local")[3],
+    } ) };
+    newHinge->mConstraintToLocalOther = { glm::normalize(glm::quat {
+        jsonAspectProperties.at("constraint_to_local_other")[0],
+        jsonAspectProperties.at("constraint_to_local_other")[1],
+        jsonAspectProperties.at("constraint_to_local_other")[2],
+        jsonAspectProperties.at("constraint_to_local_other")[3],
+    } ) };
     newHinge->mAxis = {
         jsonAspectProperties.at("axis")[0],
         jsonAspectProperties.at("axis")[1],
@@ -164,8 +160,8 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> Hinge::clone() const {
     std::shared_ptr<Hinge> newHinge(new Hinge{});
     newHinge->mAttachmentPoint = mAttachmentPoint;
     newHinge->mAttachmentPointOther = mAttachmentPointOther;
-    newHinge->mOrientation = mOrientation;
-    newHinge->mOrientationOther = mOrientation;
+    newHinge->mConstraintToLocal = mConstraintToLocal;
+    newHinge->mConstraintToLocalOther = mConstraintToLocal;
     newHinge->mAxis = mAxis;
     newHinge->mOther = mOther;
     newHinge->mOffsets = mOffsets;
@@ -214,11 +210,11 @@ void Hinge::onActivated() {
             configDistanceX,
             {
                 { entityThis, {
-                    mOrientation,
+                    mConstraintToLocal,
                     mAttachmentPoint
                 } },
                 { entityOther, {
-                    mOrientationOther,
+                    mConstraintToLocalOther,
                     mAttachmentPointOther
                 } },
             },
@@ -230,11 +226,11 @@ void Hinge::onActivated() {
             configDistanceY,
             {
                 { entityThis, {
-                    mOrientation,
+                    mConstraintToLocal,
                     mAttachmentPoint
                 } },
                 { entityOther, {
-                    mOrientationOther,
+                    mConstraintToLocalOther,
                     mAttachmentPointOther
                 } },
             },
@@ -246,11 +242,11 @@ void Hinge::onActivated() {
             configDistanceZ,
             {
                 { entityThis, {
-                    mOrientation,
+                    mConstraintToLocal,
                     mAttachmentPoint
                 } },
                 { entityOther, {
-                    mOrientationOther,
+                    mConstraintToLocalOther,
                     mAttachmentPointOther
                 } },
             },
@@ -264,11 +260,11 @@ void Hinge::onActivated() {
             configRotation0,
             {
                 { entityThis, {
-                    mOrientation,
+                    mConstraintToLocal,
                     mAxis
                 } },
                 { entityOther, {
-                    mOrientationOther,
+                    mConstraintToLocalOther,
                     mAxis
                 } },
             },
@@ -280,11 +276,11 @@ void Hinge::onActivated() {
             configRotation1,
             {
                 { entityThis, {
-                    mOrientation,
+                    mConstraintToLocal,
                     mAxis
                 } },
                 { entityOther, {
-                    mOrientationOther,
+                    mConstraintToLocalOther,
                     mAxis
                 } },
             },

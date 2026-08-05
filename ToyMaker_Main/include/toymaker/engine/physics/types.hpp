@@ -1069,10 +1069,10 @@ namespace ToyMaker {
      */
     struct Constraint1DOFParam {
         /**
-         * @brief The rotation taking the parameter from constraint local space to object-local space.
+         * @brief The rotation taking the parameter from constraint space to object-local space.
          *
          */
-        glm::quat mOrientation { 1.f, 0.f, 0.f, 0.f };
+        glm::quat mRotateToLocal { 1.f, 0.f, 0.f, 0.f };
 
         /**
          * @brief The constrained vector representing a position for a distance constraints, and a direction
@@ -1084,7 +1084,7 @@ namespace ToyMaker {
         inline bool isSensible(bool isRotation=false) const {
             return (
                 isFinite(mVector) && isNumber(mVector)
-                && glm::length(mOrientation) == 1.f
+                && glm::length(mRotateToLocal) == 1.f
             );
         }
     };
