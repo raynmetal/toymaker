@@ -15,6 +15,7 @@ target_sources(Example_TriplePendulum
         gravity.cpp
         hinge.cpp
         set_substeps.cpp
+        fly_camera.cpp
     PRIVATE
 )
 

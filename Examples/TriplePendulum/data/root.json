@@ -150,7 +150,11 @@
 
         {
             "name": "camera",
-            "aspects":[{"type": "QueryClick" }, {"type": "RenderDebugViewer"}],
+            "aspects":[
+                {"type": "QueryClick" },
+                {"type": "RenderDebugViewer"},
+                {"type": "FlyCamera"}
+            ],
             "parent": "/",
             "type": "SimObject",
             "components": [

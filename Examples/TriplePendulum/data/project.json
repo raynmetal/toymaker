@@ -2,7 +2,7 @@
     "window_configuration": {
         "application_title": "ToyMaker Demo",
         "window_width": 800,
-        "window_height": 600 
+        "window_height": 600
     },
 
     "root_viewport_render_configuration": {
