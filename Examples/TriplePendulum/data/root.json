@@ -16,22 +16,73 @@
             "parameters": {
                 "height": 2.5, "width": 0.5, "depth": 0.5,
                 "material_properties": [
-                    { "name": "colorMultiplier", "type": "vec4", "value": [1.2, 0.2, 0.4, 1.0] },
+                    { "name": "colorMultiplier", "type": "vec4", "value": [0.2, 0.2, 0.4, 1.0] },
                     { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
                     { "name": "usesTextureAlbedo", "type": "int", "value": 1 }
                 ]
             }
         },
         {
-            "name": "BoxModel",
-            "method": "cuboidDimensions",
+            "method": "sphereLatLong",
+            "name": "SphereCyan",
             "type": "StaticModel",
             "parameters": {
-                "height": 2.0, "width": 2.0, "depth": 2.0,
+                "nLatitudes": 32,
+                "nMeridians": 16,
                 "material_properties": [
-                    { "name": "colorMultiplier", "type": "vec4", "value": [0.2, 0.2, 1.4, 1.0] },
-                    { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
-                    { "name": "usesTextureAlbedo", "type": "int", "value": 1 }
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.0, 0.3, 0.3, 1.0]
+                    }
+                ]
+            }
+        },
+        {
+            "method": "sphereLatLong",
+            "name": "SpherePurple",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.3, 0.0, 0.3, 1.0]
+                    }
+                ]
+            }
+        },
+        {
+            "method": "sphereLatLong",
+            "name": "SphereYellow",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.3, 0.3, 0.0, 1.0]
+                    }
+                ]
+            }
+        },
+        {
+            "method": "sphereLatLong",
+            "name": "SphereGray",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.01, 0.01, 0.01, 1.0]
+                    }
                 ]
             }
         }
@@ -119,7 +170,7 @@
                 },
                 {
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, 0.0, 15.0, 1.0 ],
+                    "position": [ 0.0, 0.0, 14.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ],
                     "type": "Placement"
                 }
@@ -139,7 +190,7 @@
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
-                    "offsets": [0, 0, 2]
+                    "offsets": [0, 0, 0.5]
                 }
             ],
             "components": [
@@ -147,7 +198,7 @@
                     "type": "Placement",
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
                     "position": [ 0.0, 0.0, 0.0, 1.0 ],
-                    "scale": [ 0.2, 0.2, 0.2 ]
+                    "scale": [ 0.5, 0.5, 0.5 ]
                 },
                 {
                     "type": "PhysicsState",
@@ -170,7 +221,7 @@
                     "interaction_layers": 1,
                     "interaction_mask": 1
                 },
-                { "resourceName": "BoxModel", "type": "StaticModel" }
+                { "resourceName": "SphereGray", "type": "StaticModel" }
             ]
         },
 
@@ -188,14 +239,14 @@
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
-                    "offsets": [0, 0, 0]
+                    "offsets": [0, 0, 0.5]
                 }
             ],
             "components": [
                 {
                     "type": "Placement",
                     "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
-                    "position": [ 0.0, 1.25, 2.0, 1.0 ],
+                    "position": [ 0.0, 1.25, 0.5, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
@@ -241,14 +292,14 @@
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
-                    "offsets": [0, 0, 0]
+                    "offsets": [0, 0, 0.5]
                 }
             ],
             "components": [
                 {
                     "type": "Placement",
                     "orientation": [ 1.0, 0.0, 0.0, 0.8939967 ],
-                    "position": [ 0.0, 2.5, 2.0, 1.0 ],
+                    "position": [ 0.0, 2.5, 1.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
@@ -258,7 +309,7 @@
                     "mass": 0.3,
                     "coefficient_friction_static": 0.75811,
                     "coefficient_friction_dynamic": 0.63,
-                    "velocity": [70, 0, 0],
+                    "velocity": [100, 0, 0],
                     "velocity_bleed": 0,
                     "angular_velocity_bleed": 0,
                     "velocity_cutoff": 0,
@@ -273,7 +324,7 @@
                     "interaction_layers": 1,
                     "interaction_mask": 1
                 },
-                { "resourceName": "BoxModel", "type": "StaticModel" }
+                { "resourceName": "SphereCyan", "type": "StaticModel" }
             ]
         },
 
@@ -291,14 +342,14 @@
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
-                    "offsets": [0, 0, 0]
+                    "offsets": [0, 0, 0.5]
                 }
             ],
             "components": [
                 {
                     "type": "Placement",
                     "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
-                    "position": [ 0.0, 3.75, 2.0, 1.0 ],
+                    "position": [ 0.0, 3.75, 1.5, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
@@ -344,7 +395,7 @@
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
-                    "offsets": [0, 0, 0]
+                    "offsets": [0, 0, 0.5]
                 }
             ],
             "components": [
@@ -352,7 +403,7 @@
                     "type": "Placement",
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
                     "position": [ 0.0, 5.0, 2.0, 1.0 ],
-                    "scale": [ 1.0, 1.0, 1.0 ]
+                    "scale": [ 0.75, 0.75, 0.75 ]
                 },
                 {
                     "type": "PhysicsState",
@@ -375,7 +426,7 @@
                     "interaction_layers": 1,
                     "interaction_mask": 1
                 },
-                { "resourceName": "BoxModel", "type": "StaticModel" }
+                { "resourceName": "SpherePurple", "type": "StaticModel" }
             ]
         },
         {
@@ -392,14 +443,14 @@
                     "axis": [0, 0, 1],
                     "orientation": [1, 0, 0, 0],
                     "orientation_other": [1, 0, 0, 0],
-                    "offsets": [0, 0, 0]
+                    "offsets": [0, 0, 0.5]
                 }
             ],
             "components": [
                 {
                     "type": "Placement",
                     "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
-                    "position": [ 0.0, 6.25, 2.0, 1.0 ],
+                    "position": [ 0.0, 6.25, 2.5, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
@@ -439,8 +490,8 @@
                 {
                     "type": "Placement",
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
-                    "position": [ 0.0, 7.5, 2.0, 1.0 ],
-                    "scale": [ 1.0, 1.0, 1.0 ]
+                    "position": [ 0.0, 7.5, 3.0, 1.0 ],
+                    "scale": [ 0.5625, 0.5625, 0.5625 ]
                 },
                 {
                     "type": "PhysicsState",
@@ -463,7 +514,7 @@
                     "interaction_layers": 1,
                     "interaction_mask": 1
                 },
-                { "resourceName": "BoxModel", "type": "StaticModel" }
+                { "resourceName": "SphereYellow", "type": "StaticModel" }
             ]
         }
     ],
