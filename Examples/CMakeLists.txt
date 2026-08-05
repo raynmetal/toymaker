@@ -3,4 +3,5 @@ add_subdirectory(LeftRightCollision)
 add_subdirectory(SlopeFriction)
 add_subdirectory(FillContainer)
 add_subdirectory(ManyLights)
+add_subdirectory(TriplePendulum)
 

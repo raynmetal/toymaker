@@ -13,8 +13,10 @@
 #ifndef TOYMAKERENGINE_SPATIALQUERYMATH_H
 #define TOYMAKERENGINE_SPATIALQUERYMATH_H
 
+#include <iostream>
 #include <glm/glm.hpp>
 
+#include "../util.hpp"
 #include "types.hpp"
 
 namespace ToyMaker {
@@ -30,13 +32,6 @@ namespace ToyMaker {
      * @warning Error if triangle with colinear points provided.
      */
     glm::mat3 computeBarycentricSolver(const AreaTriangle& triangle);
-
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Determines whether a particular matrix is valid and finite
-     *
-     */
-    bool isSensible(const glm::mat3& matrix);
 
     /** 
      * @ingroup ToyMakerSpatialQuerySystem
@@ -252,28 +247,6 @@ namespace ToyMaker {
      */
     bool contains(const ObjectBounds& one, const AxisAlignedBounds& two);
 
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Returns a pair of tangents to an input vector.
-     * 
-     * See [Erin Catto's blog post](https://box2d.org/posts/2014/02/computing-a-basis/) for the method used here to 
-     * derive consistent tangents to a vector efficiently.
-     * 
-     */
-    inline std::pair<glm::vec3, glm::vec3> deriveTangents(const glm::vec3& vector) {
-        assert(isFinite(vector) && "Vector must be finite");
-        assert(squareDistance(vector) && "Zero vectors are invalid as basis for tangents");
-
-        const auto normalized { glm::normalize(vector) };
-        const glm::vec3 tangentPrelim { ((glm::abs(normalized.x) >= .57735f) ?
-            glm::vec3{ normalized.y, -normalized.x, 0.f } : glm::vec3{ 0.f, normalized.z, -normalized.y }
-        ) };
-        const glm::vec3 tangent2 {
-            glm::normalize(glm::cross(tangentPrelim, normalized))
-        };
-
-        return { glm::normalize(glm::cross(normalized, tangent2)), tangent2 };
-    }
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
@@ -320,9 +293,10 @@ namespace ToyMaker {
 
         glm::vec3 searchDirection { two.getPositionWorld() - one.getPositionWorld() };
 
-        // Two non-degenerate objects share the same origin, obviously they overlap
+        // avoid handling cases where 2 objects overlap at their origin
         if(squareDistance(searchDirection) == 0.f) {
-            return { true, Simplex {} };
+            std::cerr << "Invalid overlap where 2 objects share same origin detected.\n";
+            return { false, Simplex {} };
         }
 
         Simplex simplex {};
@@ -476,7 +450,7 @@ namespace ToyMaker {
         const auto contactNormal {
             squareDistance(closestPoint)? closestPoint: one.getPositionWorld() - two.getPositionWorld()
         };
-        const auto tangentPair { deriveTangents(contactNormal) };
+        const auto tangentPair { getTangents(contactNormal) };
         collisionResult.mContactB.mNormal = glm::normalize(contactNormal);
         collisionResult.mContactB.mTangent1 = glm::normalize(tangentPair.first);
         collisionResult.mContactB.mTangent2 = glm::normalize(tangentPair.second);
@@ -518,7 +492,5 @@ namespace ToyMaker {
         return polytope;
     }
 }
-
-
 
 #endif

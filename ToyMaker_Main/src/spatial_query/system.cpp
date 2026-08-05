@@ -213,7 +213,8 @@ void SpatialQuerySystem::updateTransform(EntityID entity) {
     // entities whose transforms are set by their object bounds should
     // only have their translation and rotation inherited
     newTransform.mInheritedComponents = (TRANSFORMCOMPONENT_TRANSLATION | TRANSFORMCOMPONENT_ROTATION);
-    newTransform.mModelMatrix = updatedBounds.getTranslationTransformOrigin() * updatedBounds.getRotationTransformOrigin();
+    const glm::mat4 scaleMatrix { newTransform.getMatrixScale() };
+    newTransform.mModelMatrix = updatedBounds.getTranslationTransformOrigin() * updatedBounds.getRotationTransformOrigin() * scaleMatrix;
     updateComponent(entity, newTransform);
     updateComponent(entity, updatedBounds);
 }

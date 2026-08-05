@@ -11,7 +11,6 @@
 #ifndef TOYMAKERENGINE_SPATIALQUERYTYPES_H
 #define TOYMAKERENGINE_SPATIALQUERYTYPES_H
 
-#include <cmath>
 #include <array>
 #include <queue>
 
@@ -20,12 +19,11 @@
 #include <nlohmann/json.hpp>
 #include <string>
 
+#include "../util.hpp"
+
 namespace ToyMaker {
     struct AreaTriangle;
 
-    inline float squareDistance(const glm::vec3& vector) {
-        return glm::dot(vector, vector);
-    }
 
     /**
      * @ingroup ToyMakerSpatialQuerySystem
@@ -45,85 +43,6 @@ namespace ToyMaker {
         FRONT=0x4
     };
 
-
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Tests whether a given number is finite.
-     *
-     * @param number The number being tested.
-     * @retval true The number is finite;
-     * @retval false The number is not finite;
-     */
-    inline bool isFinite(float number) {
-        return std::isfinite(number);
-    }
-
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Tests whether a set of 3 numbers is finite.
-     *
-     * @param vector The numbers being tested.
-     * @retval true The numbers are (all) finite;
-     * @retval false One or more numbers are not finite;
-     */
-    inline bool isFinite(const glm::vec3& vector) {
-        return isFinite(vector.x) && isFinite(vector.y) && isFinite(vector.z);
-    }
-
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Tests whether a number is strictly positive.
-     *
-     * @param number The number being tested.
-     * @retval true The number is strictly positive;
-     * @retval false The number is not positive;
-     */
-    inline bool isPositiveStrict(float number) {
-        return number > 0.f;
-    }
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Tests whether a set of 3 numbers is strictly positive.
-     *
-     * @param vector The numbers being tested.
-     * @retval true The numbers are (all) strictly positive;
-     * @retval false One or more numbers are not positive;
-     */
-    inline bool isPositiveStrict(const glm::vec3& vector) {
-        return isPositiveStrict(vector.x) && isPositiveStrict(vector.y) && isPositiveStrict(vector.z);
-    }
-
-    inline bool isNumber(float number) {
-        return !std::isnan(number);
-    };
-
-    inline bool isNumber(const glm::vec3& vector) {
-        return isNumber(vector.x) && isNumber(vector.y) && isNumber(vector.z);
-    };
-
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Tests whether a number is non-negative.
-     *
-     * @param number The number being tested.
-     * @retval true The number is non-negative;
-     * @retval false The number is negative;
-     */
-    inline bool isNonNegative(float number) {
-        return number >= 0.f;
-    }
-
-    /**
-     * @ingroup ToyMakerSpatialQuerySystem
-     * @brief Tests whether a set of numbers is non-negative.
-     *
-     * @param vector The numbers being tested.
-     * @retval true The numbers are (all) non-negative.
-     * @retval false One or more of the numbers are negative.
-     */
-    inline bool isNonNegative(const glm::vec3& vector) {
-        return isNonNegative(vector.x) && isNonNegative(vector.y) && isNonNegative(vector.z);
-    }
 
 
     template <typename TDerived>

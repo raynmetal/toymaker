@@ -841,7 +841,7 @@ Collision ToyMaker::checkCollisionSphereSphere(const ObjectBounds& one, const Ob
     Collision collisionResult { .mCollided { true } };
     const auto contactNormal { glm::normalize(toTwo) };
     const auto penetrationDepth { sumRadius - glm::length(toTwo) };
-    const auto tangentPair { deriveTangents(contactNormal) };
+    const auto tangentPair { getTangents(contactNormal) };
     collisionResult.mContactB.mPoint = two.getPositionWorld() - contactNormal * two.mTrueVolume.mSphere.mRadius;
     collisionResult.mContactA.mPoint = one.getPositionWorld() + contactNormal * one.mTrueVolume.mSphere.mRadius;
     collisionResult.mContactB.mPenetrationDepth

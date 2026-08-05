@@ -7,10 +7,6 @@ using namespace ToyMaker;
 
 const float kPersistentThresholdSquared { 1.5e-6 };
 
-const float kFactorDamping { 8e-2 };
-
-const float kFactorCutoffVelocity { 5.2f };
-
 void PhysicsState::applyForceLocal(const glm::vec3& force, const glm::vec3& atPosition, const ObjectBounds& bounds) {
     const glm::vec3 position { bounds.getPositionWorld() };
     const glm::quat orientation { bounds.getOrientationWorld() };
@@ -52,9 +48,9 @@ float BaseConstraint::getCompliance() const {
     return mCompliance;
 }
 
-ContactConstraint::ContactConstraint(): Constraint<2> { 0.f } {}
+ConstraintContact::ConstraintContact(): Constraint<2> { 0.f } {}
 
-void ContactConstraint::updateCollisionData(
+void ConstraintContact::updateCollisionData(
     const Collision& collision,
     const PhysicsState& physicsA,
     const ObjectBounds& boundsA,
@@ -106,7 +102,7 @@ void ContactConstraint::updateCollisionData(
     mCollisionVelocity = glm::dot(pointVelocityAB, mContactNormal);
 }
 
-void ContactConstraint::applyConstraintPosition(
+void ConstraintContact::applyConstraintPosition(
     const ParticipantTable& states,
     float substepSeconds
 ) {
@@ -263,8 +259,25 @@ void ContactConstraint::applyConstraintPosition(
     );
 }
 
-void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+void ConstraintContact::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     assert(states.size() == 2 && "Constraint accepts states belonging to exactly two participants");
+    PhysicsState& physicsA { states.at(0).second.get() };
+    PhysicsState& physicsB { states.at(1).second.get() };
+
+    // guards:
+    if(
+        // at least one object must be dynamic for the collision solver to work
+        (
+            physicsA.getMode() != PhysicsState::MODE_DYNAMIC
+            && physicsB.getMode() != PhysicsState::MODE_DYNAMIC
+        // both objects must be configured to separate on collision
+        ) || !(
+            physicsA.separatesOnCollision()
+            && physicsB.separatesOnCollision()
+        )
+    ) {
+        return;
+    }
 
     const double oneBySubstep { 1.f / substepSeconds };
 
@@ -279,8 +292,6 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
     const glm::vec3 contactPositionB { positionB + orientationB * mRelativeB };
 
     // cache physics related stuff
-    PhysicsState& physicsA { states.at(0).second.get() };
-    PhysicsState& physicsB { states.at(1).second.get() };
     const float generalizedInverseA { computeGeneralizedInverseMassPositional(
         objectA,
         physicsA,
@@ -306,10 +317,11 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
     ) };
     const glm::vec3 pointVelocityAB { pointVelocityA - pointVelocityB };
     const float bounceVelocity { glm::dot(pointVelocityAB, mContactNormal) };
+    const float cutoffVelocity { physicsA.mVelocityCutoff + physicsB.mVelocityCutoff };
 
     // derive the current coefficient of restitution between this pair of objects, set
     // to 0 when small separation velocity detected
-    const float coefficientRestitution { (glm::abs(bounceVelocity) <= 2.f * kFactorCutoffVelocity * substepSeconds)?
+    const float coefficientRestitution { (glm::abs(bounceVelocity) <= cutoffVelocity)?
         0.f :
         glm::max(physicsA.mCoefficientRestitution, physicsB.mCoefficientRestitution)
     };
@@ -383,25 +395,25 @@ void ContactConstraint::applyConstraintVelocity(const ParticipantTable& states, 
     }
 }
 
-void ContactManifold::resetLagrange() {
+void ConstraintContactManifold::resetLagrange() {
     for(auto i { 0 }; i < mNContacts; ++i) {
         mContacts[i].resetLagrange();
     }
 }
 
-void ContactManifold::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+void ConstraintContactManifold::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     for(auto i { 0 }; i < mNContacts; ++i) {
         mContacts[i].applyConstraintVelocity(states, substepSeconds);
     }
 }
 
-void ContactManifold::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
+void ConstraintContactManifold::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
     for(auto i { 0 }; i < mNContacts; ++i) {
         mContacts[i].applyConstraintPosition(states, substepSeconds);
     }
 }
 
-void ContactManifold::addContact(const Collision& collision,
+void ConstraintContactManifold::addContact(const Collision& collision,
     const PhysicsState& physicsA, const ObjectBounds& boundsA, const ObjectBounds& boundsAPrev,
     const PhysicsState& physicsB, const ObjectBounds& boundsB, const ObjectBounds& boundsBPrev
 ) {
@@ -560,7 +572,7 @@ void ContactManifold::addContact(const Collision& collision,
     }
 }
 
-void ContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boundsB) {
+void ConstraintContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boundsB) {
     const glm::vec3 positionA { boundsA.getPositionWorld() };
     const glm::vec3 positionB { boundsB.getPositionWorld() };
     const glm::quat orientationA { boundsA.getOrientationWorld() };
@@ -593,16 +605,24 @@ void ContactManifold::trim(const ObjectBounds& boundsA, const ObjectBounds& boun
     }
 }
 
-void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
+void ConstraintDampingRigidbody::applyConstraintVelocity(const ParticipantTable& states, float substepSeconds) {
     // only dynamic objects have damping applied
     PhysicsState& physicsCurr { states.at(0).second.get() };
     if(physicsCurr.getMode() != PhysicsState::MODE_DYNAMIC) {
         return;
     }
 
-    const float factorDamping { glm::min(kFactorDamping * substepSeconds, 1.f) };
+    const float factorDamping { glm::min(physicsCurr.mVelocityBleed * substepSeconds, 1.f) };
+    const float factorDampingAngular { glm::min(physicsCurr.mVelocityBleedAngular * substepSeconds, 1.f) };
+    assert(factorDamping >= 0.f && "A negative damping value is invalid");
+    assert(factorDampingAngular >= 0.f && "A negative damping value is invalid");
+    assert(physicsCurr.mVelocityBleed <= 1.f && "A velocity bleed greater than one is invalid");
+    assert(physicsCurr.mVelocityBleedAngular <= 1.f && "A velocity bleed greater than one is invalid");
     const float oneBySubstep { 1.f / substepSeconds };
-    const float cutoffVelocity { kFactorCutoffVelocity * substepSeconds };
+    const float cutoffVelocity { physicsCurr.mVelocityCutoff };
+    const float cutoffVelocityAngular { physicsCurr.mVelocityCutoffAngular };
+    assert(cutoffVelocity >= 0.f && "A negative cutoff value is invalid");
+    assert(cutoffVelocityAngular >= 0.f && "A negative cutoff value is invalid");
 
     const ObjectBounds& object { states.at(0).first.get() };
     const PhysicsState physicsPrev { getParameter(0) };
@@ -617,23 +637,185 @@ void DampingConstraint::applyConstraintVelocity(const ParticipantTable& states, 
         impulseLinear,
         object.getPositionWorld()
     );
-    if(squareDistance(physicsCurr.mVelocity) < cutoffVelocity * cutoffVelocity) {
+    if(squareDistance(physicsCurr.mVelocity) <= cutoffVelocity * cutoffVelocity) {
         physicsCurr.mVelocity = glm::vec3 { 0.f };
     }
 
     // apply angular damping
     const glm::quat orientation { object.getOrientationWorld() };
     const glm::vec3 deltaVelocityAngularLocal { glm::inverse(orientation) * (physicsCurr.mAngularVelocity - physicsPrev.mAngularVelocity) };
-    const glm::vec3 correctionAngularLocal { -factorDamping * deltaVelocityAngularLocal };
+    const glm::vec3 correctionAngularLocal { -factorDampingAngular * deltaVelocityAngularLocal };
     const glm::vec3 impulseAngular { orientation * (correctionAngularLocal * physicsCurr.getRotationalInertia()) };
     physicsCurr = applyImpulsePhysics(
         object,
         physicsCurr,
         impulseAngular
     );
-    if(squareDistance(physicsCurr.mAngularVelocity) < 1.5f * cutoffVelocity * cutoffVelocity) {
+    if(squareDistance(physicsCurr.mAngularVelocity) <= cutoffVelocityAngular * cutoffVelocityAngular) {
         physicsCurr.mAngularVelocity = glm::vec3 { 0.f };
     }
+}
+
+void ConstraintRotation1D::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
+    assert(getConfig().isSensible(true) && "Invalid rotation constraint config");
+    assert(states.find(0) != states.end() && "Entry for participant 0 not found");
+    assert(states.find(1) != states.end() && "Entry for participant 1 not found");
+    assert(getParameter(0).isSensible() && "Invalid rotation parameter for participant 0");
+    assert(getParameter(1).isSensible() && "Invalid rotation parameter for participant 1");
+    assert(squareDistance(getParameter(0).mVector) != 0.f && isNumber(getParameter(0).mVector) && isFinite(getParameter(0).mVector)  && "Invalid vector relative to participant 0 specified");
+    assert(squareDistance(getParameter(1).mVector) != 0.f && isNumber(getParameter(1).mVector) && isFinite(getParameter(1).mVector)  && "Invalid vector relative to participant 1 specified");
+    assert(glm::dot(getParameter(0).mVector, getConfig().mAxis) == 0.f && "Axis of rotation and participant 0 relative vector must be orthogonal");
+    assert(glm::dot(getParameter(1).mVector, getConfig().mAxis) == 0.f && "Axis of rotation and participant 1 relative vector must be orthogonal");
+
+    // guard: config must be active
+    const Constraint1DOFConfig config { getConfig() };
+    if(!config.isActive) {
+        return;
+    }
+
+    // guard: at least _one_ of the participants must be dynamic, otherwise no corrections can
+    // be made.
+    const PhysicsState& physicsA { states.at(0).second.get() };
+    const PhysicsState& physicsB { states.at(1).second.get() };
+    if(
+        physicsA.getMode() != PhysicsState::MODE_DYNAMIC
+        && physicsB.getMode() != PhysicsState::MODE_DYNAMIC
+    ) {
+        return;
+    }
+
+    // find the globally oriented vectors of participants 0 and 1 and the axis of rotation
+    ObjectBounds& boundsA { states.at(0).first.get() };
+    ObjectBounds& boundsB { states.at(1).first.get() };
+    const glm::quat orientationA { boundsA.getOrientationWorld() };
+    const glm::quat orientationConstraintA { getParameter(0).mRotateToLocal };
+    const glm::quat orientationB { boundsB.getOrientationWorld() };
+    const glm::quat orientationConstraintB { getParameter(1).mRotateToLocal };
+    const glm::vec3 axisLocal { config.mAxis };
+    const glm::vec3 vectorLocalA { getParameter(0).mVector };
+    const glm::vec3 vectorLocalB { getParameter(1).mVector };
+    const glm::vec3 axis { glm::normalize(orientationA * orientationConstraintA * axisLocal) };
+    const glm::vec3 vectorA { orientationA * orientationConstraintA * vectorLocalA };
+    const glm::vec3 vectorB { orientationB * orientationConstraintB * vectorLocalB };
+
+    // find the angle between our vectors in range [-Pi, Pi]
+    const float angle { getAngle(vectorA, vectorB, axis) };
+
+    // guard: only apply corrections when necessary
+    if(angle >= config.mBoundLower && angle <= config.mBoundUpper) {
+        return;
+    }
+
+    // find generalized inverse masses for both bodies
+    const float generalizedInverseA { computeGeneralizedInverseMassRotational(
+        boundsA, physicsA, axis
+    ) };
+    const float generalizedInverseB { computeGeneralizedInverseMassRotational(
+        boundsB, physicsB, axis
+    ) };
+
+    // find correctional impulse
+    const float oneBySubstep { 1.f / substepSeconds };
+    const float alphaDerivative2 { getCompliance() * oneBySubstep * oneBySubstep };
+    const float lagrangeDenominator {
+        1.f / (generalizedInverseA + generalizedInverseB + alphaDerivative2)
+    };
+    const float error { -(angle - ((angle > config.mBoundUpper)?
+        config.mBoundUpper : config.mBoundLower
+    )) };
+    const float lagrangePrevious { getLagrange().at(0) };
+    const float lagrangeDelta { -(error + alphaDerivative2 * lagrangePrevious)
+        * lagrangeDenominator
+    };
+    const glm::vec3 impulseCorrection {
+        lagrangeDelta * axis
+    };
+    applyLagrangeDelta(lagrangeDelta, 0);
+
+    // distribute correction amongst the bodies
+    boundsA = applyImpulseObject(boundsA, physicsA, impulseCorrection);
+    boundsB = applyImpulseObject(boundsB, physicsB, -impulseCorrection);
+}
+
+void ConstraintDistance1D::applyConstraintPosition(const ParticipantTable& states, float substepSeconds) {
+    assert(getConfig().isSensible(false) && "Invalid position constraint config");
+    assert(getParameter(0).isSensible() && "Invalid position parameter for participant 0");
+    assert(getParameter(1).isSensible() && "Invalid position parameter for participant 1");
+    assert(states.find(0) != states.end() && "Entry for participant 0 not found");
+    assert(states.find(1) != states.end() && "Entry for participant 1 not found");
+    assert(isNumber(getParameter(0).mVector) && isFinite(getParameter(0).mVector)  && "Invalid point relative to participant 0 specified");
+    assert(isNumber(getParameter(1).mVector) && isFinite(getParameter(1).mVector)  && "Invalid point relative to participant 1 specified");
+
+    // guard: config must be active
+    const Constraint1DOFConfig config { getConfig() };
+    if(!config.isActive) {
+        return;
+    }
+
+    // guard: at least _one_ of the participants must be dynamic, otherwise no corrections can
+    // be made.
+    const PhysicsState& physicsA { states.at(0).second.get() };
+    const PhysicsState& physicsB { states.at(1).second.get() };
+    if(
+        physicsA.getMode() != PhysicsState::MODE_DYNAMIC
+        && physicsB.getMode() != PhysicsState::MODE_DYNAMIC
+    ) {
+        return;
+    }
+
+    // find the global position vectors of participants 0 and 1 and the globally oriented constrained axis
+    ObjectBounds& boundsA { states.at(0).first.get() };
+    ObjectBounds& boundsB { states.at(1).first.get() };
+    const glm::quat orientationA { boundsA.getOrientationWorld() };
+    const glm::quat orientationConstraintA { getParameter(0).mRotateToLocal };
+    const glm::quat orientationB { boundsB.getOrientationWorld() };
+    const glm::quat orientationConstraintB { getParameter(1).mRotateToLocal };
+    const glm::vec3 positionA { boundsA.getPositionWorld() };
+    const glm::vec3 positionB { boundsB.getPositionWorld() };
+    const glm::vec3 axisLocal { config.mAxis };
+    const glm::vec3 pointLocalA { getParameter(0).mVector };
+    const glm::vec3 pointLocalB { getParameter(1).mVector };
+    const glm::vec3 axis { glm::normalize(orientationA * orientationConstraintA * axisLocal) };
+    const glm::vec3 pointA { positionA + orientationA * orientationConstraintA * pointLocalA };
+    const glm::vec3 pointB { positionB + orientationB * orientationConstraintB * pointLocalB };
+
+    // find the projected difference between A and B along the contrained axis
+    const float projectedA { glm::dot(axis, pointA) };
+    const float projectedB { glm::dot(axis, pointB) };
+    const float deltaAB { projectedB - projectedA };
+
+    // guard: apply correction only when configured limits are exceeded
+    if(deltaAB <= config.mBoundUpper && deltaAB >= config.mBoundLower) {
+        return;
+    }
+
+    // find generalized inverse masses of A and B
+    const float generalizedInverseA { computeGeneralizedInverseMassPositional(
+        boundsA, physicsA, pointA, axis
+    ) };
+    const float generalizedInverseB { computeGeneralizedInverseMassPositional(
+        boundsB, physicsB, pointB, axis
+    ) };
+
+    // find and correctional impulse
+    const float error { -(deltaAB - ((deltaAB > config.mBoundUpper)?
+        config.mBoundUpper : config.mBoundLower
+    )) };
+    const float lagrangePrevious { getLagrange().at(0) };
+    const float oneBySubstep { 1.f / substepSeconds };
+    const float alphaDerivative2 { getCompliance() * oneBySubstep * oneBySubstep };
+    const float lagrangeDenominator { 1.f / (
+        generalizedInverseA + generalizedInverseB + alphaDerivative2
+    ) };
+    const float lagrangeDelta { -(error + alphaDerivative2 * lagrangePrevious)
+        * lagrangeDenominator
+    };
+    const glm::vec3 impulseCorrection { lagrangeDelta * axis };
+    applyLagrangeDelta(lagrangeDelta, 0);
+
+    // apply the impulse
+    boundsA = applyImpulseObject(boundsA, physicsA, impulseCorrection, pointA);
+    boundsB = applyImpulseObject(boundsB, physicsB, -impulseCorrection, pointB);
 }
 
 float ToyMaker::computeGeneralizedInverseMassPositional(
@@ -676,7 +858,7 @@ ObjectBounds ToyMaker::applyImpulseObject(
     const glm::vec3& impulsePoint
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulsePositional == glm::vec3 { 0.f }) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || squareDistance(impulsePositional) == 0.f) {
         return object;
     }
 
@@ -700,7 +882,7 @@ PhysicsState ToyMaker::applyImpulsePhysics(
     const glm::vec3& impulsePoint
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulsePositional == glm::vec3{ 0.f }) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || squareDistance(impulsePositional) == 0.f) {
         return physics;
     }
 
@@ -732,7 +914,7 @@ ObjectBounds ToyMaker::applyImpulseObject(
     const glm::vec3& impulseRotational
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulseRotational == glm::vec3 { 0.f }) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || squareDistance(impulseRotational) == 0.f ) {
         return object;
     }
 
@@ -752,7 +934,7 @@ PhysicsState ToyMaker::applyImpulsePhysics(
     const glm::vec3& impulseRotational
 ) {
     // guard: you can only apply an impulse to a dynamic physics object
-    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || impulseRotational == glm::vec3{ 0.f }) {
+    if(physics.getMode() != PhysicsState::MODE_DYNAMIC || squareDistance(impulseRotational) == 0.f) {
         return physics;
     }
 

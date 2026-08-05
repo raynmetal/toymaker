@@ -41,7 +41,7 @@ TEST_CASE("Head-On") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::ContactConstraint collisionConstraint {};
+        ToyMaker::ConstraintContact collisionConstraint {};
         collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
@@ -54,7 +54,7 @@ TEST_CASE("Head-On") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::ContactConstraint collisionConstraint {};
+        ToyMaker::ConstraintContact collisionConstraint {};
         collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
@@ -70,7 +70,7 @@ TEST_CASE("Head-On") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::ContactConstraint collisionConstraint {};
+        ToyMaker::ConstraintContact collisionConstraint {};
         collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
@@ -119,7 +119,7 @@ TEST_CASE("Offset") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::ContactConstraint collisionConstraint {};
+        ToyMaker::ConstraintContact collisionConstraint {};
         collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
@@ -151,7 +151,7 @@ TEST_CASE("Offset") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::ContactConstraint collisionConstraint {};
+        ToyMaker::ConstraintContact collisionConstraint {};
         collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 
@@ -184,7 +184,7 @@ TEST_CASE("Offset") {
         const auto collision { ToyMaker::checkCollision(object1, object2) };
         REQUIRE(collision.mCollided);
 
-        ToyMaker::ContactConstraint collisionConstraint {};
+        ToyMaker::ConstraintContact collisionConstraint {};
         collisionConstraint.updateCollisionData(collision, physics1, object1, object1, physics2, object2, object2);
         collisionConstraint.applyConstraintPosition(participantTable, 0.0001);
 

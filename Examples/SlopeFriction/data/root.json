@@ -181,7 +181,9 @@
                     "coefficient_friction_static": 0.75811,
                     "coefficient_friction_dynamic": 0.63,
                     "velocity": [4.7, 0.0, 0.0],
-                    "angular_velocity": [0.0, 0.0, 0.0]
+                    "velocity_cutoff": 0.03,
+                    "angular_velocity": [0.0, 0.0, 0.0],
+                    "angular_velocity_cutoff": 0.03
                 },
                 {
                     "type": "ObjectBounds",

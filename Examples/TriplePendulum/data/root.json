@@ -1,0 +1,528 @@
+{
+    "resources": [
+        {
+            "name": "Sad_Texture",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "data/Sad.png",
+                "cubemap_layout": "row"
+            }
+        },
+        {
+            "name": "BarModel",
+            "method": "cuboidDimensions",
+            "type": "StaticModel",
+            "parameters": {
+                "height": 2.5, "width": 0.5, "depth": 0.5,
+                "material_properties": [
+                    { "name": "colorMultiplier", "type": "vec4", "value": [0.2, 0.2, 0.4, 1.0] },
+                    { "name": "textureAlbedo", "type": "texture", "value": "Sad_Texture" },
+                    { "name": "usesTextureAlbedo", "type": "int", "value": 1 }
+                ]
+            }
+        },
+        {
+            "method": "sphereLatLong",
+            "name": "SphereCyan",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.0, 0.3, 0.3, 1.0]
+                    }
+                ]
+            }
+        },
+        {
+            "method": "sphereLatLong",
+            "name": "SpherePurple",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.3, 0.0, 0.3, 1.0]
+                    }
+                ]
+            }
+        },
+        {
+            "method": "sphereLatLong",
+            "name": "SphereYellow",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.3, 0.3, 0.0, 1.0]
+                    }
+                ]
+            }
+        },
+        {
+            "method": "sphereLatLong",
+            "name": "SphereGray",
+            "type": "StaticModel",
+            "parameters": {
+                "nLatitudes": 32,
+                "nMeridians": 16,
+                "material_properties": [
+                    {
+                        "name": "colorMultiplier",
+                        "type": "vec4",
+                        "value": [0.01, 0.01, 0.01, 1.0]
+                    }
+                ]
+            }
+        }
+    ],
+
+    "nodes": [
+        {
+            "name": "root",
+            "aspects": [ { "type": "SetSubsteps" } ],
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ],
+            "parent": "",
+            "type": "SimObject"
+        },
+
+        {
+            "name": "light1",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "orientation": [ 0.707, 0.408, 0.408, -0.408 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                },
+                {
+                    "ambient": [ 0.1, 0.2, 0.3 ],
+                    "diffuse": [ 7.5, 5.4, 3.7 ],
+                    "specular": [ 0.5, 0.5, 0.5 ],
+                    "lightType": "directional",
+                    "type": "LightEmissionData"
+                }
+            ]
+        },
+
+        {
+            "name": "light2",
+            "parent": "/",
+            "type": "SceneNode",
+            "components": [
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 5.0, -4.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                },
+                {
+                    "ambient": [ 0.0, 0.001, 0.0 ],
+                    "diffuse": [ 0.0, 0.1, 0.02 ],
+                    "specular": [ 0.003, 0.003, 0.003 ],
+                    "linearConst": 0.01,
+                    "quadraticConst": 0.002,
+                    "lightType": "point",
+                    "type": "LightEmissionData"
+                }
+            ]
+        },
+
+        {
+            "name": "camera",
+            "aspects":[
+                {"type": "QueryClick" },
+                {"type": "RenderDebugViewer"},
+                {"type": "FlyCamera"}
+            ],
+            "parent": "/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "fov": 75.0,
+                    "aspect": 1.333,
+                    "orthographic_dimensions": {
+                        "horizontal": 800,
+                        "vertical": 600
+                    },
+                    "near_far_planes": {
+                        "near": 0.4,
+                        "far": 50
+                    },
+                    "projection_mode": "frustum",
+                    "type": "CameraProperties"
+                },
+                {
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 14.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ],
+                    "type": "Placement"
+                }
+            ]
+        },
+
+        {
+            "name": "hinge_0",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                {
+                    "type": "Hinge",
+                    "other": "/root/bar_0/",
+                    "attachment": [0, 0, 0],
+                    "attachment_other": [0, 1.25, 0],
+                    "axis": [0, 0, 1],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0.5]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 0.5, 0.5, 0.5 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": "infinity",
+                    "mode": "static",
+                    "collision_response": [],
+                    "coefficient_friction_static": 1.0,
+                    "coefficient_friction_dynamic": 1.0
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 0.2,
+                        "depth": 0.2,
+                        "height": 0.2
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "SphereGray", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "bar_0",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                { "type": "Gravity" },
+                {
+                    "type": "Hinge",
+                    "other": "/root/hinge_1/",
+                    "attachment": [0, -1.25, 0],
+                    "attachment_other": [0, 0.0, 0],
+                    "axis": [0, 0, 1],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0.5]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
+                    "position": [ 0.0, 1.25, 0.5, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": 0.03,
+                    "mode": "dynamic",
+                    "coefficient_friction_static": 1.0,
+                    "coefficient_friction_dynamic": 1.0,
+                    "collision_response": [],
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 0.5,
+                        "depth": 0.5,
+                        "height": 2.5
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BarModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "hinge_1",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                {"type": "Gravity"},
+                {
+                    "type": "Hinge",
+                    "other": "/root/bar_1/",
+                    "attachment": [0, 0.0, 0],
+                    "attachment_other": [0, 1.25, 0],
+                    "axis": [0, 0, 1],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0.5]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.8939967 ],
+                    "position": [ 0.0, 2.5, 1.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "dynamic",
+                    "collision_response": [],
+                    "mass": 0.3,
+                    "coefficient_friction_static": 0.75811,
+                    "coefficient_friction_dynamic": 0.63,
+                    "velocity": [100, 0, 0],
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": { "width": 2.0, "depth": 2.0, "height": 2.0 },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "SphereCyan", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "bar_1",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                { "type": "Gravity" },
+                {
+                    "type": "Hinge",
+                    "other": "/root/hinge_2/",
+                    "attachment": [0, -1.25, 0],
+                    "attachment_other": [0, 0.0, 0],
+                    "axis": [0, 0, 1],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0.5]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
+                    "position": [ 0.0, 3.75, 1.5, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": 0.03,
+                    "mode": "dynamic",
+                    "coefficient_friction_static": 1.0,
+                    "coefficient_friction_dynamic": 1.0,
+                    "collision_response": [],
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 0.5,
+                        "depth": 0.5,
+                        "height": 2.5
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BarModel", "type": "StaticModel" }
+            ]
+        },
+
+        {
+            "name": "hinge_2",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                {"type": "Gravity"},
+                {
+                    "type": "Hinge",
+                    "other": "/root/bar_2/",
+                    "attachment": [0, 0.0, 0],
+                    "attachment_other": [0, 1.25, 0],
+                    "axis": [0, 0, 1],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0.5]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 5.0, 2.0, 1.0 ],
+                    "scale": [ 0.75, 0.75, 0.75 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "dynamic",
+                    "collision_response": [],
+                    "mass": 0.15,
+                    "coefficient_friction_static": 0.75811,
+                    "coefficient_friction_dynamic": 0.63,
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": { "width": 2.0, "depth": 2.0, "height": 2.0 },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "SpherePurple", "type": "StaticModel" }
+            ]
+        },
+        {
+            "name": "bar_2",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [
+                { "type": "Gravity" },
+                {
+                    "type": "Hinge",
+                    "other": "/root/bob/",
+                    "attachment": [0, -1.25, 0],
+                    "attachment_other": [0, 0, 0],
+                    "axis": [0, 0, 1],
+                    "constraint_to_local": [1, 0, 0, 0],
+                    "constraint_to_local_other": [1, 0, 0, 0],
+                    "offsets": [0, 0, 0.5]
+                }
+            ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ -0.4480736, 0.0, 0.0, 0.8939967 ],
+                    "position": [ 0.0, 6.25, 2.5, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mass": 0.03,
+                    "mode": "dynamic",
+                    "coefficient_friction_static": 1.0,
+                    "coefficient_friction_dynamic": 1.0,
+                    "collision_response": [],
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": {
+                        "width": 0.5,
+                        "depth": 0.5,
+                        "height": 1.25
+                    },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "BarModel", "type": "StaticModel" }
+            ]
+        },
+        {
+            "name": "bob",
+            "parent": "/",
+            "type": "SimObject",
+            "aspects": [ {"type": "Gravity"} ],
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 7.5, 3.0, 1.0 ],
+                    "scale": [ 0.5625, 0.5625, 0.5625 ]
+                },
+                {
+                    "type": "PhysicsState",
+                    "mode": "dynamic",
+                    "collision_response": [],
+                    "mass": 0.075,
+                    "coefficient_friction_static": 0.75811,
+                    "coefficient_friction_dynamic": 0.63,
+                    "velocity_bleed": 0,
+                    "angular_velocity_bleed": 0,
+                    "velocity_cutoff": 0,
+                    "angular_velocity_cutoff": 0
+                },
+                {
+                    "type": "ObjectBounds",
+                    "volume_type": "box",
+                    "position_offset": [0, 0, 0],
+                    "orientation_offset": [1, 0, 0, 0],
+                    "volume_properties": { "width": 2.0, "depth": 2.0, "height": 2.0 },
+                    "interaction_layers": 1,
+                    "interaction_mask": 1
+                },
+                { "resourceName": "SphereYellow", "type": "StaticModel" }
+            ]
+        }
+    ],
+
+    "connections":[]
+}
+
