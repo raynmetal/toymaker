@@ -724,8 +724,9 @@ void ViewportNode::requestDimensions(glm::u16vec2 requestDimensions) {
             );
         break;
         case RenderConfiguration::ResizeType::VIEWPORT_DIMENSIONS:
+            resizeDomainCameras(mRenderConfiguration.mComputedDimensions);
             renderSystem->setRenderProperties(
-                glm::mat2{mRenderConfiguration.mRenderScale} * mRenderConfiguration.mComputedDimensions, 
+                glm::mat2{mRenderConfiguration.mRenderScale} * mRenderConfiguration.mComputedDimensions,
                 requestDimensions,
                 getCenteredViewportCoordinates(),
                 mRenderConfiguration.mRenderType
@@ -778,6 +779,19 @@ void ViewportNode::unregisterDomainCamera(std::shared_ptr<SceneNodeCore> cameraN
     mDomainCameras.erase(cameraNode);
     if(mActiveCamera == cameraNode) {
         setActiveCamera(findFallbackCamera());
+    }
+}
+void ViewportNode::resizeDomainCameras(const glm::vec2& newDimensions) {
+    for(const auto& camera: mDomainCameras) {
+        CameraProperties cameraProps { camera->getComponent<CameraProperties>() };
+        if(
+            cameraProps.mAspectMode != CameraProperties::AspectMode::RESIZE
+            || cameraProps.mProjectionType != CameraProperties::ProjectionType::FRUSTUM
+        ) {
+            continue;
+        }
+        cameraProps.mAspect = newDimensions.x / newDimensions.y;
+        camera->updateComponent(cameraProps);
     }
 }
 std::shared_ptr<SceneNodeCore> ViewportNode::findFallbackCamera() {

@@ -1274,6 +1274,14 @@ namespace ToyMaker {
         std::shared_ptr<SceneNodeCore> findFallbackCamera();
 
         /**
+         * @brief Readjusts all viewport cameras to match the size of the viewport.
+         *
+         * @TODO: Support resizing of orthographics cameras also.
+         *
+         */
+        void resizeDomainCameras(const glm::vec2& computedDimensions);
+
+        /**
          * @brief Gets active descendant viewports (in DFS order) under this Viewport.
          * 
          * @return std::vector<std::shared_ptr<ViewportNode>> A list of descendant viewports, in DFS order.
