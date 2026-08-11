@@ -784,13 +784,20 @@ void ViewportNode::unregisterDomainCamera(std::shared_ptr<SceneNodeCore> cameraN
 void ViewportNode::resizeDomainCameras(const glm::vec2& newDimensions) {
     for(const auto& camera: mDomainCameras) {
         CameraProperties cameraProps { camera->getComponent<CameraProperties>() };
-        if(
-            cameraProps.mAspectMode != CameraProperties::AspectMode::RESIZE
-            || cameraProps.mProjectionType != CameraProperties::ProjectionType::FRUSTUM
-        ) {
+        if(cameraProps.mAspectMode != CameraProperties::AspectMode::RESIZE) {
             continue;
         }
-        cameraProps.mAspect = newDimensions.x / newDimensions.y;
+        switch(cameraProps.mProjectionType) {
+            case CameraProperties::ProjectionType::FRUSTUM:
+                cameraProps.mAspect = newDimensions.x / newDimensions.y;
+                break;
+            case CameraProperties::ProjectionType::ORTHOGRAPHIC:
+                cameraProps.mOrthographicDimensions = newDimensions;
+                break;
+            default:
+                assert(false && "Unsupported projection specified");
+                break;
+        }
         camera->updateComponent(cameraProps);
     }
 }
