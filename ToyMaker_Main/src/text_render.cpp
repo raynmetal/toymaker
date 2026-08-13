@@ -1,5 +1,6 @@
 #include <SDL3_ttf/SDL_ttf.h>
 
+#include "toymaker/engine/application.hpp"
 #include "toymaker/engine/text_render.hpp"
 
 using namespace ToyMaker;
@@ -25,7 +26,8 @@ TTF_Font* TextFont::LoadFont(const std::string& fontPath, uint16_t pointSize) {
 }
 
 std::shared_ptr<IResource> TextFontFromFile::createResource(const nlohmann::json& methodParameters) {
-    const std::string filepath { methodParameters.at("path").get<std::string>() };
+    const std::string dataPath { Application::getProjectDataPath() };
+    const std::string filepath { dataPath + "/" + methodParameters.at("path").get<std::string>() };
     const uint16_t pointSize { methodParameters.at("point_size").get<uint16_t>() };
     return std::make_shared<TextFont>(filepath, pointSize);
 }

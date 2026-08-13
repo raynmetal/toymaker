@@ -5,7 +5,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/Sad.png",
+                "path": "Sad.png",
                 "cubemap_layout": "row"
             }
         },

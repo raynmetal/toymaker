@@ -13,6 +13,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "toymaker/engine/application.hpp"
 #include "toymaker/engine/shader_program.hpp"
 
 using namespace ToyMaker;
@@ -244,10 +245,13 @@ void ShaderProgram::releaseResource() {
 std::shared_ptr<IResource> ShaderProgramFromFile::createResource(const nlohmann::json& methodParameters) {
     GLuint shaderProgram { 0 };
     std::ifstream jsonFileStream;
-    std::string programJSONPath { methodParameters.at("path").get<std::string>() };
+    const std::string dataPath { Application::getProjectDataPath() };
+    const std::string programJSONPath { dataPath + "/" + methodParameters.at("path").get<std::string>() };
+    std::cout << "program json path: " << programJSONPath << "\n";
 
     // Load parent shader program definition
     jsonFileStream.open(programJSONPath);
+    assert(!jsonFileStream.fail() && "Could not open shader description");
     nlohmann::json programJSON{ nlohmann::json::parse(jsonFileStream) };
     jsonFileStream.close();
     nlohmann::json::iterator endIter { programJSON[0].end() };

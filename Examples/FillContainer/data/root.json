@@ -5,7 +5,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/Sad.png",
+                "path": "Sad.png",
                 "cubemap_layout": "row"
             }
         },
@@ -41,7 +41,7 @@
             "type": "SimObject",
             "method": "fromSceneFile",
             "parameters": {
-                "path": "data/ball.json"
+                "path": "ball.json"
             }
         }
     ],

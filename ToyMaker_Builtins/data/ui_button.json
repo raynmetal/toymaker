@@ -5,7 +5,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/textures/button_active.png"
+                "path": "textures/button_active.png"
             }
         },
         {
@@ -13,7 +13,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path":  "data/textures/button_inactive.png"
+                "path":  "textures/button_inactive.png"
             }
         },
         {
@@ -21,7 +21,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/textures/button_hover.png"
+                "path": "textures/button_hover.png"
             }
         },
         {
@@ -29,7 +29,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/textures/button_pressed.png"
+                "path": "textures/button_pressed.png"
             }
         },
         {
@@ -37,7 +37,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/textures/button_highlight.png"
+                "path": "textures/button_highlight.png"
             }
         },
 
@@ -92,7 +92,7 @@
             "type": "TextFont",
             "method": "fromFile",
             "parameters": {
-                "path": "data/fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
+                "path": "fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
                 "point_size": 24
             }
         }

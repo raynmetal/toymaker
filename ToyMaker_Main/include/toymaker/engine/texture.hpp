@@ -264,7 +264,7 @@ namespace ToyMaker {
      *     "type": "Texture",
      *     "method": "fromFile",
      *     "parameters": {
-     *         "path": "data/textures/skybox.png",
+     *         "path": "textures/skybox.png",
      *         "cubemap_layout": "row"
      *     }
      * }

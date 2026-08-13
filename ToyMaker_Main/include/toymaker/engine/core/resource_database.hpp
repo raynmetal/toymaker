@@ -176,7 +176,7 @@ namespace ToyMaker {
      *     \"type\": \"Texture\",\
      *     \"method\": \"fromFile\",\
      *     \"parameters\": {\
-     *         \"path\": \"data/textures/button_pressed.png\"\
+     *         \"path\": \"textures/button_pressed.png\"\
      *     }\
      * }";
      * ```
@@ -195,7 +195,7 @@ namespace ToyMaker {
      * std::shared_ptr<ToyMaker::Texture> buttonPressedTexture { ToyMaker::ResourceDatabase::GetRegisteredResource(\"Bad_Button_Pressed_Texture\") };
      * ```
      * 
-     * The resource will be constructed based on its type (`"type": "Texture"`), constructor (`"method": "fromFile"`), and parameters (`"parameters": {"path": "data/textures/button_pressed.png"}`).
+     * The resource will be constructed based on its type (`"type": "Texture"`), constructor (`"method": "fromFile"`), and parameters (`"parameters": {"path": "textures/button_pressed.png"}`).
      * 
      *
      * @warning 
