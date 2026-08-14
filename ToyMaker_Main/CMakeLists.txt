@@ -118,6 +118,7 @@ find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 
 find_package(SDL3_image REQUIRED)
 find_package(SDL3_ttf REQUIRED)
+find_package(SDL3_mixer REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW 2.0 REQUIRED)
 find_package(glm 1.0 REQUIRED)
@@ -131,6 +132,7 @@ target_link_libraries(ToyMaker PUBLIC
     glm::glm
     SDL3_image::SDL3_image
     SDL3_ttf::SDL3_ttf
+    SDL3_mixer::SDL3_mixer
     assimp::assimp
     nlohmann_json::nlohmann_json
 )
