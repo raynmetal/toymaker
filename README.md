@@ -243,6 +243,8 @@ This program makes extensive use of the following libraries:
 
 - [SDL TTF](https://github.com/libsdl-org/SDL_ttf)
 
+- [SDL Mixer](https://github.com/libsdl-org/SDL_mixer)
+
 - [GLEW](https://github.com/nigels-com/glew)
 
 - [Nlohmann JSON](https://json.nlohmann.me/)

@@ -4,9 +4,10 @@
 #include <map>
 
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-#include <SDL3_image/SDL_image.h>
+#include <assimp/Importer.hpp>
 
 #include "toymaker/engine/texture.hpp"
 

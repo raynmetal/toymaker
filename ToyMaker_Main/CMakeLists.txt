@@ -80,7 +80,7 @@ target_sources(ToyMaker
             # Physics sources
             include/toymaker/engine/physics/types.hpp
             include/toymaker/engine/physics/system.hpp
-            # Misc. internals 
+            # Misc. internals
             include/toymaker/engine/camera_system.hpp
             include/toymaker/engine/framebuffer.hpp
             include/toymaker/engine/instance.hpp
