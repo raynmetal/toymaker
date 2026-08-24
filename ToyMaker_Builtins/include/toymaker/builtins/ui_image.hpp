@@ -1,5 +1,5 @@
 /**
- * @ingroup UrGameUIComponent
+ * @ingroup ToyMakerBuiltins
  * @file ui_image.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Contains the definition of the aspect responsible for the model-texture combo for displaying an image from a file.
@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef ZOAPPUIIMAGE_H
-#define ZOAPPUIIMAGE_H
+#ifndef TOYMAKERBUILTINS_UIIMAGE_H
+#define TOYMAKERBUILTINS_UIIMAGE_H
 
 #include "toymaker/engine/sim_system.hpp"
 #include "toymaker/engine/texture.hpp"

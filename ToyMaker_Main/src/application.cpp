@@ -79,8 +79,8 @@ Application::Application() {
         assert(mSimulationStep >= kMinSimStep && mSimulationStep <= kMaxSimStep && assertionMessage);
     }
 
-
     mSceneSystem = ECSWorld::getSingletonSystem<SceneSystem>();
+    mSoundSystem = ECSWorld::getSingletonSystem<SoundSystem>();
 
     initialize(projectJSON.at("window_configuration"));
 
@@ -105,6 +105,7 @@ Application::Application() {
     );
 
     mSceneSystem.lock()->onApplicationInitialize(projectJSON.at("root_viewport_render_configuration"));
+    mSoundSystem.lock()->onApplicationInitialize();
     mSceneSystem.lock()->addNode(
         ResourceDatabase::GetRegisteredResource<SimObject>("root_scene"),
         "/"
@@ -114,6 +115,7 @@ Application::Application() {
 void Application::execute() {
     WindowContext& windowContext { WindowContext::getInstance() };
     std::shared_ptr<SceneSystem> sceneSystem { mSceneSystem.lock() };
+    std::shared_ptr<SoundSystem> soundSystem { mSoundSystem.lock() };
 
     SignalObserver<> onWindowResized { mSignalTracker, "onWindowResized", [this, &sceneSystem, &windowContext]() {
         sceneSystem->getRootViewport().requestDimensions(windowContext.getDimensions());
@@ -216,6 +218,7 @@ void Application::execute() {
 
     }
     sceneSystem->onApplicationEnd();
+    soundSystem->onApplicationEnd();
 }
 
 Application::~Application() {

@@ -240,7 +240,7 @@ std::shared_ptr<IResource> TextureFromFile::createResource(const nlohmann::json&
 
     // Move surface pixels to the graphics card
     GLuint texture;
-    
+
     colorBufferDefinition.mDimensions = {pretexture->w, pretexture->h};
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);

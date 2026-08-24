@@ -1,28 +1,16 @@
 /**
- * @ingroup UrGameUIComponent
+ * @ingroup ToyMakerBuiltins
  * @file ui_panel.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Contains the class responsible for managing, configuring, and displaying a NineSlicePanel resource.
  * @version 0.3.2
  * @date 2025-09-13
- * 
- * 
+ *
+ *
  */
 
-/**
- * @defgroup UrGameVisualLayer Visual Layer
- * @ingroup UrGame
- * 
- */
-
-/**
- * @defgroup UrGameUIComponent UI Components
- * @ingroup UrGameVisualLayer
- * 
- */
-
-#ifndef ZOAPPUIPANEL_H
-#define ZOAPPUIPANEL_H
+#ifndef TOYMAKERBUILTINS_UIPANEL_H
+#define TOYMAKERBUILTINS_UIPANEL_H
 
 #include "toymaker/engine/sim_system.hpp"
 
@@ -31,7 +19,7 @@
 namespace ToyMaker {
 
     /**
-     * @ingroup UrGameUIComponent
+     * @ingroup ToyMakerBuiltins
      * @brief UI aspect responsible for managing and rendering a NineSlicePanel texture on the UI.
      * 
      * ## Usage:

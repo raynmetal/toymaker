@@ -1521,6 +1521,9 @@ namespace ToyMaker {
          * @brief A method intended to be used at the start of the application to configure the SceneSystem's root viewport.
          * 
          * @param rootViewportRenderConfiguration The render configuration for the SceneSystem's root ViewportNode.
+         *
+         * @TODO: Clarify relationship between scene system and ECS.  Right now, scene system seems to drive ECS,
+         * while also being driven by it, which is confusing.
          */
         void onApplicationInitialize(const ViewportNode::RenderConfiguration& rootViewportRenderConfiguration);
 

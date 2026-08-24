@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef ZOAPPRENDERDEBUGVIEWER_H
-#define ZOAPPRENDERDEBUGVIEWER_H
+#ifndef TOYMAKERBUILTINS_RENDERDEBUGVIEWER_H
+#define TOYMAKERBUILTINS_RENDERDEBUGVIEWER_H
 
 #include "toymaker/engine/sim_system.hpp"
 #include "toymaker/engine/window_context_manager.hpp"

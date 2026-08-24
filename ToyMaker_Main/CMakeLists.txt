@@ -39,6 +39,7 @@ target_sources(ToyMaker
         src/physics/system.cpp
         src/physics/types.cpp
         # Sound sources
+        src/sound/system.cpp
         src/sound/types.cpp
         # Everything else
         src/application.cpp

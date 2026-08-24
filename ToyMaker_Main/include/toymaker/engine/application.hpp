@@ -17,6 +17,7 @@
 
 #include "signals.hpp"
 #include "scene_system.hpp"
+#include "sound/system.hpp"
 #include "physics/system.hpp"
 #include "render_system.hpp"
 #include "input_system/input_system.hpp"
@@ -204,6 +205,12 @@ namespace ToyMaker {
          * 
          */
         std::weak_ptr<SceneSystem> mSceneSystem {};
+
+        /**
+         * @brief A pointer to this project's sound system, valid throughout the project.
+         *
+         */
+        std::weak_ptr<SoundSystem> mSoundSystem {};
     };
 
     template <typename TObject>

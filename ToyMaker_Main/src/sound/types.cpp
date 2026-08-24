@@ -3,6 +3,7 @@
 #include <SDL3/SDL.h>
 #include <SDL3_mixer/SDL_mixer.h>
 
+#include "toymaker/engine/application.hpp"
 #include "toymaker/engine/sound/types.hpp"
 
 using namespace ToyMaker;
@@ -11,6 +12,21 @@ Sound::Sound(MIX_Audio* sound):
     Resource<Sound>{ 0 },
     mAudio { sound, MIX_DestroyAudio }
 {}
+
+Sound::Sound(Sound&& other):
+    Resource<Sound>{ 0 },
+    mAudio { std::move(other.mAudio) }
+{}
+
+Sound& Sound::operator=(Sound&& other) {
+    if(&other == this) {
+        return *this;
+    }
+
+    mAudio = std::move(other.mAudio);
+
+    return *this;
+}
 
 int32_t Sound::getDuration() const {
     const auto frames { MIX_GetAudioDuration(mAudio.get()) };
@@ -28,15 +44,47 @@ SoundMixer::SoundMixer():
     assert(mMixer != nullptr && "Failed to create mixer");
 }
 
-SoundChannel::SoundChannel(std::shared_ptr<SoundMixer> mixer):
+float SoundMixer::getVolume() const {
+    return MIX_GetMixerGain(mMixer.get());
+}
+
+void SoundMixer::setVolume(float volume) {
+    assert(volume >= 0.f && "Volume must be greater than or equal to 0");
+    assert(volume <= 1.f && "Volume must be less than or equal to 1");
+    const bool success { MIX_SetMixerGain(mMixer.get(), std::clamp(volume, 0.f, 1.f)) };
+    assert(success && "Could not set mixer volume");
+}
+
+SoundChannel::SoundChannel(const SoundMixer& mixer):
     mTrack {
-        MIX_CreateTrack(mixer->mMixer.get()),
+        MIX_CreateTrack(mixer.mMixer.get()),
         MIX_DestroyTrack
     },
     mProperties { SDL_CreateProperties() }
 {
+    assert(mixer.mMixer != nullptr && "Empty mixer passed as input");
     assert(mTrack != nullptr && "Failed to create sound channel");
     assert(mProperties != 0 && "Failed to create sound channel properties");
+}
+
+SoundChannel::SoundChannel(SoundChannel&& other):
+    mTrack { std::move(other.mTrack) },
+    mProperties { other.mProperties }
+{
+    other.mProperties = 0;
+}
+
+SoundChannel& SoundChannel::operator=(SoundChannel&& other) {
+    if(&other == this) {
+        return *this;
+    }
+
+    mTrack = std::move(other.mTrack);
+    SDL_DestroyProperties(mProperties);
+    mProperties = other.mProperties;
+    other.mProperties = 0;
+
+    return *this;
 }
 
 void SoundChannel::play() {
@@ -155,12 +203,15 @@ void SoundChannel::setFadeInDuration(uint32_t millis) {
 }
 
 std::shared_ptr<IResource> SoundFromFile::createResource(const nlohmann::json& methodParameters) {
-    const std::string soundPath { methodParameters.at("path").get<std::string>() };
-    MIX_Audio* pAudio { MIX_LoadAudio(nullptr, soundPath.c_str(), false) }; 
-    assert(pAudio && "Failed to load sound from sound file");
+    const std::string dataPath { Application::getProjectDataPath() };
+
+    const std::string soundPath { dataPath + "/" + methodParameters.at("path").get<std::string>() };
+    const bool decompress { methodParameters.at("decompress").get<bool>() };
+    MIX_Audio* pAudio { MIX_LoadAudio(nullptr, soundPath.c_str(), decompress) };
     if(!pAudio) {
         std::cerr << SDL_GetError() << "\n";
     }
+    assert(pAudio && "Failed to load sound from sound file");
     return std::make_shared<Sound>(pAudio);
 }
 

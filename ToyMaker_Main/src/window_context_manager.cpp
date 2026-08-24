@@ -15,8 +15,8 @@
 using namespace ToyMaker;
 
 WindowContext::WindowContext(const nlohmann::json& initialWindowConfiguration) {
-    const bool init{ SDL_Init(SDL_INIT_VIDEO) };
-    assert(init && "Could not initialise SDL2 library");
+    const bool init{ SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) };
+    assert(init && "Could not initialise SDL3 library");
 
     const bool ttfInit { TTF_Init() };
     assert(ttfInit && "Could not initialise SDL_ttf library");
@@ -82,8 +82,8 @@ WindowContext::~WindowContext() {
     SDL_GL_DestroyContext(mpGLContext);
     SDL_DestroyWindow(mpSDLWindow);
     // NOTE: no need for IMG_Quit() or the like -- see SDL 2 -> 3 migration guide
-    TTF_Quit();
     MIX_Quit();
+    TTF_Quit();
     SDL_Quit();
     delete mpAssetImporter;
 }

@@ -13,7 +13,7 @@ add_executable(Example_SlopeFriction)
 target_sources(Example_SlopeFriction
     PRIVATE
         gravity.cpp
-    PRIVATE
+        collision_sound.cpp
 )
 
 toymaker_configure_executable(Example_SlopeFriction)

@@ -1,5 +1,5 @@
 /**
- * @ingroup UrGameInteractionLayer
+ * @ingroup ToyMakerBuiltins
  * @file interface_pointer_callback.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Contains classes that serve as interfaces for sim objects that wish to respond to click events.
@@ -8,14 +8,8 @@
  * 
  */
 
-/**
- * @defgroup UrGameInteractionLayer Interaction Layer
- * @ingroup UrGame
- * 
- */
-
-#ifndef ZOAPPINTERFACEPOINTERCALLBACK_H
-#define ZOAPPINTERFACEPOINTERCALLBACK_H
+#ifndef TOYMAKERBUILTINS_INTERFACEPOINTERCALLBACK_H
+#define TOYMAKERBUILTINS_INTERFACEPOINTERCALLBACK_H
 
 #include <glm/glm.hpp>
 
@@ -25,11 +19,11 @@ namespace ToyMaker {
     class IHoverable;
 
     /**
-     * @ingroup UrGameInteractionLayer
+     * @ingroup ToyMakerBuiltins
      * @brief The interface used by aspects, objects, which cast pointer rays to interact with objects present in the world.
      * 
      * This interface will usually be attached to an aspect associated with a camera object.
-     * 
+     *
      * Contains methods to invoke pointer event callbacks on objects that implement IRightClickable, ILeftClickable, and IHoverable.
      * 
      * The responsibility of actually conducting the raycast falls on the aspect implementing this interface itself.
@@ -84,7 +78,7 @@ namespace ToyMaker {
     };
 
     /**
-     * @ingroup UrGameInteractionLayer
+     * @ingroup ToyMakerBuiltins
      * @brief The interface used by aspects which wish to respond to mouse left click events (or equivalent).
      * 
      */
@@ -116,7 +110,7 @@ namespace ToyMaker {
     // };
 
     /**
-     * @ingroup UrGameInteractionLayer
+     * @ingroup ToyMakerBuiltins
      * @brief The interface implemented by aspects which wish to respond to pointer hover related events.
      * 
      */

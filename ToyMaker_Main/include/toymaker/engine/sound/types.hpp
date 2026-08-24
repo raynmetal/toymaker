@@ -12,7 +12,7 @@ namespace ToyMaker {
     class SoundMixer;
 
     /**
-     * @ingroup ToyMakerSound
+     * @ingroup ToyMakerSoundSystem
      * @brief Class representing a single playable piece of audio.
      *
      */
@@ -31,11 +31,11 @@ namespace ToyMaker {
         Sound(MIX_Audio* sound);
 
         /** @brief Move constructor */
-        Sound(Sound&& other) = delete;
+        Sound(Sound&& other);
         /** @brief Copy constructor */
         Sound(const Sound& other) = delete;
         /** @brief Move assignment */
-        Sound& operator=(Sound&& other) = delete;
+        Sound& operator=(Sound&& other);
         /** @brief Copy assignment */
         Sound& operator=(const Sound& other) = delete;
 
@@ -57,7 +57,7 @@ namespace ToyMaker {
     };
 
     /**
-     * @ingroup ToyMakerSound
+     * @ingroup ToyMakerSoundSystem
      *
      * @brief Class representing a single voice to be mixed with other voices that may play simultaneiously to
      * produce the final sound output.
@@ -75,7 +75,7 @@ namespace ToyMaker {
          * @brief Constructs a channel owned and used by `mixer`
          *
          */
-        SoundChannel(std::shared_ptr<SoundMixer> mixer);
+        SoundChannel(const SoundMixer& mixer);
 
         /**
          * @brief Destroys sound channel and any related properties it owns.
@@ -84,6 +84,15 @@ namespace ToyMaker {
         inline ~SoundChannel() {
             SDL_DestroyProperties(mProperties);
         }
+
+        /** @brief Move constructor */
+        SoundChannel(SoundChannel&& other);
+        /** @brief Copy constructor */
+        SoundChannel(const SoundChannel& other) = delete;
+        /** @brief Move assignment */
+        SoundChannel& operator=(SoundChannel&& other);
+        /** @brief Copy assignment */
+        SoundChannel& operator=(const SoundChannel& other) = delete;
 
         /**
          * @brief Starts playing sound attached to this channel.
@@ -200,7 +209,7 @@ namespace ToyMaker {
     };
 
     /**
-     * @ingroup ToyMakerSound
+     * @ingroup ToyMakerSoundSystem
      *
      * @brief Class managing a group of sound channels, as many as permitted by the underlying hardware,
      * which this object mixes to produce a single audio output.
@@ -214,6 +223,18 @@ namespace ToyMaker {
          */
         SoundMixer();
 
+        /**
+         * @brief Returns the gain applied to the mixed sound output applied by this mixer.
+         *
+         */
+        float getVolume() const;
+
+        /**
+         * @brief Sets the volume at which the sound mixed by this mixer will be played, a value between 0 and 1.
+         *
+         */
+        void setVolume(float newVolume);
+
     private:
         /**
          * @brief The SDL3_mixer object this class is a wrapper over.
@@ -225,7 +246,7 @@ namespace ToyMaker {
     };
 
     /**
-     * @ingroup ToyMakerSound ToyMakerSerialization
+     * @ingroup ToyMakerSoundSystem ToyMakerSerialization
      *
      * @brief JSON serialization of a sound resource loaded from a file.
      *
