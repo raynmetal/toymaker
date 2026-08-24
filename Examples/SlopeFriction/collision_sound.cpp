@@ -113,6 +113,8 @@ void CollisionSound::onActivated() {
     mSound = ToyMaker::ResourceDatabase::GetRegisteredResource<ToyMaker::Sound>("SnapSound");
     mChannel = getSimObject().getWorld().lock()->getSystem<ToyMaker::SoundSystem>()->createChannel();
     mChannel->setSound(*mSound);
+    mChannel->setGain(5.f);
+    mChannel->play();
 }
 
 void CollisionSound::soundCollision(const ToyMaker::PhysicsSystem::SignalCollidedData& collisionData) {
@@ -122,10 +124,15 @@ void CollisionSound::soundCollision(const ToyMaker::PhysicsSystem::SignalCollide
     std::cout << "Penetration depth: "
         << std::to_string(collisionData.second.mContactA.mPenetrationDepth) << "\n";
 
+    if(collisionData.second.mContactA.mPenetrationDepth <= .005f) {
+        return;
+    }
+
     const auto camera { getLocalViewport().getActiveCamera() };
     const auto viewMatrix { camera->getComponent<ToyMaker::CameraProperties>().mViewMatrix };
-    const auto worldPosition { getComponent<ToyMaker::ObjectBounds>().mPositionWorld };
-    const glm::vec3 viewPosition { viewMatrix * glm::vec4 { worldPosition, 1.f } };
+    const glm::vec3 viewPosition { viewMatrix * glm::vec4 { collisionData.second.mContactA.mPoint, 1.f } };
+    mChannel->setGain(5.f);
     mChannel->setPosition(viewPosition);
     mChannel->play();
+    assert(mChannel->isPlaying() && "Collision sound effect isn't playing");
 }

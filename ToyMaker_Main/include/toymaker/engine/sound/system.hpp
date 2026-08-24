@@ -89,7 +89,7 @@ namespace ToyMaker {
          * 0 means silence, while 1 means the mixed sound is left untouched.
          *
          */
-        float getMasterVolume() const;
+        float getMasterGain() const;
 
         /**
          * @brief Sets the volume of the mixed output sound.
@@ -97,7 +97,7 @@ namespace ToyMaker {
          * 0 means silence, while 1 means the mixed sound is untouched.
          *
          */
-        void setMasterVolume(float newVolume);
+        void setMasterGain(float newVolume);
 
     private:
         /**

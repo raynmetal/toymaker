@@ -44,15 +44,14 @@ SoundMixer::SoundMixer():
     assert(mMixer != nullptr && "Failed to create mixer");
 }
 
-float SoundMixer::getVolume() const {
+float SoundMixer::getGain() const {
     return MIX_GetMixerGain(mMixer.get());
 }
 
-void SoundMixer::setVolume(float volume) {
-    assert(volume >= 0.f && "Volume must be greater than or equal to 0");
-    assert(volume <= 1.f && "Volume must be less than or equal to 1");
-    const bool success { MIX_SetMixerGain(mMixer.get(), std::clamp(volume, 0.f, 1.f)) };
-    assert(success && "Could not set mixer volume");
+void SoundMixer::setGain(float gain) {
+    assert(gain >= 0.f && "Gain must be greater than or equal to 0");
+    const bool success { MIX_SetMixerGain(mMixer.get(), std::max(gain, 0.f)) };
+    assert(success && "Could not set mixer gain");
 }
 
 SoundChannel::SoundChannel(const SoundMixer& mixer):
@@ -200,6 +199,16 @@ void SoundChannel::setFadeInDuration(uint32_t millis) {
         SDL_SetNumberProperty(mProperties, MIX_PROP_PLAY_FADE_IN_MILLISECONDS_NUMBER, millis)
     };
     assert(success && "Could not set fade in milliseconds");
+}
+
+void SoundChannel::setGain(float gain) {
+    assert(gain >= 0.f && "Gain must be greater than zero");
+    const bool success { MIX_SetTrackGain(mTrack.get(), std::max(gain, 0.f)) };
+    assert(success && "Could not set channel gain");
+}
+
+float SoundChannel::getGain() const {
+    return MIX_GetTrackGain(mTrack.get());
 }
 
 std::shared_ptr<IResource> SoundFromFile::createResource(const nlohmann::json& methodParameters) {

@@ -194,6 +194,19 @@ namespace ToyMaker {
          */
         void setFadeInDuration(uint32_t millis);
 
+        /**
+         * @brief Sets the factor by which the sound from this channel will be multiplied.
+         *
+         * Accepts any value greater than 0.
+         */
+        void setGain(float gain);
+
+        /**
+         * @brief Gets the factor by which the sound from this channel is multiplied.
+         *
+         */
+        float getGain() const;
+
     private:
         /**
          * @brief The underlying SDL3_mixer track object object
@@ -227,13 +240,13 @@ namespace ToyMaker {
          * @brief Returns the gain applied to the mixed sound output applied by this mixer.
          *
          */
-        float getVolume() const;
+        float getGain() const;
 
         /**
-         * @brief Sets the volume at which the sound mixed by this mixer will be played, a value between 0 and 1.
+         * @brief Sets the factor by which the sound returned by this mixer is multiplied.
          *
          */
-        void setVolume(float newVolume);
+        void setGain(float gain);
 
     private:
         /**
