@@ -5,7 +5,7 @@
             "type": "TextFont",
             "method": "fromFile",
             "parameters": {
-                "path": "data/fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
+                "path": "fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
                 "point_size": 24
             }
         }
@@ -56,6 +56,7 @@
             "components": [
                 {
                     "fov": 45.0,
+                    "aspect_mode": "resize",
                     "aspect": 0.0,
                     "orthographic_dimensions": {
                         "horizontal": 800,

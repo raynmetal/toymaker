@@ -10,6 +10,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
+#include "toymaker/engine/application.hpp"
 #include "toymaker/engine/window_context_manager.hpp"
 #include "toymaker/engine/material.hpp"
 #include "toymaker/engine/texture.hpp"
@@ -100,8 +101,9 @@ ResourceConstructor<StaticModel, StaticModelFromFile>{0}
 {}
 
 std::shared_ptr<IResource> StaticModelFromFile::createResource(const nlohmann::json& methodParameters) {
+    const std::string dataPath { Application::getProjectDataPath() };
 
-    const std::string modelPath { methodParameters.at("path").get<std::string>() };
+    const std::string modelPath { dataPath + "/" + methodParameters.at("path").get<std::string>() };
     Assimp::Importer* pImporter { WindowContext::getInstance().getAssetImporter() };
     const aiScene* pAiScene {
         pImporter->ReadFile(

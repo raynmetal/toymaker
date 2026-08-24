@@ -1,5 +1,6 @@
 #include "toymaker/engine/core/resource_database.hpp"
 
+#include "toymaker/engine/application.hpp"
 #include "toymaker/engine/shapegen.hpp"
 #include "toymaker/engine/framebuffer.hpp"
 
@@ -15,6 +16,7 @@ ToyMaker::Resource<NineSlicePanel>{0},
 mTexture { baseTexture },
 mContentRegion { contentRegionUV }
 {
+    const std::string dataPath  { Application::getProjectDataPath() };
     assert(mTexture != nullptr && "NineSlice base texture should be a valid texture");
     assert(
         contentRegionUV.x >= 0.f && contentRegionUV.y >= 0.f 
@@ -26,7 +28,7 @@ mContentRegion { contentRegionUV }
         && contentRegionUV.h >= 0.f && contentRegionUV.y + contentRegionUV.h <= 1.f
         && "Content region's end must be within the bounds of the texture"
     );
-    const std::string nineSliceShaderPath { "data/shader/nineSliceShader.json" };
+    const std::string nineSliceShaderPath { "shader/nineSliceShader.json" };
     if(!ToyMaker::ResourceDatabase::HasResourceDescription(nineSliceShaderPath)){
         nlohmann::json shaderDescription {
             {"name", nineSliceShaderPath},

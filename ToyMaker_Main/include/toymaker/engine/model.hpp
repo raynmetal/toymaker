@@ -194,7 +194,7 @@ namespace ToyMaker {
      *     "method": "fromFile",
      *     "name": "EagleModel_One",
      *     "parameters": {
-     *         "path": "data/models/UrEagle.obj",
+     *         "path": "models/UrEagle.obj",
      *         "material_overrides": {
      *             "0": [
      *                 {

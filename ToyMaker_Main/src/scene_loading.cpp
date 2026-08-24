@@ -2,15 +2,19 @@
 #include <filesystem>
 #include <nlohmann/json.hpp>
 
+#include "toymaker/engine/application.hpp"
 #include "toymaker/engine/scene_loading.hpp"
 
 using namespace ToyMaker;
 
 std::shared_ptr<IResource> SceneFromFile::createResource(const nlohmann::json& sceneFileDescription) {
-    std::string scenePath { sceneFileDescription.at("path").get<std::string>() };
+    const std::string dataPath { Application::getProjectDataPath() };
+    std::string scenePath { dataPath + "/" + sceneFileDescription.at("path").get<std::string>() };
     std::ifstream jsonFileStream;
 
+    std::cout << "scene path: " << scenePath << "\n";
     jsonFileStream.open(scenePath);
+    assert(!jsonFileStream.fail() && "Failed to read scene description");
     nlohmann::json sceneDescription { nlohmann::json::parse(jsonFileStream) };
     jsonFileStream.close();
 

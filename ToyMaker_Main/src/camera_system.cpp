@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <set>
 
-#include "toymaker/engine/scene_system.hpp"
 #include "toymaker/engine/camera_system.hpp"
 
 using namespace ToyMaker;
@@ -17,6 +16,7 @@ void CameraSystem::updateActiveCameraMatrices() {
     std::set<EntityID> requiresViewUpdate{};
     std::swap(requiresProjectionUpdate, mProjectionUpdateQueue);
     std::swap(requiresViewUpdate, mViewUpdateQueue);
+
 
     // Apply pending updates
     for(EntityID entity: requiresProjectionUpdate) {

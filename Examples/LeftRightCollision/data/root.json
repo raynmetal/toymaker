@@ -7,7 +7,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/Sad.png",
+                "path": "Sad.png",
                 "cubemap_layout": "row"
             }
         },
@@ -133,6 +133,7 @@
             "components": [
                 {
                     "fov": 75.0,
+                    "aspect_mode": "resize",
                     "aspect": 1.333,
                     "orthographic_dimensions": {
                         "horizontal": 800,
@@ -163,7 +164,7 @@
                     "type": "Placement",
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
                     "position": [ -4.0, 0.7, 0.0, 1.0 ],
-                    "scale": [ 0.5, 0.5, 0.5 ]
+                    "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
@@ -196,7 +197,7 @@
                     "type": "Placement",
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
                     "position": [ 4.0, -0.7, 0.0, 1.0 ],
-                    "scale": [ 0.5, 0.5, 0.5 ]
+                    "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",

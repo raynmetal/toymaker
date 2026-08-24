@@ -59,19 +59,20 @@ void printSceneHierarchyData(std::shared_ptr<ToyMaker::SceneNodeCore> rootNode) 
     }
 }
 
-Application::Application(const std::string& projectPath) {
+Application::Application() {
     s_instantiated = true;
 
-    std::filesystem::path currentResourcePath { projectPath };
+    std::filesystem::path currentResourcePath { getProjectDataPath() + "/project.json" };
     const std::filesystem::path projectRootDirectory { currentResourcePath.parent_path() };
 
     std::ifstream jsonFileStream;
 
     jsonFileStream.open(currentResourcePath.string());
-    nlohmann::json projectJSON { nlohmann::json::parse(jsonFileStream) };
+    assert(!jsonFileStream.fail() && "Could not open json file at project root path");
+    const nlohmann::json projectJSON = nlohmann::json::parse(jsonFileStream);
     jsonFileStream.close();
 
-    mSimulationStep = projectJSON[0].at("simulation_step").get<uint32_t>();
+    mSimulationStep = projectJSON.at("simulation_step").get<uint32_t>();
     {
         char assertionMessage[100];
         sprintf(assertionMessage, "Simulation step must be between %dms and %dms", kMinSimStep, kMaxSimStep);
@@ -81,15 +82,15 @@ Application::Application(const std::string& projectPath) {
 
     mSceneSystem = ECSWorld::getSingletonSystem<SceneSystem>();
 
-    initialize(projectJSON[0].at("window_configuration"));
+    initialize(projectJSON.at("window_configuration"));
 
-    const std::string& inputFile{ projectJSON[0].at("input_map_path").get<std::string>() };
+    const std::string& inputFile{ projectJSON.at("input_map_path").get<std::string>() };
     currentResourcePath = projectRootDirectory / inputFile;
     jsonFileStream.open(currentResourcePath.string());
     const nlohmann::json inputJSON { nlohmann::json::parse(jsonFileStream) };
     jsonFileStream.close();
 
-    const std::string& rootSceneFile { projectJSON[0].at("root_scene_path").get<std::string>() };
+    const std::string& rootSceneFile { projectJSON.at("root_scene_path").get<std::string>() };
     currentResourcePath = projectRootDirectory / rootSceneFile;
     mInputManager.loadInputConfiguration(inputJSON[0]);
     ResourceDatabase::AddResourceDescription(
@@ -98,12 +99,12 @@ Application::Application(const std::string& projectPath) {
             {"type", "SimObject"},
             {"method", "fromSceneFile"},
             {"parameters", {
-                {"path", currentResourcePath.string()},
+                {"path", rootSceneFile},
             }},
         }
     );
 
-    mSceneSystem.lock()->onApplicationInitialize(projectJSON[0].at("root_viewport_render_configuration"));
+    mSceneSystem.lock()->onApplicationInitialize(projectJSON.at("root_viewport_render_configuration"));
     mSceneSystem.lock()->addNode(
         ResourceDatabase::GetRegisteredResource<SimObject>("root_scene"),
         "/"
@@ -221,9 +222,9 @@ Application::~Application() {
     cleanup();
 }
 
-std::shared_ptr<Application> Application::instantiate(const std::string& projectPath) {
+std::shared_ptr<Application> Application::instantiate() {
     assert(!s_instantiated && s_pInstance.expired() && "Application may only be initialized once");
-    std::shared_ptr<Application> instance { new Application{projectPath} };
+    std::shared_ptr<Application> instance { new Application{} };
     s_pInstance = instance;
     s_instantiated = true;
     return instance;
