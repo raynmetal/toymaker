@@ -29,7 +29,7 @@ namespace ToyMaker {
      * 
      * {
      *     "type": "UIImage",
-     *     "image_filepath": "data/textures/button_active.png",
+     *     "image_filepath": "textures/button_active.png",
      *     "dimensions": [620, 440],
      *     "anchor": [0.5, 0.5]
      * }

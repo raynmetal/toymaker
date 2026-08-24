@@ -60,7 +60,7 @@ namespace ToyMaker {
          *     "method": "fromFile",
          *     "name": "SwallowModel_One",
          *     "parameters": {
-         *         "path": "data/models/UrSwallow.obj",
+         *         "path": "models/UrSwallow.obj",
          *         "material_overrides": {
          *             "0": [
          *                 {

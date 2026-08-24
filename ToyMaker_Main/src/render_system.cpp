@@ -4,6 +4,7 @@
 #include <glm/glm.hpp>
 #include <nlohmann/json.hpp>
 
+#include "toymaker/engine/application.hpp"
 #include "toymaker/engine/core/resource_database.hpp"
 #include "toymaker/engine/core/ecs_world.hpp"
 #include "toymaker/engine/window_context_manager.hpp"
@@ -162,16 +163,15 @@ RenderSetID RenderSystem::createRenderSet(glm::u16vec2 renderDimensions, glm::u1
         assert(mNextRenderSetID + 1 < kMaxRenderSetIDs && "Maximum allocatable render sets have been created");
         newRenderSetID = mNextRenderSetID++;
     }
-
     RenderSet&& newRenderSet {};
-    newRenderSet.mGeometryRenderStage = std::make_shared<GeometryRenderStage>("data/shader/geometryShader.json" );
-    newRenderSet.mLightingRenderStage = std::make_shared<LightingRenderStage>("data/shader/lightingShader.json");
-    newRenderSet.mSkyboxRenderStage = std::make_shared<SkyboxRenderStage>("data/shader/skyboxShader.json");
-    newRenderSet.mBlurRenderStage = std::make_shared<BlurRenderStage>("data/shader/gaussianblurShader.json");
-    newRenderSet.mTonemappingRenderStage = std::make_shared<TonemappingRenderStage>("data/shader/tonemappingShader.json");
-    newRenderSet.mResizeRenderStage = std::make_shared<ResizeRenderStage>("data/shader/basicShader.json");
-    newRenderSet.mScreenRenderStage = std::make_shared<ScreenRenderStage>("data/shader/basicShader.json");
-    newRenderSet.mAdditionRenderStage = std::make_shared<AdditionRenderStage>("data/shader/combineShader.json");
+    newRenderSet.mGeometryRenderStage = std::make_shared<GeometryRenderStage>("shader/geometryShader.json" );
+    newRenderSet.mLightingRenderStage = std::make_shared<LightingRenderStage>("shader/lightingShader.json");
+    newRenderSet.mSkyboxRenderStage = std::make_shared<SkyboxRenderStage>("shader/skyboxShader.json");
+    newRenderSet.mBlurRenderStage = std::make_shared<BlurRenderStage>("shader/gaussianblurShader.json");
+    newRenderSet.mTonemappingRenderStage = std::make_shared<TonemappingRenderStage>("shader/tonemappingShader.json");
+    newRenderSet.mResizeRenderStage = std::make_shared<ResizeRenderStage>("shader/basicShader.json");
+    newRenderSet.mScreenRenderStage = std::make_shared<ScreenRenderStage>("shader/basicShader.json");
+    newRenderSet.mAdditionRenderStage = std::make_shared<AdditionRenderStage>("shader/combineShader.json");
 
     newRenderSet.mLightMaterialHandle = ResourceDatabase::ConstructAnonymousResource<Material>({
         {"type", Material::getResourceTypeName()},

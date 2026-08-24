@@ -7,7 +7,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/Sad.png",
+                "path": "Sad.png",
                 "cubemap_layout": "row"
             }
         },
@@ -163,7 +163,7 @@
                     "type": "Placement",
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
                     "position": [ -4.0, 0.7, 0.0, 1.0 ],
-                    "scale": [ 0.5, 0.5, 0.5 ]
+                    "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",
@@ -196,7 +196,7 @@
                     "type": "Placement",
                     "orientation": [ 1.0, 0.0, 0.0, 0.0 ],
                     "position": [ 4.0, -0.7, 0.0, 1.0 ],
-                    "scale": [ 0.5, 0.5, 0.5 ]
+                    "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {
                     "type": "PhysicsState",

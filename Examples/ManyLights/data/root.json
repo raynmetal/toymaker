@@ -5,7 +5,7 @@
             "type": "Texture",
             "method": "fromFile",
             "parameters": {
-                "path": "data/Sad.png",
+                "path": "Sad.png",
                 "cubemap_layout": "row"
             }
         },
@@ -40,7 +40,7 @@
             "type": "StaticModel",
             "method": "fromFile",
             "parameters": {
-                "path": "data/UrEagle.obj",
+                "path": "UrEagle.obj",
                 "material_overrides": {
                     "0": [{
                         "name": "colorMultiplier",
@@ -55,7 +55,7 @@
             "type": "SimObject",
             "method": "fromSceneFile",
             "parameters": {
-                "path": "data/eagle.json"
+                "path": "eagle.json"
             }
         },
         {
@@ -63,7 +63,7 @@
             "type": "SimObject",
             "method": "fromSceneFile",
             "parameters": {
-                "path": "data/fly_camera.json"
+                "path": "fly_camera.json"
             }
         }
     ],

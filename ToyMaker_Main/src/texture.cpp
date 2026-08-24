@@ -8,6 +8,7 @@
 #include <glm/glm.hpp>
 #include <SDL3_image/SDL_image.h>
 
+#include "toymaker/engine/application.hpp"
 #include "toymaker/engine/texture.hpp"
 
 using namespace ToyMaker;
@@ -211,7 +212,8 @@ GLenum Texture::externalFormat() {
 }
 
 std::shared_ptr<IResource> TextureFromFile::createResource(const nlohmann::json& methodParameters) {
-    std::string filepath { methodParameters["path"].get<std::string>() };
+    const std::string dataPath { Application::getProjectDataPath() };
+    const std::string filepath { dataPath + "/" + methodParameters.at("path").get<std::string>() };
     ColorBufferDefinition colorBufferDefinition {
         .mDataType { GL_UNSIGNED_BYTE },
         .mUsesWebColors { true }

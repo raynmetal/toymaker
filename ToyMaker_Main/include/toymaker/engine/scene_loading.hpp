@@ -35,7 +35,7 @@ namespace ToyMaker {
      *     "type": "SimObject",
      *     "method": "fromSceneFile",
      *     "parameters": {
-     *         "path": "data/ur_button.json"
+     *         "path": "ur_button.json"
      *     }
      * }
      * 

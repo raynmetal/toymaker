@@ -79,6 +79,15 @@ namespace ToyMaker {
         static Application& getInstance();
 
         /**
+         * @brief Returns a const reference to the base path in which application data is stored.
+         *
+         */
+        inline static const std::string& getProjectDataPath() {
+            static const std::string projectDataPath { SDL_GetBasePath() + std::string{"data"} };
+            return projectDataPath;
+        }
+
+        /**
          * @brief Runs the application loop after setup.
          * 
          */
@@ -90,7 +99,7 @@ namespace ToyMaker {
          * @param projectPath The path to the file containing project level configuration data.
          * @return std::shared_ptr<Application> A reference to the instantiated application object.
          */
-        static std::shared_ptr<Application> instantiate(const std::string& projectPath);
+        static std::shared_ptr<Application> instantiate();
 
         /**
          * @brief Gets an object of a specific type by its scene path.
@@ -112,12 +121,7 @@ namespace ToyMaker {
         inline SignalTracker& getSignalTracker() { return mSignalTracker; }
 
     private:
-        /**
-         * @brief Constructs a new Application object
-         * 
-         * @param projectPath The path to the project JSON file containing the parameters to be used by this Application.
-         */
-        Application(const std::string& projectPath);
+        Application();
 
         /**
          * @brief Base template for engine object getter, used by Application::getObject().

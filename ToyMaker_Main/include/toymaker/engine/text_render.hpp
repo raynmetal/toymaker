@@ -160,7 +160,7 @@ namespace ToyMaker{
      *     "type": "TextFont",
      *     "method": "fromFile",
      *     "parameters": {
-     *         "path": "data/fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
+     *         "path": "fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
      *         "point_size": 24
      *     }
      * }
