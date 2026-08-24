@@ -61,10 +61,25 @@ namespace ToyMaker {
         };
 
         /**
+         * @brief The way this camera's aspect is modified when its owning viewport changes.
+         *
+         */
+        enum class AspectMode: uint8_t {
+            FIXED, //< The camera's aspect remains fixed irrespective of viewport changes.
+            RESIZE //< The camera's aspect is resized to match that of the owning viewport.
+        };
+
+        /**
          * @brief The type of projection used by the camera.
          * 
          */
         ProjectionType mProjectionType { ProjectionType::FRUSTUM };
+
+        /**
+         * @brief The way this camera's aspect is modified when its owning viewport changes.
+         *
+         */
+        AspectMode mAspectMode { AspectMode::RESIZE };
 
         /**
          * @brief (If ProjectionType::FRUSTUM) The vertical Field of View described by the camera, used to calculate mProjectMatrix
@@ -119,6 +134,15 @@ namespace ToyMaker {
     NLOHMANN_JSON_SERIALIZE_ENUM(CameraProperties::ProjectionType, {
         {CameraProperties::ProjectionType::FRUSTUM, "frustum"},
         {CameraProperties::ProjectionType::ORTHOGRAPHIC, "orthographic"},
+    });
+
+    /**
+     * @ingroup ToyMakerRenderSystem ToyMakerSerialization
+     *
+     */
+    NLOHMANN_JSON_SERIALIZE_ENUM(CameraProperties::AspectMode, {
+        { CameraProperties::AspectMode::FIXED, "fixed" },
+        { CameraProperties::AspectMode::RESIZE, "resize" },
     });
 
     /**
@@ -250,6 +274,7 @@ namespace ToyMaker {
         assert(json.at("type").get<std::string>() == CameraProperties::getComponentTypeName() && "Type mismatch, json must be of camera properties type");
         json.at("projection_mode").get_to(cameraProperties.mProjectionType);
         json.at("fov").get_to(cameraProperties.mFov);
+        json.at("aspect_mode").get_to(cameraProperties.mAspectMode);
         json.at("aspect").get_to(cameraProperties.mAspect);
         json.at("orthographic_dimensions")
             .at("horizontal")
@@ -261,12 +286,16 @@ namespace ToyMaker {
         json.at("near_far_planes").at("far").get_to(cameraProperties.mNearFarPlanes.y);
     }
 
-    /** @ingroup ToyMakerSerialization */
+    /**
+     * @ingroup ToyMakerSerialization ToyMakerRenderSystem
+     *
+     */
     inline void to_json(nlohmann::json& json, const CameraProperties& cameraProperties) {
         json = {
             {"type", CameraProperties::getComponentTypeName()},
             {"projection_mode", cameraProperties.mProjectionType},
             {"fov", cameraProperties.mFov},
+            {"aspect_mode", cameraProperties.mAspectMode},
             {"aspect", cameraProperties.mAspect},
             {"orthographic_dimensions", {
                 {"horizontal", cameraProperties.mOrthographicDimensions.x},

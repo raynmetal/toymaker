@@ -13,6 +13,7 @@
             "components": [
                 {
                     "fov": 75.0,
+                    "aspect_mode": "resize",
                     "aspect": 1.333,
                     "orthographic_dimensions": {
                         "horizontal": 800,
