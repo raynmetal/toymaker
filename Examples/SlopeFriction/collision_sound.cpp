@@ -124,9 +124,54 @@ void CollisionSound::soundCollision(const ToyMaker::PhysicsSystem::SignalCollide
     std::cout << "Penetration depth: "
         << std::to_string(collisionData.second.mContactA.mPenetrationDepth) << "\n";
 
-    if(collisionData.second.mContactA.mPenetrationDepth <= .005f) {
-        return;
-    }
+    // get physics and bounds of each collision object
+    const auto entityOther {
+        collisionData.first.first() == getEntityID()?
+            collisionData.first.second():
+            collisionData.first.first()
+    };
+    const auto nodeOther {
+        getSimObject().getNodeByID(entityOther)
+    };
+    // NOTE: using 0 to get values from _before_ the physics update
+    const auto boundsSelf {
+        getComponent<ToyMaker::ObjectBounds>(0.f)
+    };
+    const auto& boundsOther {
+        nodeOther->getComponent<ToyMaker::ObjectBounds>(0.f)
+    };
+    const auto physicsSelf {
+        getComponent<ToyMaker::PhysicsState>(0.f)
+    };
+    const auto& physicsOther {
+        nodeOther->getComponent<ToyMaker::PhysicsState>(0.f)
+    };
+
+    // compute relative contact velocity along collision normal
+    const auto& contactSelf {
+        collisionData.first.first() == getEntityID()?
+            collisionData.second.mContactA:
+            collisionData.second.mContactB
+    };
+    const auto& contactOther {
+        collisionData.first.first() != getEntityID()?
+            collisionData.second.mContactA:
+            collisionData.second.mContactB
+    };
+    const auto pointRelativeSelf {
+        contactSelf.mPoint - boundsSelf.getPositionWorld()
+    };
+    const auto pointRelativeOther {
+        contactOther.mPoint - boundsOther.getPositionWorld()
+    };
+    const glm::vec3& contactNormal { contactOther.mNormal };
+    const float contactVelocitySelf { glm::dot(contactNormal,
+        physicsSelf.mVelocity + glm::cross(physicsSelf.mAngularVelocity, pointRelativeSelf)
+    ) };
+    const float contactVelocityOther { glm::dot(contactNormal,
+        physicsOther.mVelocity + glm::cross(physicsOther.mAngularVelocity, pointRelativeOther)
+    ) };
+    const float contactVelocityTotal { contactVelocitySelf + contactVelocityOther };
 
     const auto camera { getLocalViewport().getActiveCamera() };
     const auto viewMatrix { camera->getComponent<ToyMaker::CameraProperties>().mViewMatrix };
