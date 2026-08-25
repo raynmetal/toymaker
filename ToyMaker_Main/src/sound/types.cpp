@@ -44,14 +44,35 @@ SoundMixer::SoundMixer():
     assert(mMixer != nullptr && "Failed to create mixer");
 }
 
-float SoundMixer::getGain() const {
+float SoundMixer::getGainMaster() const {
     return MIX_GetMixerGain(mMixer.get());
 }
 
-void SoundMixer::setGain(float gain) {
+void SoundMixer::setGainMaster(float gain) {
     assert(gain >= 0.f && "Gain must be greater than or equal to 0");
     const bool success { MIX_SetMixerGain(mMixer.get(), std::max(gain, 0.f)) };
     assert(success && "Could not set mixer gain");
+}
+
+void SoundMixer::setGainTagged(const std::string& tag, float gain) {
+    assert(gain >= 0.f && "Gain must be greater than or equal to 0");
+    const bool success { MIX_SetTagGain(mMixer.get(), tag.c_str(), std::max(gain, 0.f)) };
+    assert(success && "Could not set tag gain");
+}
+
+void SoundMixer::stopTagged(const std::string& tag, uint32_t millis) {
+    const bool success { MIX_StopTag(mMixer.get(), tag.c_str(), millis) };
+    assert(success && "Could not pause channels with this tag");
+}
+
+void SoundMixer::pauseTagged(const std::string& tag) {
+    const bool success { MIX_PauseTag(mMixer.get(), tag.c_str()) };
+    assert(success && "Could not pause channels with this tag");
+}
+
+void SoundMixer::resumeTagged(const std::string& tag) {
+    const bool success { MIX_ResumeTag(mMixer.get(), tag.c_str()) };
+    assert(success && "Could not resume channels with this tag");
 }
 
 SoundChannel::SoundChannel(const SoundMixer& mixer):
@@ -209,6 +230,37 @@ void SoundChannel::setGain(float gain) {
 
 float SoundChannel::getGain() const {
     return MIX_GetTrackGain(mTrack.get());
+}
+
+void SoundChannel::addTag(const std::string& tag) {
+    const bool success { MIX_TagTrack(mTrack.get(), tag.c_str()) };
+    assert(success && "Could not tag this channel");
+}
+
+void SoundChannel::removeTag(const std::string& tag) {
+    MIX_UntagTrack(mTrack.get(), tag.c_str());
+}
+
+void SoundChannel::removeAllTags() {
+    MIX_UntagTrack(mTrack.get(), nullptr);
+}
+
+std::vector<std::string> SoundChannel::getTags() const {
+    int nTags { 0 };
+    auto rawTags { MIX_GetTrackTags(mTrack.get(), &nTags) };
+    if(!rawTags) {
+        std::cerr << "Could not retrieve channel tags: " << SDL_GetError() << "\n";
+    }
+    assert(rawTags && "Could not retrieve channel tags");
+
+    std::vector<std::string> tags {};
+    tags.reserve(nTags);
+    for(std::size_t i { 0 }; i < nTags; ++i) {
+        tags[i] = std::string { rawTags[i] };
+    }
+    SDL_free(rawTags);
+
+    return tags;
 }
 
 std::shared_ptr<IResource> SoundFromFile::createResource(const nlohmann::json& methodParameters) {

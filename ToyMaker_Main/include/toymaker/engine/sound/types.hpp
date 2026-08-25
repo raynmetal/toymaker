@@ -207,6 +207,31 @@ namespace ToyMaker {
          */
         float getGain() const;
 
+        /**
+         * @brief Adds a string tag to this channel, allowing channels sharing the same tag to be
+         * controlled together.
+         *
+         */
+        void addTag(const std::string& tag);
+
+        /**
+         * @brief Removes a string tag from this channel.
+         *
+         */
+        void removeTag(const std::string& tag);
+
+        /**
+         * @brief Removes all tags associated with this channel.
+         *
+         */
+        void removeAllTags();
+
+        /**
+         * @brief Returns all the tags associated with this channel.
+         *
+         */
+        std::vector<std::string> getTags() const;
+
     private:
         /**
          * @brief The underlying SDL3_mixer track object object
@@ -240,13 +265,39 @@ namespace ToyMaker {
          * @brief Returns the gain applied to the mixed sound output applied by this mixer.
          *
          */
-        float getGain() const;
+        float getGainMaster() const;
 
         /**
          * @brief Sets the factor by which the sound returned by this mixer is multiplied.
          *
          */
-        void setGain(float gain);
+        void setGainMaster(float gain);
+
+        /**
+         * @brief Sets the gain applied to all channels marked with a particular tag.
+         *
+         * @NOTE: This overwrites the individual gain of each channel marked with this tag.
+         *
+         */
+        void setGainTagged(const std::string& tag, float gain);
+
+        /**
+         * @brief Stops the playback of all channels marked with a specific tag.
+         *
+         */
+        void stopTagged(const std::string& tag, uint32_t millis);
+
+        /**
+         * @brief Pauses playback of all channels marked with a specific tag.
+         *
+         */
+        void pauseTagged(const std::string& tag);
+
+        /**
+         * @brief Resumes playback of all channels marked with a specific tag.
+         *
+         */
+        void resumeTagged(const std::string& tag);
 
     private:
         /**
@@ -290,7 +341,6 @@ namespace ToyMaker {
          */
         std::shared_ptr<IResource> createResource(const nlohmann::json& methodParameters) override;
     };
-
 }
 
 #endif

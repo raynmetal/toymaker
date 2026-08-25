@@ -14,10 +14,10 @@ std::unique_ptr<SoundChannel> SoundSystem::createChannel() {
 }
 
 float SoundSystem::getMasterGain() const {
-    return mMixer->getGain();
+    return mMixer->getGainMaster();
 }
 
 void SoundSystem::setMasterGain(float newVolume) {
-    mMixer->setGain(newVolume);
+    mMixer->setGainMaster(newVolume);
 }
 
