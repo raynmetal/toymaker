@@ -184,7 +184,7 @@ void CollisionSound::soundCollision(const ToyMaker::PhysicsSystem::SignalCollide
 
     // decide gain based on contact velocity (harder impact -> louder sound)
     const float gain { 2.f +
-        50.f * (contactVelocityTotal - 2.f) / 30.f
+        50.f * (contactVelocityTotal - 1.f) / 30.f
     };
 
     // spatialize audio based on 3d position of the impact
