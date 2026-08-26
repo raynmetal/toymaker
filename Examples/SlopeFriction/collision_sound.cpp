@@ -113,8 +113,6 @@ void CollisionSound::onActivated() {
     mSound = ToyMaker::ResourceDatabase::GetRegisteredResource<ToyMaker::Sound>("SnapSound");
     mChannel = getSimObject().getWorld().lock()->getSystem<ToyMaker::SoundSystem>()->createChannel();
     mChannel->setSound(*mSound);
-    mChannel->setGain(5.f);
-    mChannel->play();
 }
 
 void CollisionSound::soundCollision(const ToyMaker::PhysicsSystem::SignalCollidedData& collisionData) {
@@ -123,6 +121,11 @@ void CollisionSound::soundCollision(const ToyMaker::PhysicsSystem::SignalCollide
         << std::to_string(collisionData.first.second()) << ")\n";
     std::cout << "Penetration depth: "
         << std::to_string(collisionData.second.mContactA.mPenetrationDepth) << "\n";
+
+    // guard: skip if we're already in the middle of playing an impact sound effect
+    if(mChannel->isPlaying()) {
+        return;
+    }
 
     // get physics and bounds of each collision object
     const auto entityOther {
@@ -133,6 +136,7 @@ void CollisionSound::soundCollision(const ToyMaker::PhysicsSystem::SignalCollide
     const auto nodeOther {
         getSimObject().getNodeByID(entityOther)
     };
+
     // NOTE: using 0 to get values from _before_ the physics update
     const auto boundsSelf {
         getComponent<ToyMaker::ObjectBounds>(0.f)
@@ -171,12 +175,23 @@ void CollisionSound::soundCollision(const ToyMaker::PhysicsSystem::SignalCollide
     const float contactVelocityOther { glm::dot(contactNormal,
         physicsOther.mVelocity + glm::cross(physicsOther.mAngularVelocity, pointRelativeOther)
     ) };
-    const float contactVelocityTotal { contactVelocitySelf + contactVelocityOther };
+    const float contactVelocityTotal { glm::abs(contactVelocitySelf + contactVelocityOther) };
 
+    // guard: slow collisions are quiet
+    if(contactVelocityTotal <= 1.f) {
+        return;
+    }
+
+    // decide gain based on contact velocity (harder impact -> louder sound)
+    const float gain { 2.f +
+        50.f * (contactVelocityTotal - 2.f) / 30.f
+    };
+
+    // spatialize audio based on 3d position of the impact
     const auto camera { getLocalViewport().getActiveCamera() };
     const auto viewMatrix { camera->getComponent<ToyMaker::CameraProperties>().mViewMatrix };
     const glm::vec3 viewPosition { viewMatrix * glm::vec4 { collisionData.second.mContactA.mPoint, 1.f } };
-    mChannel->setGain(5.f);
+    mChannel->setGain(gain);
     mChannel->setPosition(viewPosition);
     mChannel->play();
     assert(mChannel->isPlaying() && "Collision sound effect isn't playing");
