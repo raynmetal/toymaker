@@ -1521,6 +1521,9 @@ namespace ToyMaker {
          * @brief A method intended to be used at the start of the application to configure the SceneSystem's root viewport.
          * 
          * @param rootViewportRenderConfiguration The render configuration for the SceneSystem's root ViewportNode.
+         *
+         * @TODO: Clarify relationship between scene system and ECS.  Right now, scene system seems to drive ECS,
+         * while also being driven by it, which is confusing.
          */
         void onApplicationInitialize(const ViewportNode::RenderConfiguration& rootViewportRenderConfiguration);
 
@@ -1933,26 +1936,26 @@ namespace ToyMaker {
 
     template <typename TSceneNode>
     inline std::shared_ptr<TSceneNode> SceneSystem::getNodeByID(const UniversalEntityID& universalEntityID) {
-        return SceneSystem::getNodeByID_Helper<TSceneNode>(universalEntityID, *this);
+        return getNodeByID_Helper<TSceneNode>::get(universalEntityID, *this);
     }
 
     // Fail retrieval in cases where no explicitly defined object by path
     // method exists
     template <typename TObject, typename Enable>
-    TObject SceneNodeCore::getByPath_Helper<TObject, Enable>::get(std::shared_ptr<SceneNodeCore> rootNode, const std::string& where) {
+    inline TObject SceneNodeCore::getByPath_Helper<TObject, Enable>::get(std::shared_ptr<SceneNodeCore> rootNode, const std::string& where) {
         static_assert(false && "No Object-by-Path method for this type exists");
         return TObject{}; // this is just to shut the compiler up about no returned value
     }
 
     template <typename TSceneNode, typename Enable>
-    std::shared_ptr<TSceneNode> SceneSystem::getNodeByID_Helper<TSceneNode, Enable>::get(const UniversalEntityID& universalEntityID, SceneSystem& sceneSystem) {
+    inline std::shared_ptr<TSceneNode> SceneSystem::getNodeByID_Helper<TSceneNode, Enable>::get(const UniversalEntityID& universalEntityID, SceneSystem& sceneSystem) {
         static_assert(false && "No scene node of this type exists");
         return std::shared_ptr<TSceneNode>{};
     }
 
     template <typename TSceneNode>
     struct SceneSystem::getNodeByID_Helper<TSceneNode, typename std::enable_if_t<std::is_base_of<SceneNodeCore, TSceneNode>::value>> {
-        std::shared_ptr<TSceneNode> get(const UniversalEntityID& universalEntityID, SceneSystem& sceneSystem) {
+        static std::shared_ptr<TSceneNode> get(const UniversalEntityID& universalEntityID, SceneSystem& sceneSystem) {
             return std::static_pointer_cast<TSceneNode>(sceneSystem.getNodeByID(universalEntityID));
         }
     };

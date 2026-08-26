@@ -8,8 +8,8 @@
  * 
  */
 
-#ifndef ZOAPPQUERYCLICK_H
-#define ZOAPPQUERYCLICK_H
+#ifndef TOYMAKERBUILTINS_QUERYCLICK_H
+#define TOYMAKERBUILTINS_QUERYCLICK_H
 
 #include "toymaker/engine/camera_system.hpp"
 #include "toymaker/engine/sim_system.hpp"

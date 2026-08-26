@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.23)
 project(
     ToyMaker
-    VERSION 0.3.4
+    VERSION 0.4.0
     DESCRIPTION "A game engine built using SDL3 and OpenGL."
     HOMEPAGE_URL https://www.github.com/raynmetal/toymaker
     LANGUAGES CXX
@@ -24,12 +24,12 @@ else()
     message("Machine-local installation of ToyMaker will be used to build ToyMaker executables")
 endif()
 
-# Build the centertext example project, if configured
+# Build example projects, if configured
 if(TOYMAKER_BUILD_EXAMPLES)
-    message("The toymaker centertext example project has been configured to be built")
+    message("The ToyMaker example projects have been configured to be built")
     add_subdirectory(Examples)
 else()
-    message("The ToyMaker centertext example project will not be built in this configuration")
+    message("The ToyMaker example projects will not be built in this configuration")
 endif()
 
 # Provide ctest related options IF the project being built is ToyMaker

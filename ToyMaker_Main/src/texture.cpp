@@ -4,9 +4,10 @@
 #include <map>
 
 #include <SDL3/SDL.h>
+#include <SDL3_image/SDL_image.h>
 #include <GL/glew.h>
 #include <glm/glm.hpp>
-#include <SDL3_image/SDL_image.h>
+#include <assimp/Importer.hpp>
 
 #include "toymaker/engine/application.hpp"
 #include "toymaker/engine/texture.hpp"
@@ -239,7 +240,7 @@ std::shared_ptr<IResource> TextureFromFile::createResource(const nlohmann::json&
 
     // Move surface pixels to the graphics card
     GLuint texture;
-    
+
     colorBufferDefinition.mDimensions = {pretexture->w, pretexture->h};
     glGenTextures(1, &texture);
     glBindTexture(GL_TEXTURE_2D, texture);

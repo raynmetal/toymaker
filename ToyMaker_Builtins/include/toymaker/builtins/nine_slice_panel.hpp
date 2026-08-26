@@ -1,5 +1,5 @@
 /**
- * @ingroup UrGameUIComponent
+ * @ingroup ToyMakerBuiltins
  * @file nine_slice_panel.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Contains class defining this project's implementation of nine-slice (or nine-region) resizable panels.
@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef ZOAPPNINESLICE_H
-#define ZOAPPNINESLICE_H
+#ifndef TOYMAKERBUILTINS_NINESLICE_H
+#define TOYMAKERBUILTINS_NINESLICE_H
 
 #include <SDL3/SDL.h>
 #include <nlohmann/json.hpp>
@@ -23,7 +23,7 @@
 namespace ToyMaker{
 
     /**
-     * @ingroup UrGameUIComponent
+     * @ingroup ToyMakerBuiltins
      * @brief Resource responsible for resizing a texture using the 9-slice technique, for use in UI elements.
      * 
      * The base texture provided to this panel is divided into 9 regions
@@ -135,7 +135,7 @@ namespace ToyMaker{
     };
 
     /**
-     * @ingroup UrGameUIComponent
+     * @ingroup ToyMakerBuiltins
      * @brief Resource constructor for creating new NineSlicePanel resources from their descriptions in JSON.
      * 
      * Its appearance in JSON is as follows:
@@ -179,7 +179,7 @@ namespace ToyMaker{
         std::shared_ptr<ToyMaker::IResource> createResource(const nlohmann::json& methodParameters) override;
     };
 
-    /** @ingroup UrGameUIComponent */
+    /** @ingroup ToyMakerBuiltins ToyMakerSerialization */
     NLOHMANN_JSON_SERIALIZE_ENUM(NineSlicePanel::ScaleMode, {
         {NineSlicePanel::ScaleMode::STRETCH, "stretch"},
         {NineSlicePanel::ScaleMode::TILE, "tile"},

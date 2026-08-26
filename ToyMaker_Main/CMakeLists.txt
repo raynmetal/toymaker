@@ -23,22 +23,25 @@ option(ZO_DUMB_DELAY "Relinquish CPU for 10 milliseconds between frames" OFF)
 
 target_sources(ToyMaker
     PRIVATE
-    # Core sources
+        # Core sources
         src/core/ecs_world.cpp
         src/core/resource_database.cpp
-    # Input system sources
+        # Input system sources
         src/input_system/action_context.cpp
         src/input_system/input_manager.cpp
-    # Spatial query sources
+        # Spatial query sources
         src/spatial_query/types.cpp
         src/spatial_query/math.cpp
         src/spatial_query/octree.cpp
         src/spatial_query/sweep_prune.cpp
         src/spatial_query/system.cpp
-    # Physics sources
+        # Physics sources
         src/physics/system.cpp
         src/physics/types.cpp
-    # Everything else
+        # Sound sources
+        src/sound/system.cpp
+        src/sound/types.cpp
+        # Everything else
         src/application.cpp
         src/camera_system.cpp
         src/framebuffer.cpp
@@ -63,7 +66,6 @@ target_sources(ToyMaker
         FILE_SET HEADERS
         BASE_DIRS include
         FILES
-            include/toymaker/engine/application.hpp
             # Core sources
             include/toymaker/engine/core/ecs_world_resource_ext.hpp
             include/toymaker/engine/core/ecs_world.hpp
@@ -80,7 +82,11 @@ target_sources(ToyMaker
             # Physics sources
             include/toymaker/engine/physics/types.hpp
             include/toymaker/engine/physics/system.hpp
-            # Misc. internals 
+            # Sound sources
+            include/toymaker/engine/sound/types.hpp
+            include/toymaker/engine/sound/system.hpp
+            # Misc. internals
+            include/toymaker/engine/application.hpp
             include/toymaker/engine/camera_system.hpp
             include/toymaker/engine/framebuffer.hpp
             include/toymaker/engine/instance.hpp
@@ -118,6 +124,7 @@ find_package(SDL3 REQUIRED CONFIG REQUIRED COMPONENTS SDL3)
 
 find_package(SDL3_image REQUIRED)
 find_package(SDL3_ttf REQUIRED)
+find_package(SDL3_mixer REQUIRED)
 find_package(OpenGL REQUIRED)
 find_package(GLEW 2.0 REQUIRED)
 find_package(glm 1.0 REQUIRED)
@@ -131,6 +138,7 @@ target_link_libraries(ToyMaker PUBLIC
     glm::glm
     SDL3_image::SDL3_image
     SDL3_ttf::SDL3_ttf
+    SDL3_mixer::SDL3_mixer
     assimp::assimp
     nlohmann_json::nlohmann_json
 )

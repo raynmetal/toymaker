@@ -34,6 +34,15 @@
                     { "name": "usesTextureAlbedo", "type": "int", "value": 1 }
                 ]
             }
+        },
+        {
+            "name": "SnapSound",
+            "type": "Sound",
+            "method": "fromFile",
+            "parameters": {
+                "path": "snap.wav",
+                "decompress": true
+            }
         }
     ],
 
@@ -166,12 +175,12 @@
             "name": "object",
             "parent": "/",
             "type": "SimObject",
-            "aspects": [ {"type": "Gravity"} ],
+            "aspects": [ {"type": "Gravity"}, {"type": "CollisionSound"} ],
             "components": [
                 {
                     "type": "Placement",
                     "orientation": [1, 0, 0, 0],
-                    "position": [ -2.0, 1.7, 0.0, 1.0 ],
+                    "position": [ -2.0, 6.7, 0.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
                 },
                 {

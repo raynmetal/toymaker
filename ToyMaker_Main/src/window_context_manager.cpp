@@ -2,6 +2,7 @@
 
 #include <SDL3/SDL.h>
 #include <SDL3_ttf/SDL_ttf.h>
+#include <SDL3_mixer/SDL_mixer.h>
 
 #include <GL/glew.h>
 #include <assimp/Importer.hpp>
@@ -14,11 +15,16 @@
 using namespace ToyMaker;
 
 WindowContext::WindowContext(const nlohmann::json& initialWindowConfiguration) {
-    const bool init{ SDL_Init(SDL_INIT_VIDEO) };
-    assert(init && "Could not initialise SDL2 library");
+    const bool init{ SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) };
+    assert(init && "Could not initialise SDL3 library");
 
     const bool ttfInit { TTF_Init() };
     assert(ttfInit && "Could not initialise SDL_ttf library");
+
+    const bool mixerInit { MIX_Init() };
+    assert(mixerInit && "Could not initialize SDL_mixer library");
+
+    // NOTE: There's no need for IMG_Init() or the like -- see SDL_image 2->3 migration guide
 
     const std::string& applicationTitle { initialWindowConfiguration.at("application_title") };
     const uint32_t windowWidth { initialWindowConfiguration.at("window_width") };
@@ -75,6 +81,8 @@ WindowContext::~WindowContext() {
     std::cout << "Time to say goodbye" << std::endl;
     SDL_GL_DestroyContext(mpGLContext);
     SDL_DestroyWindow(mpSDLWindow);
+    // NOTE: no need for IMG_Quit() or the like -- see SDL 2 -> 3 migration guide
+    MIX_Quit();
     TTF_Quit();
     SDL_Quit();
     delete mpAssetImporter;

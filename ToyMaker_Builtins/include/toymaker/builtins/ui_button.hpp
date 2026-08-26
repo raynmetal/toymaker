@@ -1,5 +1,5 @@
 /**
- * @ingroup UrGameUIComponent UrGameInteractionLayer
+ * @ingroup ToyMakerBuiltins
  * @file ui_button.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Contains the class representation of UI buttons used in this project.
@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef ZOAPPUIBUTTON_H
-#define ZOAPPUIBUTTON_H
+#ifndef TOYMAKERBUILTINS_UIBUTTON_H
+#define TOYMAKERBUILTINS_UIBUTTON_H
 
 #include <nlohmann/json.hpp>
 
@@ -23,7 +23,7 @@
 namespace ToyMaker {
 
     /**
-     * @ingroup UrGameInteractionLayer UrGameUIComponent
+     * @ingroup ToyMakerBuiltins
      * @brief A UI component class for creating simple buttons comprised of a resizable panel and some text.
      * 
      * May optionally also have a "highlight" texture configured to overlay over a button in order to represent special application defined states.
@@ -355,7 +355,7 @@ namespace ToyMaker {
     };
 
 
-    /** @ingroup UrGameUIComponent UrGameInteractionLayer */
+    /** @ingroup ToyMakerBuiltins */
     NLOHMANN_JSON_SERIALIZE_ENUM(UIButton::State, {
         {UIButton::State::ACTIVE, "active"},
         {UIButton::State::HOVER, "hover"},

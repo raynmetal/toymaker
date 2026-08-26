@@ -1,5 +1,5 @@
 /**
- * @ingroup UrGameUIComponent
+ * @ingroup ToyMakerBuiltins
  * @file ui_text.hpp
  * @author Zoheb Shujauddin (zoheb2424@gmail.com)
  * @brief Contains the definition for UIText, responsible for rendering text textures.
@@ -9,8 +9,8 @@
  * 
  */
 
-#ifndef ZOAPPUITEXT_H
-#define ZOAPPUITEXT_H
+#ifndef TOYMAKERBUILTINS_UITEXT_H
+#define TOYMAKERBUILTINS_UITEXT_H
 
 #include "toymaker/engine/sim_system.hpp"
 #include "toymaker/engine/text_render.hpp"
@@ -18,7 +18,7 @@
 namespace ToyMaker {
 
     /**
-     * @ingroup UrGameUIComponent
+     * @ingroup ToyMakerBuiltins
      * @brief An aspect responsible for rendering text textures and displaying them on a surface in the scene.
      * 
      */

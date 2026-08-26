@@ -13,6 +13,7 @@
 /**
  * @note Since I'm packaging this as a static library, any premade resource type, resource constructor, sim aspect type, or anything derived from a template ought to be included here.
  */
+#include "toymaker/engine/sound/system.hpp"
 #include "toymaker/engine/window_context_manager.hpp"
 #include "toymaker/engine/input_system/input_system.hpp"
 #include "toymaker/engine/scene_system.hpp"
@@ -78,8 +79,8 @@ Application::Application() {
         assert(mSimulationStep >= kMinSimStep && mSimulationStep <= kMaxSimStep && assertionMessage);
     }
 
-
     mSceneSystem = ECSWorld::getSingletonSystem<SceneSystem>();
+    mSoundSystem = ECSWorld::getSingletonSystem<SoundSystem>();
 
     initialize(projectJSON.at("window_configuration"));
 
@@ -104,6 +105,7 @@ Application::Application() {
     );
 
     mSceneSystem.lock()->onApplicationInitialize(projectJSON.at("root_viewport_render_configuration"));
+    mSoundSystem.lock()->onApplicationInitialize();
     mSceneSystem.lock()->addNode(
         ResourceDatabase::GetRegisteredResource<SimObject>("root_scene"),
         "/"
@@ -113,6 +115,7 @@ Application::Application() {
 void Application::execute() {
     WindowContext& windowContext { WindowContext::getInstance() };
     std::shared_ptr<SceneSystem> sceneSystem { mSceneSystem.lock() };
+    std::shared_ptr<SoundSystem> soundSystem { mSoundSystem.lock() };
 
     SignalObserver<> onWindowResized { mSignalTracker, "onWindowResized", [this, &sceneSystem, &windowContext]() {
         sceneSystem->getRootViewport().requestDimensions(windowContext.getDimensions());
@@ -215,6 +218,7 @@ void Application::execute() {
 
     }
     sceneSystem->onApplicationEnd();
+    soundSystem->onApplicationEnd();
 }
 
 Application::~Application() {
