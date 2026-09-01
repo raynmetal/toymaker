@@ -132,6 +132,7 @@ void UIImage::recomputeTexture() {
             };
         }
     }
+    rectangle->requireRecompute();
     updateComponent<std::shared_ptr<ToyMaker::StaticModel>>(rectangle);
 
     // apply the texture to the rectangle

@@ -127,6 +127,14 @@ namespace ToyMaker {
          */
         inline const bool boundsNeedRecompute() const { return mCoarseBoundsDirty; }
 
+        /**
+         * @brief Sets the flag which causes the bounds associated with this model to be recomputed.
+         *
+         */
+        inline void requireRecompute() {
+            mCoarseBoundsDirty = true;
+        }
+
     private:
         /**
          * @brief The meshes that make up this model

@@ -93,6 +93,7 @@ void UIPanel::recomputeTexture() {
             };
         }
     }
+    rectangle->requireRecompute();
     updateComponent<std::shared_ptr<ToyMaker::StaticModel>>(rectangle);
     std::shared_ptr<ToyMaker::Material> material { getComponent<std::shared_ptr<ToyMaker::StaticModel>>()->getMaterialHandles()[0] };
     material->updateTextureProperty(
