@@ -32,6 +32,7 @@
 #include "render_system.hpp"
 #include "texture.hpp"
 #include "input_system/input_system.hpp"
+#include "signals.hpp"
 
 namespace ToyMaker {
 
@@ -839,7 +840,7 @@ namespace ToyMaker {
      * @see ViewportNodeFromDescription
      * 
      */
-    class ViewportNode: public BaseSceneNode<ViewportNode>, public Resource<ViewportNode> {
+    class ViewportNode: public BaseSceneNode<ViewportNode>, public Resource<ViewportNode>, public SignalTracker {
     public:
         /**
          * @brief A collection of data that specifies the behaviour and properties of the RenderSystem and target texture associated with this viewport.
@@ -1177,6 +1178,14 @@ namespace ToyMaker {
          * @return uint32_t The precedence of this viewport relative to other viewports.
          */
         inline uint32_t getViewportLoadOrdinal() const { return mViewportLoadOrdinal; }
+
+        /**
+         * @brief Signal emitted whenever this viewport's render configuration is updated.
+         *
+         */
+        Signal<RenderConfiguration> mRenderConfigurationUpdated {
+            *this, "RenderConfigurationUpdated"
+        };
 
     protected:
         ViewportNode(const Placement& placement, const std::string& name):

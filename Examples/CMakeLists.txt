@@ -4,4 +4,5 @@ add_subdirectory(SlopeFriction)
 add_subdirectory(FillContainer)
 add_subdirectory(ManyLights)
 add_subdirectory(TriplePendulum)
+add_subdirectory(UILayout)
 

@@ -15,6 +15,7 @@ target_sources(ToyMakerBuiltinsArchive
         src/ui_image.cpp
         src/ui_panel.cpp
         src/ui_text.cpp
+        src/ui_container.cpp
     PUBLIC
     FILE_SET HEADERS
     BASE_DIRS include
@@ -27,6 +28,7 @@ target_sources(ToyMakerBuiltinsArchive
         include/toymaker/builtins/ui_image.hpp
         include/toymaker/builtins/ui_panel.hpp
         include/toymaker/builtins/ui_text.hpp
+        include/toymaker/builtins/ui_container.hpp
 )
 
 target_link_libraries(ToyMakerBuiltinsArchive PUBLIC ToyMaker)

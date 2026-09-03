@@ -17,8 +17,9 @@
 #include "toymaker/engine/sim_system.hpp"
 #include "toymaker/engine/signals.hpp"
 
-#include "toymaker/builtins/interface_pointer_callback.hpp"
-#include "toymaker/builtins/nine_slice_panel.hpp"
+#include "interface_pointer_callback.hpp"
+#include "nine_slice_panel.hpp"
+#include "ui_container.hpp"
 
 namespace ToyMaker {
 
@@ -89,8 +90,10 @@ namespace ToyMaker {
      * 
      * The button may also be enabled or disabled by calling UIButton::enableButton() or UIButton::disableButton().
      * 
+     * @TODO: Either flesh this out or replace with a proper UI library.
+     *
      */
-    class UIButton: public ToyMaker::SimObjectAspect<UIButton>, public IHoverable, public ILeftClickable {
+    class UIButton: public ToyMaker::SimObjectAspect<UIButton>, public IHoverable, public ILeftClickable, public IUIElement {
     public:
         /**
          * @brief A list of states this button class supports.
@@ -189,6 +192,18 @@ namespace ToyMaker {
          */
         void updateHighlightColor(glm::vec4 newColor);
 
+        inline glm::vec2 getReferenceCoordinate() const override {
+            return mReferenceCoordinate;
+        }
+
+        inline glm::vec2 getOffsets() const override {
+            return mOffsets;
+        }
+
+        inline bool allowsDescendantControl() const override {
+            return false;
+        }
+
     private:
         /**
          * @brief The current state of this button.
@@ -261,8 +276,21 @@ namespace ToyMaker {
         glm::vec4 mHighlightColor {0.f, 0.f, 0.f, 0.f};
 
         /**
+         * @brief The reference coordinate on the owning container relative to which this element is positioned
+         *
+         */
+        glm::vec2 mReferenceCoordinate { 0.f, 0.f };
+
+        /**
+         * @brief The offsets relative to the parent container's reference coordinate determining this element's
+         * position.
+         *
+         */
+        glm::vec2 mOffsets { 0.f, 0.f };
+
+        /**
          * @brief The method responsible for recomputing this button's panel and text textures.
-         * 
+         *
          */
         void recomputeTexture();
 

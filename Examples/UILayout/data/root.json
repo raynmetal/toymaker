@@ -79,7 +79,7 @@
         },
 
         {
-            "name": "center_text",
+            "name": "container",
             "parent": "/",
             "type": "SimObject",
             "components": [
@@ -88,12 +88,23 @@
                     "orientation": [ 1.0,  0.0, 0.0, 0.0 ],
                     "position": [ 0.0, 0.0, 0.0, 1.0 ],
                     "scale": [ 1.0, 1.0, 1.0 ]
-                },
+                }
+            ],
+            "aspects": [
+                { "type": "UIContainer" }
+            ]
+        },
+
+        {
+            "name": "center_text",
+            "parent": "/container/",
+            "type": "SimObject",
+            "components": [
                 {
-                    "type": "PhysicsState",
-                    "mass": 1.0,
-                    "mode": "dynamic",
-                    "angular_velocity": [ 0.0, 0.0, 0.0 ]
+                    "type": "Placement",
+                    "orientation": [ 1.0,  0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
                 }
             ],
             "aspects": [
@@ -102,12 +113,11 @@
                     "text": "ToyMaker Center Text",
                     "font_resource_name": "Roboto_Mono_Regular_24",
                     "scale": 1.0,
-                    "anchor": [0.5, 0.0],
+                    "anchor": [0.0, 0.0],
                     "color": [255, 255, 255, 255],
                     "reference_coordinate": [0, 0],
-                    "offsets": [0, 0]
-                },
-                { "type": "SpinOnClick" }
+                    "offsets": [10, 10]
+                }
             ]
         }
     ],

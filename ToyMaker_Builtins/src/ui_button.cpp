@@ -68,6 +68,14 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIButton::create(const nlohmann::
             jsonAspectProperties.at("highlight_color")[3].get<float>()
         };
     }
+    const glm::vec2 referenceCoordinate {
+        jsonAspectProperties.at("reference_coordinate").at(0).get<float>(),
+        jsonAspectProperties.at("reference_coordinate").at(1).get<float>()
+    };
+    const glm::vec2 offsets {
+        jsonAspectProperties.at("offsets").at(0).get<float>(),
+        jsonAspectProperties.at("offsets").at(1).get<float>()
+    };
 
     std::shared_ptr<UIButton> buttonAspect { std::make_shared<UIButton>() };
     buttonAspect->mStatePanels[State::INACTIVE] = ToyMaker::ResourceDatabase::GetRegisteredResource<NineSlicePanel>(panelInactive);
@@ -83,6 +91,8 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIButton::create(const nlohmann::
     buttonAspect->mTextFontOverride = fontResourceName;
     buttonAspect->mTextColorOverride = color;
     buttonAspect->mValue = value;
+    buttonAspect->mOffsets = offsets;
+    buttonAspect->mReferenceCoordinate = referenceCoordinate;
     if(hasHighlight) {
         buttonAspect->mHighlightColor = highlightColor;
     }
@@ -101,6 +111,8 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIButton::clone() const {
     buttonAspect->mTextColorOverride = mTextColorOverride;
     buttonAspect->mValue = mValue;
     buttonAspect->mHighlightColor = mHighlightColor;
+    buttonAspect->mReferenceCoordinate = mReferenceCoordinate;
+    buttonAspect->mOffsets = mOffsets;
 
     return buttonAspect;
 }

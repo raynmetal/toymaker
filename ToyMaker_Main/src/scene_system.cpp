@@ -740,6 +740,7 @@ void ViewportNode::requestDimensions(glm::u16vec2 requestDimensions) {
             }
         }
     }
+    mRenderConfigurationUpdated.emit(mRenderConfiguration);
 }
 
 void ViewportNode::setResizeType(RenderConfiguration::ResizeType resizeType) {
@@ -1340,7 +1341,7 @@ void SceneSystem::activateSubtree(std::shared_ptr<SceneNodeCore> rootNode) {
     mComputeTransformQueue.insert(rootNode->getUniversalEntityID());
 
     // NOTE:  We needn't insert anything into the placement queue, it's assumed that placements are
-    // in their intended states when a tree is activated (since that is what the user interacts with)
+    //in their intended states when a tree is activated (since that is what the user interacts with)
 
     rootNode->onActivated();
 }

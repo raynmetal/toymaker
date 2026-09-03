@@ -15,14 +15,16 @@
 #include "toymaker/engine/sim_system.hpp"
 #include "toymaker/engine/text_render.hpp"
 
+#include "ui_container.hpp"
+
 namespace ToyMaker {
 
     /**
      * @ingroup ToyMakerBuiltins
      * @brief An aspect responsible for rendering text textures and displaying them on a surface in the scene.
-     * 
+     *
      */
-    class UIText: public ToyMaker::SimObjectAspect<UIText> {
+    class UIText: public ToyMaker::SimObjectAspect<UIText>, public IUIElement {
     public:
         /**
          * @brief Constructs a new UIText aspect.
@@ -100,6 +102,18 @@ namespace ToyMaker {
          */
         void updateAnchor(glm::vec2 anchor);
 
+        inline glm::vec2 getReferenceCoordinate() const override {
+            return mReferenceCoordinate;
+        }
+
+        inline glm::vec2 getOffsets() const override {
+            return mOffsets;
+        }
+
+        inline bool allowsDescendantControl() const override {
+            return false;
+        }
+
     private:
         /**
          * @brief Recomputes the text texture and vertex offsets associated with this object based on its configuration.
@@ -142,6 +156,18 @@ namespace ToyMaker {
          * 
          */
         glm::vec2 mAnchor {0.f, 0.f};
+
+        /**
+         * @brief The coordinate on the owning container relative to which this elements position is computed.
+         *
+         */
+        glm::vec2 mReferenceCoordinate { 0.f, 0.f };
+
+        /**
+         * @brief The offsets of this element relative to the parent container's reference coordinate.
+         *
+         */
+        glm::vec2 mOffsets { 0.f, 0.f };
     };
 }
 

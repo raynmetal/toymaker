@@ -47,7 +47,16 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIText::create(const nlohmann::js
         jsonAspectProperties.at("max_width").get<uint32_t>():
         0
     };
+    const glm::vec2 referenceCoordinate {
+        jsonAspectProperties.at("reference_coordinate").at(0).get<float>(),
+        jsonAspectProperties.at("reference_coordinate").at(1).get<float>(),
+    };
+    const glm::vec2 offsets {
+        jsonAspectProperties.at("offsets").at(0).get<float>(),
+        jsonAspectProperties.at("offsets").at(1).get<float>(),
+    };
     std::shared_ptr<ToyMaker::TextFont> font { ToyMaker::ResourceDatabase::GetRegisteredResource<ToyMaker::TextFont>(fontResourceName) };
+
     std::shared_ptr<UIText> testTextAspect { std::make_shared<UIText>() };
     testTextAspect->mFont = font;
     testTextAspect->mText = text;
@@ -55,6 +64,8 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIText::create(const nlohmann::js
     testTextAspect->mAnchor = anchor;
     testTextAspect->mColor = color;
     testTextAspect->mMaxWidthPixels = maxWidth;
+    testTextAspect->mOffsets = offsets;
+    testTextAspect->mReferenceCoordinate = referenceCoordinate;
     return testTextAspect;
 }
 
@@ -66,6 +77,8 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIText::clone() const {
     testTextAspect->mAnchor = mAnchor;
     testTextAspect->mColor = mColor;
     testTextAspect->mMaxWidthPixels = mMaxWidthPixels;
+    testTextAspect->mOffsets = mOffsets;
+    testTextAspect->mReferenceCoordinate = mReferenceCoordinate;
     return testTextAspect;
 }
 

@@ -28,9 +28,20 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIImage::create(const nlohmann::j
         jsonAspectProperties.at("dimensions")[1].get<uint32_t>(),
     };
 
+    const glm::vec2 referenceCoordinate {
+        jsonAspectProperties.at("reference_coordinate").at(0).get<float>(),
+        jsonAspectProperties.at("reference_coordinate").at(1).get<float>(),
+    };
+    const glm::vec2 offsets {
+        jsonAspectProperties.at("offsets").at(0).get<float>(),
+        jsonAspectProperties.at("offsets").at(0).get<float>(),
+    };
+
     imageAspect->mImageFilepath = imageFilepath;
     imageAspect->mAnchor = anchor;
     imageAspect->mDimensions = dimensions;
+    imageAspect->mReferenceCoordinate = referenceCoordinate;
+    imageAspect->mOffsets = offsets;
 
     return imageAspect;
 }
@@ -40,6 +51,8 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIImage::clone() const {
     imageAspect->mImageFilepath = mImageFilepath;
     imageAspect->mAnchor = mAnchor;
     imageAspect->mDimensions = mDimensions;
+    imageAspect->mOffsets = mOffsets;
+    imageAspect->mReferenceCoordinate = mReferenceCoordinate;
     return imageAspect;
 }
 

@@ -20,14 +20,18 @@ namespace ToyMaker {
 
     /**
      * @ingroup ToyMakerBuiltins
-     * @brief The interface used by aspects, objects, which cast pointer rays to interact with objects present in the world.
-     * 
-     * This interface will usually be attached to an aspect associated with a camera object.
+     * @brief The interface used by aspects, objects, which cast pointer
+     * rays to interact with objects present in the world.
      *
-     * Contains methods to invoke pointer event callbacks on objects that implement IRightClickable, ILeftClickable, and IHoverable.
-     * 
-     * The responsibility of actually conducting the raycast falls on the aspect implementing this interface itself.
-     * 
+     * This interface will usually be attached to an aspect
+     * associated with a camera object.
+     *
+     * Contains methods to invoke pointer event callbacks on objects that
+     * implement IRightClickable, ILeftClickable, and IHoverable.
+     *
+     * The responsibility of actually conducting the raycast falls on
+     * the aspect implementing this interface itself.
+     *
      */
     class IUsePointer {
     public:
