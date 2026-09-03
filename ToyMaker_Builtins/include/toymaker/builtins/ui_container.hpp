@@ -35,7 +35,7 @@ namespace ToyMaker {
          * @see ToyMaker::UIContainer
          *
          */
-        virtual glm::vec2 getOffsets() const = 0;
+        virtual glm::vec3 getOffsets() const = 0;
 
         /**
          * @brief Whether the container is permitted to reposition this element's

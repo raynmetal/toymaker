@@ -51,9 +51,10 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIText::create(const nlohmann::js
         jsonAspectProperties.at("reference_coordinate").at(0).get<float>(),
         jsonAspectProperties.at("reference_coordinate").at(1).get<float>(),
     };
-    const glm::vec2 offsets {
+    const glm::vec3 offsets {
         jsonAspectProperties.at("offsets").at(0).get<float>(),
         jsonAspectProperties.at("offsets").at(1).get<float>(),
+        jsonAspectProperties.at("offsets").at(2).get<float>(),
     };
     std::shared_ptr<ToyMaker::TextFont> font { ToyMaker::ResourceDatabase::GetRegisteredResource<ToyMaker::TextFont>(fontResourceName) };
 

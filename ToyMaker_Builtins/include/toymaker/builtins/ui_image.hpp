@@ -103,7 +103,7 @@ namespace ToyMaker {
             return mReferenceCoordinate;
         }
 
-        inline glm::vec2 getOffsets() const override {
+        inline glm::vec3 getOffsets() const override {
             return mOffsets;
         }
 
@@ -148,7 +148,7 @@ namespace ToyMaker {
          * this element.
          *
          */
-        glm::vec2 mOffsets { 0.f, 0.f };
+        glm::vec3 mOffsets { 0.f, 0.f, 0.f };
     };
 
 }

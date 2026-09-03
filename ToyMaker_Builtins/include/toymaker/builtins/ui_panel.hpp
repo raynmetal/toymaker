@@ -116,7 +116,7 @@ namespace ToyMaker {
          * @brief Returns this element's offsets relative to the owning container's reference coordinate.
          *
          */
-        inline glm::vec2 getOffsets() const override { return mOffsets; }
+        inline glm::vec3 getOffsets() const override { return mOffsets; }
 
         /**
          * @brief Returns whether the owning container can modify this object's children's positions.
@@ -162,7 +162,7 @@ namespace ToyMaker {
          *
          * @see ToyMaker::UIContainer
          */
-        glm::vec2 mOffsets { 0.f, 0.f };
+        glm::vec3 mOffsets { 0.f, 0.f, 0.f };
 
         /**
          * @brief Whether elements falling under this panel can have their positions controlled by the

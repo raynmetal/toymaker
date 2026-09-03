@@ -54,6 +54,7 @@ void UIContainer::onViewportResized(const ToyMaker::ViewportNode::RenderConfigur
     const glm::mat3 rotation { transform.getMatrixRotation() };
     const glm::vec3 up { rotation * glm::vec3 { 0.f, 1.f, 0.f } };
     const glm::vec3 right { rotation * glm::vec3 { 1.f, 0.f, 0.f } };
+    const glm::vec3 out { rotation * glm::vec3 { 0.f, 0.f, 1.f } };
     const glm::vec3 origin { position - (
         .5f * mContentSize.x * right
         - .5f * mContentSize.y * up
@@ -67,7 +68,7 @@ void UIContainer::onViewportResized(const ToyMaker::ViewportNode::RenderConfigur
 
         for(auto aspect: currentSim->getAspectsWithInterface<IUIElement>()) {
             const glm::vec2 referenceCoordinate { aspect.get().getReferenceCoordinate() };
-            const glm::vec2 offsets { aspect.get().getOffsets() };
+            const glm::vec3 offsets { aspect.get().getOffsets() };
             const glm::vec2 referenceCoordinateContent { mContentSize * referenceCoordinate };
             const glm::vec3 referenceCoordinateWorld { origin
                 + referenceCoordinateContent.x * right
@@ -76,6 +77,7 @@ void UIContainer::onViewportResized(const ToyMaker::ViewportNode::RenderConfigur
             const glm::vec3 elementPosition { referenceCoordinateWorld
                 + offsets.x * right
                 - offsets.y * up
+                + offsets.z * out
             };
 
             ToyMaker::Placement placement { current->getComponent<ToyMaker::Placement>() };

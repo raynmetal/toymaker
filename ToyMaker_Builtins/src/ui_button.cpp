@@ -72,9 +72,10 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIButton::create(const nlohmann::
         jsonAspectProperties.at("reference_coordinate").at(0).get<float>(),
         jsonAspectProperties.at("reference_coordinate").at(1).get<float>()
     };
-    const glm::vec2 offsets {
+    const glm::vec3 offsets {
         jsonAspectProperties.at("offsets").at(0).get<float>(),
-        jsonAspectProperties.at("offsets").at(1).get<float>()
+        jsonAspectProperties.at("offsets").at(1).get<float>(),
+        jsonAspectProperties.at("offsets").at(2).get<float>(),
     };
 
     std::shared_ptr<UIButton> buttonAspect { std::make_shared<UIButton>() };

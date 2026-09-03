@@ -118,7 +118,9 @@
 
                     "has_highlight": false,
                     "highlight": "UI_BUTTON_DEFAULT_HIGHLIGHT_PANEL",
-                    "highlight_color": [1.0, 0, 0, 1.0]
+                    "highlight_color": [1.0, 0, 0, 1.0],
+                    "reference_coordinate": [0.5, 0.5],
+                    "offsets": [0.0, 0.0, 0.0]
                 }
             ],
             "components": [
@@ -151,7 +153,9 @@
                     "text": "Default Text",
                     "font_resource_name": "UI_BUTTON_DEFAULT_TEXT_FONT",
                     "scale": 1.0,
-                    "anchor": [1.0, 1.0]
+                    "anchor": [1.0, 1.0],
+                    "reference_coordinate": [0.5, 0.5],
+                    "offsets": [0, 0, 0]
                 }
             ]
         },

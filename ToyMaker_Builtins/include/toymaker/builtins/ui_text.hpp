@@ -106,7 +106,7 @@ namespace ToyMaker {
             return mReferenceCoordinate;
         }
 
-        inline glm::vec2 getOffsets() const override {
+        inline glm::vec3 getOffsets() const override {
             return mOffsets;
         }
 
@@ -167,7 +167,7 @@ namespace ToyMaker {
          * @brief The offsets of this element relative to the parent container's reference coordinate.
          *
          */
-        glm::vec2 mOffsets { 0.f, 0.f };
+        glm::vec3 mOffsets { 0.f, 0.f, 0.f };
     };
 }
 

@@ -8,6 +8,14 @@
                 "path": "fonts/Roboto_Mono/static/RobotoMono-Regular.ttf",
                 "point_size": 24
             }
+        },
+        {
+            "name": "UI_Button",
+            "type": "SimObject",
+            "method": "fromSceneFile",
+            "parameters": {
+                "path": "ui_button.json"
+            }
         }
     ],
 
@@ -96,7 +104,7 @@
         },
 
         {
-            "name": "center_text",
+            "name": "topleft_text",
             "parent": "/container/",
             "type": "SimObject",
             "components": [
@@ -110,13 +118,68 @@
             "aspects": [
                 {
                     "type": "UIText",
-                    "text": "ToyMaker Center Text",
+                    "text": "Top-Left Text",
                     "font_resource_name": "Roboto_Mono_Regular_24",
                     "scale": 1.0,
                     "anchor": [0.0, 0.0],
                     "color": [255, 255, 255, 255],
                     "reference_coordinate": [0, 0],
-                    "offsets": [10, 10]
+                    "offsets": [10, 10, 0]
+                }
+            ]
+        },
+
+        {
+            "name": "UI_Button",
+            "parent": "/container/",
+            "type": "Scene",
+            "copy": true,
+            "overrides": {
+                "name": "bottomright_button",
+                "components": [],
+                "aspects": [
+                    {
+                        "type": "UIButton",
+                        "text": "Bottom-Right Button",
+                        "font_resource_name": "UI_BUTTON_DEFAULT_TEXT_FONT",
+                        "color": [255, 255, 255, 255],
+                        "scale": 1.0,
+                        "anchor": [1.0, 1.0],
+                        "value": "Bottom_Right_Button",
+                        "panel_active": "UI_BUTTON_DEFAULT_ACTIVE_PANEL",
+                        "panel_inactive": "UI_BUTTON_DEFAULT_INACTIVE_PANEL",
+                        "panel_hover": "UI_BUTTON_DEFAULT_HOVER_PANEL",
+                        "panel_pressed": "UI_BUTTON_DEFAULT_PRESSED_PANEL",
+                        "has_highlight": false,
+                        "offsets": [-10, -10, 0],
+                        "reference_coordinate": [1, 1]
+                    }
+                ]
+            }
+        },
+        {
+            "name": "center_panel",
+            "parent": "/container/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0,  0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            ],
+            "aspects": [
+                {
+                    "type": "UIPanel",
+                    "panel_resource_name": "UI_BUTTON_DEFAULT_INACTIVE_PANEL",
+                    "color": [255, 255, 255, 255],
+                    "scale": 1.0,
+                    "anchor": [0.5, 0.5],
+                    "offsets": [0, 0],
+                    "reference_coordinate": [0.5, 0.5],
+                    "offsets": [0.0, 0.0, -1.0],
+                    "content_size": [400, 600]
                 }
             ]
         }
