@@ -157,6 +157,7 @@
                 ]
             }
         },
+
         {
             "name": "center_panel",
             "parent": "/container/",
@@ -182,9 +183,96 @@
                     "content_size": [400, 600]
                 }
             ]
+        },
+
+        {
+            "name": "uppermiddle_text",
+            "parent": "/container/center_panel/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0,  0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 280.0, 1.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            ],
+            "aspects": [
+                {
+                    "type": "UIText",
+                    "text": "Upper-Middle Text",
+                    "font_resource_name": "Roboto_Mono_Regular_24",
+                    "scale": 1.0,
+                    "anchor": [0.5, 0.0],
+                    "color": [255, 255, 255, 255],
+                    "reference_coordinate": [0.5, 0.5],
+                    "offsets": [0, 0, 0]
+                }
+            ]
+        },
+        {
+            "name": "lowermiddle_text",
+            "parent": "/container/center_panel/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0,  0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, -280.0, 1.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            ],
+            "aspects": [
+                {
+                    "type": "UIText",
+                    "text": "Lower-Middle Text",
+                    "font_resource_name": "Roboto_Mono_Regular_24",
+                    "scale": 1.0,
+                    "anchor": [0.5, 1.0],
+                    "color": [255, 255, 255, 255],
+                    "reference_coordinate": [0.5, 0.5],
+                    "offsets": [10, 10, 0]
+                }
+            ]
+        },
+
+        {
+            "name": "UI_Button",
+            "parent": "/container/center_panel/",
+            "type": "Scene",
+            "copy": true,
+            "overrides": {
+                "name": "center_button",
+                "components": [
+                    {
+                        "type": "Placement",
+                        "orientation": [ 1.0,  0.0, 0.0, 0.0 ],
+                        "position": [ 0.0, 0.0, 1.0, 1.0 ],
+                        "scale": [ 1.0, 1.0, 1.0 ]
+                    }
+                ],
+                "aspects": [
+                    {
+                        "type": "UIButton",
+                        "text": "Center Button",
+                        "font_resource_name": "UI_BUTTON_DEFAULT_TEXT_FONT",
+                        "color": [255, 255, 255, 255],
+                        "scale": 1.0,
+                        "anchor": [0.5, 0.5],
+                        "value": "Bottom_Right_Button",
+                        "panel_active": "UI_BUTTON_DEFAULT_ACTIVE_PANEL",
+                        "panel_inactive": "UI_BUTTON_DEFAULT_INACTIVE_PANEL",
+                        "panel_hover": "UI_BUTTON_DEFAULT_HOVER_PANEL",
+                        "panel_pressed": "UI_BUTTON_DEFAULT_PRESSED_PANEL",
+                        "has_highlight": false,
+                        "offsets": [0, 0, 0],
+                        "reference_coordinate": [0.5, 0.5]
+                    }
+                ]
+            }
         }
     ],
 
-    "connections":[]
+    "connections": []
 }
 
