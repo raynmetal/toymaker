@@ -19,6 +19,15 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIPanel::create(const nlohmann::j
         jsonAspectProperties.at("content_size")[0].get<float>(),
         jsonAspectProperties.at("content_size")[1].get<float>(),
     };
+    const glm::vec2 referenceCoordinate {
+        jsonAspectProperties.at("reference_coordinate").at(0).get<float>(),
+        jsonAspectProperties.at("reference_coordinate").at(1).get<float>(),
+    };
+    const glm::vec3 offsets {
+        jsonAspectProperties.at("offsets").at(0).get<float>(),
+        jsonAspectProperties.at("offsets").at(1).get<float>(),
+        jsonAspectProperties.at("offsets").at(2).get<float>(),
+    };
 
     std::shared_ptr<NineSlicePanel> panel { ToyMaker::ResourceDatabase::GetRegisteredResource<NineSlicePanel>(panelResourceName) };
     std::shared_ptr<UIPanel> panelAspect { std::make_shared<UIPanel>() };
@@ -26,6 +35,8 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIPanel::create(const nlohmann::j
     panelAspect->mBasePanel = panel;
     panelAspect->mContentSize = contentSize;
     panelAspect->mAnchor = anchor;
+    panelAspect->mReferenceCoordinate = referenceCoordinate;
+    panelAspect->mOffsets = offsets;
 
     return panelAspect;
 }
@@ -52,6 +63,8 @@ std::shared_ptr<ToyMaker::BaseSimObjectAspect> UIPanel::clone() const {
     panelAspect->mBasePanel = mBasePanel;
     panelAspect->mContentSize = mContentSize;
     panelAspect->mAnchor = mAnchor;
+    panelAspect->mOffsets = mOffsets;
+    panelAspect->mReferenceCoordinate = mReferenceCoordinate;
 
     return panelAspect;
 }
@@ -102,3 +115,4 @@ void UIPanel::recomputeTexture() {
     );
     material->updateIntProperty("usesTextureAlbedo", true);
 }
+

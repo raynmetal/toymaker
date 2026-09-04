@@ -13,33 +13,34 @@
 #define TOYMAKERBUILTINS_UIIMAGE_H
 
 #include "toymaker/engine/sim_system.hpp"
-#include "toymaker/engine/texture.hpp"
+
+#include "ui_container.hpp"
 
 namespace ToyMaker {
 
     /**
      * @ingroup UrGameUIComponent
      * @brief The aspect class responsible for displaying an image from a file scaled to some specific dimensions.
-     * 
+     *
      * ## Usage:
-     * 
+     *
      * Its appearance in JSON is as follows:
-     * 
+     *
      * ```jsonc
-     * 
+     *
      * {
      *     "type": "UIImage",
      *     "image_filepath": "textures/button_active.png",
      *     "dimensions": [620, 440],
      *     "anchor": [0.5, 0.5]
      * }
-     * 
+     *
      * ```
-     * 
+     *
      * To change the image associated with this aspect, call UIImage::updateImage(), passing the path to the file from which the new image is to be loaded.
-     * 
+     *
      */
-    class UIImage: public ToyMaker::SimObjectAspect<UIImage> {
+    class UIImage: public ToyMaker::SimObjectAspect<UIImage>, public IUIElement {
     public:
         /**
          * @brief Constructs a new UIImage aspect.
@@ -98,6 +99,18 @@ namespace ToyMaker {
          */
         void updateAnchor(const glm::vec2& anchor);
 
+        inline glm::vec2 getReferenceCoordinate() const override {
+            return mReferenceCoordinate;
+        }
+
+        inline glm::vec3 getOffsets() const override {
+            return mOffsets;
+        }
+
+        inline bool allowsDescendantControl() const override {
+            return false;
+        }
+
     private:
         /**
          * @brief Recomputes the texture associated with this object's StaticModel.
@@ -122,6 +135,20 @@ namespace ToyMaker {
          * 
          */
         glm::uvec2 mDimensions { 0.f, 0.f };
+
+        /**
+         * @brief The reference coordinate of the parent container, relative to which this element's position
+         * is determined.
+         *
+         */
+        glm::vec2 mReferenceCoordinate { 0.f, 0.f };
+
+        /**
+         * @brief The offsets, relative to the parent container's reference coordinate, determining the position of
+         * this element.
+         *
+         */
+        glm::vec3 mOffsets { 0.f, 0.f, 0.f };
     };
 
 }

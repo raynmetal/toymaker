@@ -14,7 +14,8 @@
 
 #include "toymaker/engine/sim_system.hpp"
 
-#include "toymaker/builtins/nine_slice_panel.hpp"
+#include "nine_slice_panel.hpp"
+#include "ui_container.hpp"
 
 namespace ToyMaker {
 
@@ -38,7 +39,7 @@ namespace ToyMaker {
      * ```
      * 
      */
-    class UIPanel: public ToyMaker::SimObjectAspect<UIPanel> {
+    class UIPanel: public ToyMaker::SimObjectAspect<UIPanel>, public IUIElement {
     public:
         /**
          * @brief Constructs a new UIPanel aspect.
@@ -81,7 +82,7 @@ namespace ToyMaker {
          * 
          * @param contentSize The new content display region of the NineSlicePanel.
          */
-        void updateContentSize(glm::vec2 contentSize);
+        virtual void updateContentSize(glm::vec2 contentSize);
 
         /**
          * @brief Updates the point considered the new origin for this object, where (0,0) represents the top left corner of the object, and (1,1) the bottom right corner.
@@ -97,6 +98,31 @@ namespace ToyMaker {
          * @param newPanel The new panel resource used to render this object's texture.
          */
         void updateBasePanel(std::shared_ptr<NineSlicePanel> newPanel);
+
+        /**
+         * @brief Returns the current content size for this panel.
+         *
+         */
+        inline glm::vec2 getContentSize() const { return mContentSize; }
+
+        /**
+         * @brief Returns the reference coordinate relative to which the position of this element is computed.
+         *
+         *
+         */
+        inline glm::vec2 getReferenceCoordinate() const override { return mReferenceCoordinate; }
+
+        /**
+         * @brief Returns this element's offsets relative to the owning container's reference coordinate.
+         *
+         */
+        inline glm::vec3 getOffsets() const override { return mOffsets; }
+
+        /**
+         * @brief Returns whether the owning container can modify this object's children's positions.
+         *
+         */
+        inline bool allowsDescendantControl() const override { return mAllowsDescendantControl; }
 
     private:
         /**
@@ -122,8 +148,29 @@ namespace ToyMaker {
          * 
          */
         glm::vec2 mAnchor {0.f, 0.f};
-    };
 
+        /**
+         * @brief The point on the owning container relative to which this elements offsets
+         * are computed.
+         *
+         * @see ToyMaker::UIContainer
+         */
+        glm::vec2 mReferenceCoordinate { 0.f, 0.f };
+
+        /**
+         * @brief The offsets of the anchor of this element relative to the owning container's reference coordinate.
+         *
+         * @see ToyMaker::UIContainer
+         */
+        glm::vec3 mOffsets { 0.f, 0.f, 0.f };
+
+        /**
+         * @brief Whether elements falling under this panel can have their positions controlled by the
+         * owning container.
+         *
+         */
+        bool mAllowsDescendantControl { false };
+    };
 }
 
 #endif
