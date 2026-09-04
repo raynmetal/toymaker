@@ -38,6 +38,10 @@ incline.
 
 `Examples/LeftRightCollision` -- shows single one-to-one collision between two spheres.
 
+![Resizable UI](https://media4.giphy.com/media/v1.Y2lkPTc5MGI3NjExbnp2YWRpYjRmNnJpejI2OGZ2OWc5OXk1OXQyamJmdmJvMjM4ZGR2MCZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/uMj0ixmBKVoMAX3B2P/giphy.gif)
+
+`Examples/UILayout` -- shows UI elements being dynamically repositioned in response to window resizing.
+
 ![Interactive Center Text](https://media0.giphy.com/media/v1.Y2lkPTc5MGI3NjExbDJ1aTl3Y3dzMGZ4NGx5d2YzeHJtNzV6cTIycHJhZG96aTl0YTllOSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/MLEgE7qNc53t5HznIb/giphy.gif)
 
 `Examples/CenterText` -- demo featuring clickable text that spins on interaction.
