@@ -10,6 +10,32 @@
             }
         },
         {
+            "name": "Sad_Texture",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path": "Sad.png",
+                "cubemap_layout": "row"
+            }
+        },
+        {
+            "name": "Background_Texture",
+            "type": "Texture",
+            "method": "fromFile",
+            "parameters": {
+                "path":  "textures/button_inactive.png"
+            }
+        },
+        {
+            "name": "Background_Panel",
+            "type": "NineSlicePanel",
+            "method": "fromDescription",
+            "parameters": {
+                "base_texture": "Background_Texture",
+                "content_region": [0.11, 0.11, 0.781, 0.781]
+            }
+        },
+        {
             "name": "UI_Button",
             "type": "SimObject",
             "method": "fromSceneFile",
@@ -99,7 +125,17 @@
                 }
             ],
             "aspects": [
-                { "type": "UIContainer" }
+                { "type": "UIContainer" },
+                {
+                    "type": "UIPanel",
+                    "panel_resource_name": "Background_Panel",
+                    "color": [255, 255, 255, 255],
+                    "scale": 1.0,
+                    "anchor": [0.5, 0.5],
+                    "reference_coordinate": [0.5, 0.5],
+                    "offsets": [0.0, 0.0, 0.0],
+                    "content_size": [400, 600]
+                }
             ]
         },
 
@@ -124,7 +160,7 @@
                     "anchor": [0.0, 0.0],
                     "color": [255, 255, 255, 255],
                     "reference_coordinate": [0, 0],
-                    "offsets": [10, 10, 0]
+                    "offsets": [10, 10, 2]
                 }
             ]
         },
@@ -151,11 +187,35 @@
                         "panel_hover": "UI_BUTTON_DEFAULT_HOVER_PANEL",
                         "panel_pressed": "UI_BUTTON_DEFAULT_PRESSED_PANEL",
                         "has_highlight": false,
-                        "offsets": [-10, -10, 0],
+                        "offsets": [-10, -10, 2],
                         "reference_coordinate": [1, 1]
                     }
                 ]
             }
+        },
+
+        {
+            "name": "topright_image",
+            "parent": "/container/",
+            "type": "SimObject",
+            "components": [
+                {
+                    "type": "Placement",
+                    "orientation": [ 1.0,  0.0, 0.0, 0.0 ],
+                    "position": [ 0.0, 0.0, 0.0, 1.0 ],
+                    "scale": [ 1.0, 1.0, 1.0 ]
+                }
+            ],
+            "aspects": [
+                {
+                    "type": "UIImage",
+                    "image_filepath": "Sad.png",
+                    "dimensions": [50, 50],
+                    "anchor": [1.0, 0.0],
+                    "reference_coordinate": [1, 0],
+                    "offsets": [-10, 10, 2]
+                }
+            ]
         },
 
         {
@@ -173,13 +233,12 @@
             "aspects": [
                 {
                     "type": "UIPanel",
-                    "panel_resource_name": "UI_BUTTON_DEFAULT_INACTIVE_PANEL",
+                    "panel_resource_name": "UI_BUTTON_DEFAULT_ACTIVE_PANEL",
                     "color": [255, 255, 255, 255],
                     "scale": 1.0,
                     "anchor": [0.5, 0.5],
-                    "offsets": [0, 0],
                     "reference_coordinate": [0.5, 0.5],
-                    "offsets": [0.0, 0.0, -1.0],
+                    "offsets": [0.0, 0.0, 1.0],
                     "content_size": [400, 600]
                 }
             ]
@@ -206,7 +265,7 @@
                     "anchor": [0.5, 0.0],
                     "color": [255, 255, 255, 255],
                     "reference_coordinate": [0.5, 0.5],
-                    "offsets": [0, 0, 0]
+                    "offsets": [0, 0, 2]
                 }
             ]
         },
@@ -231,11 +290,10 @@
                     "anchor": [0.5, 1.0],
                     "color": [255, 255, 255, 255],
                     "reference_coordinate": [0.5, 0.5],
-                    "offsets": [10, 10, 0]
+                    "offsets": [10, 10, 2]
                 }
             ]
         },
-
         {
             "name": "UI_Button",
             "parent": "/container/center_panel/",
@@ -265,7 +323,7 @@
                         "panel_hover": "UI_BUTTON_DEFAULT_HOVER_PANEL",
                         "panel_pressed": "UI_BUTTON_DEFAULT_PRESSED_PANEL",
                         "has_highlight": false,
-                        "offsets": [0, 0, 0],
+                        "offsets": [0, 0, 2],
                         "reference_coordinate": [0.5, 0.5]
                     }
                 ]
