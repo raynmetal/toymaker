@@ -251,6 +251,7 @@ void SpatialQuerySystem::onEntityEnabled(EntityID entityID) {
 
 void SpatialQuerySystem::onEntityDisabled(EntityID entityID) {
     mUpdateQueueAABB.erase(entityID);
+    mUpdateQueueTransform.erase(entityID);
     if(!mRequiresInitialization) { mOctree->removeEntity(entityID); }
 }
 
