@@ -156,11 +156,15 @@ bool QueryClick::onPointerMove(const ToyMaker::ActionData& actionData, const Toy
         if(std::shared_ptr<ToyMaker::SimObject> nodeAsSimObject = std::dynamic_pointer_cast<ToyMaker::SimObject>(foundNode)) {
             if(nodeAsSimObject->hasAspectWithInterface<IHoverable>()) {
                 const bool isInPreviousQuery { std::find(mPreviousQueryResults.begin(), mPreviousQueryResults.end(), foundNode) != mPreviousQueryResults.end() };
+                const glm::vec4 intersectionLocation { ToyMaker::computeIntersections(cameraRay, foundNode->getComponent<ToyMaker::AxisAlignedBounds>()).second.first, 1.f };
                 if(!isInPreviousQuery) {
                     for(IHoverable& hoverableAspect: nodeAsSimObject->getAspectsWithInterface<IHoverable>()) {
                         glm::vec4 intersectionLocation { ToyMaker::computeIntersections(cameraRay, foundNode->getComponent<ToyMaker::AxisAlignedBounds>()).second.first, 1.f };
                         pointerEnter(hoverableAspect, intersectionLocation);
                     }
+                }
+                for(IHoverable& hoverableAspect: nodeAsSimObject->getAspectsWithInterface<IHoverable>()) {
+                    pointerHover(hoverableAspect, intersectionLocation);
                 }
             }
         }

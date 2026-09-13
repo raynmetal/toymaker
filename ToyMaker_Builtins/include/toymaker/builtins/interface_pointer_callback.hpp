@@ -72,6 +72,17 @@ namespace ToyMaker {
         bool pointerEnter(IHoverable& hoverable, glm::vec4 hoverLocation);
 
         /**
+         * @brief Callback for when a pointer hovers in a region containing an object.
+         *
+         * @param hoverable The aspect with the hover callback.
+         * @param hoverLocation The location at which the pointer entered the object's region.
+         *
+         * @retval true The object handled the pointer enter event.
+         * @retval false The object did nothing with the pointer enter event.
+         */
+        bool pointerHover(IHoverable& hoverable, glm::vec4 hoverLocation);
+
+        /**
          * @brief Callback for when a pointer leaves a region containing an object.
          * 
          * @param hoverable The aspect with the hover callback.
@@ -129,6 +140,15 @@ namespace ToyMaker {
         virtual bool onPointerEnter(glm::vec4 hoverLocation)=0;
 
         /**
+         * @brief Virtual method called by a subclass of IUsePointer every tick while the pointer is in this object's region.
+         *
+         * @param hoverLocation The 3D coordinates of the ray from the pointer to the object.
+         * @retval true Returned when this object uses the pointer hover event.
+         * @retval false Returned when this object does nothing with the pointer hover event.
+         */
+        virtual bool onPointerHover(glm::vec4 hoverLocation)=0;
+
+        /**
          * @brief Virtual method called by a subclass of IUsePointer to signal that a pointer has just left this object's region
          * 
          * @retval true Returned when this object uses the pointer hover event.
@@ -145,8 +165,8 @@ namespace ToyMaker {
     inline bool IUsePointer::leftReleaseOn(ILeftClickable& clickable, glm::vec4 clickLocation) { return clickable.onPointerLeftRelease(clickLocation); }
 
     inline bool IUsePointer::pointerEnter(IHoverable& hoverable, glm::vec4 hoverLocation) { return hoverable.onPointerEnter(hoverLocation); }
+    inline bool IUsePointer::pointerHover(IHoverable& hoverable, glm::vec4 hoverLocation) { return hoverable.onPointerHover(hoverLocation); }
     inline bool IUsePointer::pointerLeave(IHoverable& hoverable) { return hoverable.onPointerLeave(); }
-
 }
 
 #endif

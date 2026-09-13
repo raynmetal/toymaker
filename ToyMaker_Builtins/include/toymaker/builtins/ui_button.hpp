@@ -356,6 +356,15 @@ namespace ToyMaker {
         bool onPointerEnter(glm::vec4 pointerLocation) override;
 
         /**
+         * @brief Handler for the hover event where a pointer lingers in this button's area.
+         * 
+         * @param pointerLocation The location of the intersection between the pointer raycast and this object.
+         * @retval true This button handled the pointer enter event.
+         * @retval false The button did not handle the pointer enter event.
+         */
+        inline bool onPointerHover(glm::vec4 pointerLocation) override { return false; }
+
+        /**
          * @brief Handler for the hover event where a pointer just leaves this button's area.
          * 
          * @retval true This button handled the pointer leave event.
