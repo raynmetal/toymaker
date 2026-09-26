@@ -1,14 +1,20 @@
 cmake_minimum_required(VERSION 3.23)
 project(
     ToyMaker
-    VERSION 0.5.2
+    VERSION 0.5.3
     DESCRIPTION "A game engine built using SDL3 and OpenGL."
     HOMEPAGE_URL https://www.github.com/raynmetal/toymaker
     LANGUAGES CXX
 )
 
+set(CopyDepsDefault OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
+    set(CopyDepsDefault ON)
+endif()
+
 include(CMakeDependentOption)
 option(TOYMAKER_BUILD_EXAMPLES "Whether projects under `Examples/` should be built" OFF)
+option(TOYMAKER_INSTALL_COPYDEPS "Whether binary dependencies are copied during installation" ${CopyDepsDefault})
 cmake_dependent_option(TOYMAKER_USE_INSTALLED "Use locally installed ToyMaker library for the basic example project" ON TOYMAKER_BUILD_EXAMPLE_CENTERTEXT OFF)
 
 # Build toymaker examples and tests on top of engine built here

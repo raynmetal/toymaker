@@ -56,13 +56,17 @@ function(toymaker_configure_executable toymaker_project_executable)
         RUNTIME_DEPENDENCY_SET deps
     )
 
-    install(
-        RUNTIME_DEPENDENCY_SET deps
-        PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
-        POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
-        DIRECTORIES $ENV{PATH}
-        DESTINATION ${CMAKE_INSTALL_BINDIR}
-    )
+    if(${TOYMAKER_INSTALL_COPYDEPS})
+        message("ToyMaker: Will copy runtime dependencies on installation")
+        install(
+            RUNTIME_DEPENDENCY_SET deps
+            PRE_EXCLUDE_REGEXES "api-ms-" "ext-ms-"
+            POST_EXCLUDE_REGEXES ".*system32/.*\\.dll"
+            DIRECTORIES $ENV{PATH}
+            DESTINATION ${CMAKE_INSTALL_BINDIR}
+        )
+    endif()
+
 
     install(
         DIRECTORY "${project_data_dir}"
