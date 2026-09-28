@@ -2,8 +2,18 @@
     "version": 4,
     "configurePresets": [
         {
-            "name": "Library_Release",
+            "name": "Library",
             "displayName": "Build ToyMaker Engine",
+            "description": "Build ToyMaker Engine.",
+            "binaryDir": "${sourceDir}/../toymaker_build",
+            "cacheVariables": {
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "TOYMAKER_USE_INSTALLED": "OFF"
+            }
+        },
+        {
+            "name": "Library_Release",
+            "displayName": "Build ToyMaker Engine (Optimized)",
             "description": "Build ToyMaker Engine.",
             "binaryDir": "${sourceDir}/../toymaker_build",
             "cacheVariables": {
