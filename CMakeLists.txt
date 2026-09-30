@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.23)
 project(
     ToyMaker
-    VERSION 0.5.4
+    VERSION 0.5.5
     DESCRIPTION "A game engine built using SDL3 and OpenGL."
     HOMEPAGE_URL https://www.github.com/raynmetal/toymaker
     LANGUAGES CXX
@@ -106,6 +106,7 @@ endif()
 
 set(CPACK_PACKAGE_NAME "toymaker")
 set(CPACK_PACKAGE_VENDOR "Zoheb Shujauddin")
+set(CPACK_PACKAGE_DESCRIPTION "ToyMaker - A simple 3D game engine built on SDL, OpenGL, C++")
 set(CPACK_PACKAGE_INSTALL_DIRECTORY "toymaker/toymaker-${ToyMaker_VERSION}")
 set(CPACK_RESOURCE_FILE_LICENSE "${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt")
 set(CPACK_RESOURCE_FILE_README "${CMAKE_CURRENT_SOURCE_DIR}/README.md")
