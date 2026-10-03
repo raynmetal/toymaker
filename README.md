@@ -108,6 +108,14 @@ Open, ongoing, and completed tasks and issues are tracked on this project's [Tre
 
 ### On Debian (Linux)
 
+
+> [!Caution]
+> 
+> The toymaker package requires libraries currently only available on the ["sid"/unstable distribution of Debian.](https://www.debian.org/releases/sid/)
+>
+> Only experienced users should attempt to install this package, otherwise preferring to build and install toymaker and its dependencies from
+> source.  The method to install dependencies of this package are beyond the scope of these instructions.
+
 Download the latest Debian package ending in `_amd64.deb` from [here.](https://github.com/raynmetal/toymaker/releases/tag/v0.5.6)  Install with:
 
 ```bash
