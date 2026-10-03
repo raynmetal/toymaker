@@ -108,7 +108,7 @@ Open, ongoing, and completed tasks and issues are tracked on this project's [Tre
 
 ### On Debian (Linux)
 
-Download the latest Debian package ending in `_amd64.deb` from [here.](#)  Install with:
+Download the latest Debian package ending in `_amd64.deb` from [here.](https://github.com/raynmetal/toymaker/releases/tag/v0.5.6)  Install with:
 
 ```bash
 sudo apt install ./libtoymaker-dev_0.5.6_amd64.deb
