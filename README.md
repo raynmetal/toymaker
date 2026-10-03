@@ -104,7 +104,43 @@ Documentation for the engine is available on this project's [github pages.](http
 
 Open, ongoing, and completed tasks and issues are tracked on this project's [Trello board.](https://trello.com/b/ALP2KjNp/toymaker-engine)
 
-## Building & Running
+## Installation
+
+### On Debian (Linux)
+
+Download the latest Debian package ending in `_amd64.deb` from [here.](#)  Install with:
+
+```bash
+sudo apt install ./libtoymaker-dev_0.5.6_amd64.deb
+```
+
+### On Arch (Linux)
+
+Download the latest Arch package from [here.](https://github.com/raynmetal/toymaker/releases/tag/v0.5.5)   Extract
+the package using:
+
+```bash
+tar -xvf toymaker-0.5.5-x86_64.tar.gz
+```
+
+Enter the freshly extracted directory, then run `makepkg` to compile the library.
+
+```bash
+cd toymaker-0.5.5-x86_64
+makepkg
+```
+
+Finally, use `pacman` to install package binaries.
+
+```bash
+pacman -U toymaker-0.5.5-1-x86_64.pkg.tar.zst
+```
+
+### ~On Windows~
+
+WIP.
+
+## Building From Source
 
 ### Requirements
 
