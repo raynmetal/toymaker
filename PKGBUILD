@@ -1,6 +1,6 @@
 # Maintainer: Zoheb Shujauddin <zoheb2424@gmail.com>
 pkgname=toymaker
-pkgver=0.5.5
+pkgver=0.5.6
 pkgrel=1
 epoch=
 pkgdesc="A small open source 3D game engine built on C++, OpenGL, and SDL."
