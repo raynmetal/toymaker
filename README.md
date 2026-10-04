@@ -128,13 +128,13 @@ Download the latest Arch package from [here.](https://github.com/raynmetal/toyma
 the package using:
 
 ```bash
-tar -xvf toymaker-0.5.6-x86_64.tar.gz
+tar -xvf toymaker-0.5.6-x86_64-arch.tar.gz
 ```
 
 Enter the freshly extracted directory, then run `makepkg` to compile the library.
 
 ```bash
-cd toymaker-0.5.6-x86_64
+cd toymaker-0.5.6-x86_64-arch
 makepkg
 ```
 
