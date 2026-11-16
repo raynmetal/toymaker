@@ -164,6 +164,8 @@ Linux.
 
 - [SDL3 TTF](https://github.com/libsdl-org/SDL_ttf) -- For loading and rendering fonts.
 
+- [SDL Mixer](https://github.com/libsdl-org/SDL_mixer) -- For simple audio management, playback.
+
 - [GLEW](https://github.com/nigels-com/glew) -- For exposing OpenGL functionality available on this platform.
 
 - [Nlohmann JSON](https://json.nlohmann.me/) -- For serialization/deserialization of data to and from JSON.
